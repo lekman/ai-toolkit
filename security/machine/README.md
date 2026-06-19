@@ -37,6 +37,14 @@ It sets four things:
   hook wired there) survive even when no repo-level protection is applied —
   defense in depth across a misconfigured or isolated box.
 
+## Optional: silence the auto-mode prompt
+
+If auto mode's confirmation prompt nags you every session, you can add
+`"skipAutoPermissionPrompt": true` alongside `defaultMode`. It is **not** in the
+fragment on purpose: it removes a prompt, not a risk. Treat it as a personal
+convenience, not part of the safety baseline — adding it makes the workflow
+smoother, not the machine safer.
+
 ## Why a deny list is not enough
 
 Deny rules are scoped to a tool. `Read(**/*.pem)` blocks the **Read** tool, but

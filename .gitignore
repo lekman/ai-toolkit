@@ -6,3 +6,8 @@
 # .trunk/.gitignore still excludes the local cache/symlinks (out, logs,
 # plugins, tools, actions, notifications, user.yaml).
 !.trunk/
+
+# Override the global ignore of .claude/ so the repo-level config is shared
+# (PreToolUse hooks, rules, settings.json). Keep personal local overrides out.
+!.claude/
+.claude/settings.local.json

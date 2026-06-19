@@ -1,0 +1,8 @@
+# Override the global gitignore (~/.gitignore_global ignores CLAUDE.md).
+# In this repo, CLAUDE.md files are shareable content, so track them.
+!CLAUDE.md
+
+# Override the global ignore of .trunk/ so the shared config is tracked.
+# .trunk/.gitignore still excludes the local cache/symlinks (out, logs,
+# plugins, tools, actions, notifications, user.yaml).
+!.trunk/

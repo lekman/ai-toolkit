@@ -14,7 +14,7 @@ config. It holds a `permissions` baseline. Merge it into the `permissions` block
 of your own `~/.claude/settings.json` — do not copy the file over the top of
 your settings, or you will wipe everything else.
 
-It sets three things:
+It sets four things:
 
 - **`defaultMode: auto`** — run permissions in auto mode by default. Auto mode
   puts a second agent service and practical safeguards between the agent and
@@ -23,10 +23,19 @@ It sets three things:
   slows down or stops actions that put you at risk, even when finishing the task
   would be faster without the check.
 - **Reading secrets denied** — `.env` files, private keys, certs, keystores, and
-  the on-disk credential stores for SSH, AWS, Azure, gcloud, kube, Docker, npm,
-  and Claude Code itself.
-- **Writing `.env` denied** — so the agent cannot clobber your environment
-  files.
+  the on-disk credential stores for SSH, AWS, Azure, gcloud, kube, Docker, GPG,
+  npm, and Claude Code itself.
+- **Writing those secrets denied** — every read deny on a credential store is
+  mirrored by a `Write`/`Edit` deny. Clobbering a credential is as damaging as
+  reading it: an overwritten `~/.ssh/authorized_keys` is a backdoor, a rewritten
+  `~/.aws/credentials` redirects your cloud calls.
+- **Self-mutation denied** — the agent cannot `Write`/`Edit` its own
+  `settings.json` (global or project). Without this, an agent in `auto` mode
+  could delete these very deny rules and then do as it pleases. This is the rule
+  that keeps the others honest. The `**/` glob is deliberate: it covers every
+  repo's `.claude/settings.json`, so a repo's guard rails (e.g. a PreToolUse
+  hook wired there) survive even when no repo-level protection is applied —
+  defense in depth across a misconfigured or isolated box.
 
 ## Why a deny list is not enough
 
@@ -34,8 +43,21 @@ Deny rules are scoped to a tool. `Read(**/*.pem)` blocks the **Read** tool, but
 `Bash(cat key.pem)` is a Bash call and slips straight past it. You can try to
 block the shell too (the `Bash(cat ...)` lines do), but it is porous: `head`,
 `less`, `tail`, `bat`, `rg`, `xxd`, and `python -c "open(...)"` all read the
-same file and you cannot enumerate every reader. Prefix denies stop honest
+same file, and a shell redirect (`> ~/.ssh/authorized_keys`, `tee`) writes one,
+none of which a prefix deny reliably catches. Prefix denies stop honest
 mistakes, not a determined path.
+
+Two deliberate choices in the list:
+
+- **Self-mutation is scoped to the settings files**, not all of `~/.claude`. A
+  blanket `Write(~/.claude/**)` deny would also block memory and plan writes
+  that the agent legitimately makes. Blocking `settings.json` /
+  `settings.local.json` is the targeted fix; the robust version is a read-only
+  mount (below).
+- **No Bash write-redirect denies.** `Bash(* > ~/.ssh/*)`-style rules give false
+  confidence — the matcher does not parse redirection reliably. The `Write`/
+  `Edit` denies cover those tools; the shell gap is closed by isolation, not by
+  more rules.
 
 So treat this baseline as one layer. It matters **most** in sessions with no
 human approving each step:
@@ -46,8 +68,9 @@ human approving each step:
   rules and on isolation.)
 - **Docker / remote Agent SDK** — usually unattended and auto-approved. Here the
   deny list is doing real work, but the durable control is **isolation**: run
-  with a least-privilege filesystem and do not mount real credentials, so a
-  shell bypass has nothing to reach. Contain the blast radius rather than trying
+  with a least-privilege filesystem, do not mount real credentials, and mount
+  the settings read-only so the agent cannot rewrite its own rules — a shell
+  bypass then has nothing to reach. Contain the blast radius rather than trying
   to enumerate every dangerous command.
 
 ## Keep secrets out of `settings.json`

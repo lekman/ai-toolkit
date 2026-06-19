@@ -1,2 +1,7 @@
 # Prettier friendly markdownlint config (all formatting rules disabled)
 extends: markdownlint/style/prettier
+# Allow the collapsible <details>/<summary> blocks used in README practices.
+MD033:
+  allowed_elements:
+    - details
+    - summary

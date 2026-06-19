@@ -18,5 +18,6 @@ Top level is flat and grouped by how each thing is consumed:
 
 The repo also has its own `.claude/` — repo-level hooks, rules, and a
 `settings.json` that protect this repo. Each folder carries its own README.
-`standards/`, `security/`, `privacy/`, and `docs/` exist today; the rest are
-added as content lands. Anthropic (Claude) only — no other ecosystems.
+`standards/`, `security/`, `privacy/`, `docs/`, and `plugins/` exist today (the
+last also makes this repo a Claude Code plugin marketplace); the rest are added
+as content lands. Anthropic (Claude) only — no other ecosystems.

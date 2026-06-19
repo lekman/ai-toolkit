@@ -1,0 +1,5 @@
+{
+  "name": "git",
+  "description": "Git workflow skills: grouped conventional commits with QA and hook compliance",
+  "version": "0.1.0"
+}

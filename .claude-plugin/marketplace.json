@@ -1,0 +1,19 @@
+{
+  "name": "ai-toolkit",
+  "metadata": {
+    "description": "Shared practices, tools, and workflows for working with Claude"
+  },
+  "owner": {
+    "name": "Tobias Lekman",
+    "url": "https://github.com/lekman"
+  },
+  "plugins": [
+    {
+      "name": "git",
+      "source": "./plugins/git",
+      "description": "Git workflow skills: analyze changes and create grouped conventional commits with QA and hook compliance",
+      "category": "development",
+      "tags": ["git", "commit", "conventional-commits", "workflow"]
+    }
+  ]
+}

@@ -8,6 +8,8 @@ Top level is flat and grouped by how each thing is consumed:
 - `standards/` — base Claude instruction files; drop into `~/.claude`.
 - `security/` — security settings by level (machine, isolated, and later CI…).
 - `privacy/` — keep PII / PHI / financial data from reaching the agent or model.
+- `observability/` — see what the agent does and get notified (notifications now,
+  progress and access visibility to come).
 - `practices/` — best practices, patterns, and workflows (guidance, prose).
 - `docs/` — cross-cutting concepts that span practices (e.g. hard vs soft controls).
 - `plugins/` — Claude Code plugins.
@@ -18,6 +20,7 @@ Top level is flat and grouped by how each thing is consumed:
 
 The repo also has its own `.claude/` — repo-level hooks, rules, and a
 `settings.json` that protect this repo. Each folder carries its own README.
-`standards/`, `security/`, `privacy/`, `docs/`, and `plugins/` exist today (the
-last also makes this repo a Claude Code plugin marketplace); the rest are added
+`standards/`, `security/`, `privacy/`, `observability/`, `docs/`, and `plugins/`
+exist today (the last also makes this repo a Claude Code plugin marketplace); the
+rest are added
 as content lands. Anthropic (Claude) only — no other ecosystems.

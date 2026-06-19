@@ -17,6 +17,8 @@ high-value; everything else is opt-in by need.
 
 - **[Privacy](privacy/README.md)** — keep PII, PHI, and financial data away from
   the agent and the model.
+- **[Observability](observability/README.md)** — see what the agent is doing and
+  get notified when it needs you (remote control, Pushover, local sound).
 - **[Isolated-agent security](security/isolated/README.md)** — guard rails for a
   remote or Docker agent, where the machine is disposable but the repo is not.
 - **[Skills](plugins/README.md)** — reusable workflows for common tasks (commit,

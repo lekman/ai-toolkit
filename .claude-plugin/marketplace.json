@@ -14,6 +14,19 @@
       "description": "Git workflow skills: analyze changes and create grouped conventional commits with QA and hook compliance",
       "category": "development",
       "tags": ["git", "commit", "conventional-commits", "workflow"]
+    },
+    {
+      "name": "goal",
+      "source": "./plugins/goal",
+      "description": "Goal-driven agent workflow: plan a Definition of Done with the operator, then execute it autonomously to a validated result",
+      "category": "workflow",
+      "tags": [
+        "planning",
+        "definition-of-done",
+        "test-plan",
+        "autonomous",
+        "qa"
+      ]
     }
   ]
 }

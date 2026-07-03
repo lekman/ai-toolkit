@@ -22,14 +22,15 @@ high-value; everything else is opt-in by need.
 - **[Isolated-agent security](security/isolated/README.md)** — guard rails for a
   remote or Docker agent, where the machine is disposable but the repo is not.
 - **[Skills](plugins/README.md)** — reusable workflows for common tasks (commit,
-  and more to come). The procedure and reference knowledge are packaged once;
+  goal plan/execute, and more to come). The procedure and reference knowledge
+  are packaged once;
   you point them at a target that varies per run — a pull request, a logfile, a
   path, a spec. Installed by adding this repo as a plugin marketplace.
 
 ## Build with it (advanced)
 
 - **Packages** — runnable TypeScript: CLIs, MCP servers, and the Agent SDK on
-  AWS Bedrock base project. *Added as content lands.*
+  AWS Bedrock base project. _Added as content lands._
 
 ## Why it's shaped this way
 

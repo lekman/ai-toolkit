@@ -18,3 +18,7 @@ Then invoke a skill, for example `/git:commit`.
 
 - **git** — [commit](git/skills/commit/SKILL.md): analyze changes and create
   grouped conventional commits with QA checks and strict hook compliance.
+- **obsidian** — [dashboard sync skills](obsidian/README.md) (add, tick, today,
+  wrapup, sync-todo, focus): resolve the active client by discovery from the
+  working directory and read/write a `Dashboard.md`, without hardcoding any
+  client name. Client identities live only in a local, uncommitted config.

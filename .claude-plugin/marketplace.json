@@ -27,6 +27,13 @@
         "autonomous",
         "qa"
       ]
+    },
+    {
+      "name": "obsidian",
+      "source": "./plugins/obsidian",
+      "description": "Obsidian dashboard sync skills: resolve the active client by discovery and read/write a Dashboard.md without hardcoding client names",
+      "category": "productivity",
+      "tags": ["obsidian", "dashboard", "tasks", "notes", "workflow"]
     }
   ]
 }

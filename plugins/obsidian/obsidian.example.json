@@ -1,0 +1,10 @@
+{
+  "vault": "/path/to/your/Obsidian/Vault",
+  "dashboard": "Dashboard.md",
+  "jira_host": "your-org.atlassian.net",
+  "clients": {
+    "/Users/you/Repo/acme": "Acme",
+    "/Users/you/Repo/globex": "Globex"
+  },
+  "default_client": "Acme"
+}

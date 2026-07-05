@@ -16,6 +16,19 @@
       "tags": ["git", "commit", "conventional-commits", "workflow"]
     },
     {
+      "name": "goal",
+      "source": "./plugins/goal",
+      "description": "Goal-driven agent workflow: plan a Definition of Done with the operator, then execute it autonomously to a validated result",
+      "category": "workflow",
+      "tags": [
+        "planning",
+        "definition-of-done",
+        "test-plan",
+        "autonomous",
+        "qa"
+      ]
+    },
+    {
       "name": "obsidian",
       "source": "./plugins/obsidian",
       "description": "Obsidian dashboard sync skills: resolve the active client by discovery and read/write a Dashboard.md without hardcoding client names",

@@ -10,6 +10,8 @@ path, or a spec.
 ```text
 /plugin marketplace add lekman/ai-toolkit
 /plugin install git@ai-toolkit
+/plugin install goal@ai-toolkit
+/plugin install obsidian@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -18,6 +20,12 @@ Then invoke a skill, for example `/git:commit`.
 
 - **git** — [commit](git/skills/commit/SKILL.md): analyze changes and create
   grouped conventional commits with QA checks and strict hook compliance.
+- **goal** — [plan](goal/skills/plan/SKILL.md) /
+  [execute](goal/skills/execute/SKILL.md): agree a Definition of Done as a
+  Test Plan with the operator, then execute it autonomously to a validated
+  result. The plan document is the contract between the executing agent and a
+  separate reviewing identity: one agent's goal is to complete the work, the
+  other's is to verify the goal plan was met.
 - **obsidian** — [dashboard sync skills](obsidian/README.md) (add, tick, today,
   wrapup, sync-todo, focus): resolve the active client by discovery from the
   working directory and read/write a `Dashboard.md`, without hardcoding any

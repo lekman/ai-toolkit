@@ -1,0 +1,5 @@
+{
+  "name": "goal",
+  "description": "Goal-driven agent workflow: plan a Definition of Done with the operator, then execute it autonomously to a validated result",
+  "version": "0.1.0"
+}

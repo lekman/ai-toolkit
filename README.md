@@ -21,6 +21,9 @@ high-value; everything else is opt-in by need.
   get notified when it needs you (remote control, Pushover, local sound).
 - **[Isolated-agent security](security/isolated/README.md)** — guard rails for a
   remote or Docker agent, where the machine is disposable but the repo is not.
+- **[Practices](practices/README.md)** — operating models and patterns, in prose.
+  Start with the orchestrator and subagent split for running agents continuously
+  and unattended across more than one client.
 - **[Skills](plugins/README.md)** — reusable workflows for common tasks (commit,
   goal plan/execute, and more to come). The procedure and reference knowledge
   are packaged once;

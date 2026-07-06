@@ -29,23 +29,45 @@ the cloud provider over SSO, works in an isolated checkout (a git worktree, see
 the [write guard](../security/isolated/README.md)), and hands its result back for
 review.
 
-## Why Split the Auth Plane
+## Why Split the Planes
 
-This is the non-obvious part, and the reason the pattern earns its setup.
+This is the non-obvious part, and the reason the pattern earns its setup. There
+are two reasons, and they are independent: one is about what each side _can do_,
+the other about what each side is _trusted with_.
+
+### Capability
+
+The orchestrator runs on the interactive Claude.ai subscription because that is
+where the capabilities the planning work needs currently live, and they are not
+on the Bedrock path:
+
+- **The stronger model for hard work.** Complicated orchestration can run on
+  Fable; the subscription exposes it, the Bedrock path does not.
+- **Remote control.** Driving and steering a session from elsewhere (a phone, for
+  example) is a subscription feature.
+- **Auto mode.** Running unattended is available on the subscription session.
+
+At the time of writing, remote control and auto mode are open feature requests
+for the Bedrock path, not shipped, and the newest models reach Bedrock on a lag.
+So this reason is **time-dependent**: if Bedrock reaches parity it weakens. The
+next reason does not.
+
+### Security and cost
 
 Orchestration and code execution have different risk, cost, and scope profiles,
 so they get different credentials:
 
 - **Orchestration** is interactive, low volume, and needs broad read plus MCP. It
-  runs on an interactive subscription. It is the part you talk to.
-- **Code execution** is the higher-risk, higher-volume part. It runs on the cloud
-  provider with credentials that are scoped by IAM, expire on their own, and are
-  tagged for per-team cost allocation.
+  is the part you talk to.
+- **Code execution** is the higher-risk, higher-volume part. It runs on Bedrock
+  with credentials that are scoped by IAM, expire on their own, and are tagged
+  for per-team cost allocation.
 
 So the credential that can run code is never the credential you use to think and
 plan, and it expires without anyone remembering to revoke it. That is least
 privilege and cheap revocation, applied to the agent's own identity rather than
-to a human's.
+to a human's. Unlike the capability reason, this one is **structural**: it holds
+even if Bedrock ships every feature above.
 
 ## One OS Account per Client
 

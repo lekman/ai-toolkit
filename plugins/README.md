@@ -12,6 +12,7 @@ path, or a spec.
 /plugin install git@ai-toolkit
 /plugin install goal@ai-toolkit
 /plugin install obsidian@ai-toolkit
+/plugin install handoff@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -30,3 +31,9 @@ Then invoke a skill, for example `/git:commit`.
   wrapup, sync-todo, focus): resolve the active client by discovery from the
   working directory and read/write a `Dashboard.md`, without hardcoding any
   client name. Client identities live only in a local, uncommitted config.
+- **handoff** — [plan-handoff](handoff/skills/plan-handoff/SKILL.md): package
+  planning and architecture output into a committed dispatch folder
+  (`docs/handoff/`): a day plan plus self-contained per-ticket briefs that a
+  fresh Claude Code session can execute without the planning conversation. The
+  operating model is described in
+  [practices/planning-handoff.md](../practices/planning-handoff.md).

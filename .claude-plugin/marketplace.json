@@ -34,6 +34,13 @@
       "description": "Obsidian dashboard sync skills: resolve the active client by discovery and read/write a Dashboard.md without hardcoding client names",
       "category": "productivity",
       "tags": ["obsidian", "dashboard", "tasks", "notes", "workflow"]
+    },
+    {
+      "name": "handoff",
+      "source": "./plugins/handoff",
+      "description": "Plan-to-implementation handoff: package planning output into committed day plans and per-ticket briefs a fresh Claude Code session can execute alone",
+      "category": "workflow",
+      "tags": ["planning", "handoff", "dispatch", "briefs", "day-plan"]
     }
   ]
 }

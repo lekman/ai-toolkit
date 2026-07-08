@@ -1,0 +1,5 @@
+{
+  "name": "handoff",
+  "description": "Plan-to-implementation handoff: package planning output into committed day plans and per-ticket briefs a fresh Claude Code session can execute alone",
+  "version": "0.1.0"
+}

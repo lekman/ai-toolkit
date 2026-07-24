@@ -72,6 +72,19 @@ gh pr view "$num" --repo "$OWNER/$repo" --json statusCheckRollup \
 `mergeStateStatus=BLOCKED` with no failing build check means a ruleset gate
 (review), not a broken build — still safe under the bar above.
 
+**Red CI is not proof of a broken build.** A frequent false negative: every job
+fails **within ~1 second of starting** (compare `startedAt` across the failed
+checks). Nothing can install deps and run lint/test in one second — those jobs
+died at setup. The usual cause is that **Dependabot PRs do not receive repo
+secrets**, so a setup step needing a token fails immediately and every job with
+it. When you see this signature (all jobs fail near-simultaneously, seconds
+after start), do not hold the PR on CI — fall through to a **local build**
+(Step 4). If the local build is green, the dependency is fine and the PR is
+safe; the red is an artifact of the CI's secret model, not the change.
+
+Tell it apart from a real break: a real compile/test failure takes longer than
+setup and usually fails **some** jobs, not all of them at the same instant.
+
 ## Step 3 — merge the safe ones
 
 Merge method is set by each repo's ruleset; do not assume squash. Detect it, or

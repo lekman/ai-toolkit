@@ -9,6 +9,7 @@ not covered, then bring them under one consistent flow.
 | --------------------- | ---------------------------------------------------------------------------------------- | ------- |
 | `/dependabot:triage`  | Scans an owner's repos and reports alert coverage gaps and open dependency PRs by status | No      |
 | `/dependabot:onboard` | Enables alerts + security fixes, installs grouped `dependabot.yml` and auto-merge         | Yes     |
+| `/dependabot:merge`   | Sweeps open Dependabot PRs, verifies each by build (CI or local), admin-merges the safe   | Yes     |
 
 ## The flow onboard installs
 

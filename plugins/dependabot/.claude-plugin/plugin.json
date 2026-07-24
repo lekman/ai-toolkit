@@ -1,0 +1,5 @@
+{
+  "name": "dependabot",
+  "description": "Dependabot lifecycle skills: scan repositories for alert coverage and open PRs, then onboard a repo with alerts, grouped update config, and auto-merge on green",
+  "version": "0.1.0"
+}

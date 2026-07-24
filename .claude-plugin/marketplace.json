@@ -41,6 +41,13 @@
       "description": "Plan-to-implementation handoff: package planning output into committed day plans and per-ticket briefs a fresh Claude Code session can execute alone",
       "category": "workflow",
       "tags": ["planning", "handoff", "dispatch", "briefs", "day-plan"]
+    },
+    {
+      "name": "dependabot",
+      "source": "./plugins/dependabot",
+      "description": "Dependabot lifecycle skills: scan repositories for alert coverage and open PRs, then onboard a repo with alerts, grouped update config, and auto-merge on green",
+      "category": "development",
+      "tags": ["dependabot", "dependencies", "security", "auto-merge", "workflow"]
     }
   ]
 }

@@ -33,11 +33,11 @@ not covered, then bring them under one consistent flow.
 /dependabot:onboard <repo>    # close a gap
 ```
 
-## One manual step
+## No manual settings step
 
-Auto-merge needs **Settings > General > "Allow auto-merge"** turned on in each
-repo. That toggle is not reliably settable through the REST API, so the
-bootstrap script prints a reminder rather than pretending it did it.
+The bootstrap script enables everything it needs via the API: vulnerability
+alerts, automated security fixes, and native auto-merge (`allow_auto_merge` on
+`PATCH /repos/{owner}/{repo}`). There is no settings toggle to flip by hand.
 
 ## Token scope
 

@@ -26,14 +26,15 @@ running.
 
 1. Dependabot **vulnerability alerts** (repo setting).
 2. **Automated security fixes** (repo setting).
-3. `.github/dependabot.yml` — weekly, grouped updates (see `assets/`).
-4. `.github/workflows/dependabot-auto-merge.yml` — enables native auto-merge for
+3. **Native auto-merge** (`allow_auto_merge` repo setting) — so the workflow can
+   enable auto-merge on PRs.
+4. `.github/dependabot.yml` — weekly, grouped updates (see `assets/`).
+5. `.github/workflows/dependabot-auto-merge.yml` — enables native auto-merge for
    github-actions and non-major bumps; holds majors for review.
 
 The auto-merge workflow only completes a merge after required checks are green.
-It also needs **"Allow auto-merge"** on in repo Settings > General — the script
-prints this reminder because that toggle is not settable via the REST API in all
-plans.
+The `allow_auto_merge` repo setting it depends on is enabled by the bootstrap
+script via `PATCH /repos/{owner}/{repo}` — no manual settings step.
 
 ## Step 1 — run the bootstrap
 
@@ -66,11 +67,12 @@ Confirm the settings took:
 ```bash
 gh api "repos/$REPO/vulnerability-alerts" && echo "alerts: on"
 gh api "repos/$REPO/automated-security-fixes" --jq '.enabled'
+gh api "repos/$REPO" --jq '.allow_auto_merge'
 ```
 
-Report: settings state, which files were written vs skipped (pre-existing), and
-the one manual step left — turning on "Allow auto-merge" if the workflow was
-installed.
+Report: settings state and which files were written vs skipped (pre-existing).
+No manual settings step remains — alerts, security fixes, and auto-merge are all
+set by the script.
 
 ## Notes
 

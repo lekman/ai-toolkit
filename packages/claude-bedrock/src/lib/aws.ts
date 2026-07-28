@@ -1,16 +1,27 @@
 /** AWS session checks. Node APIs only, so the published CLI runs under `npx`. */
 
 import { spawn, spawnSync } from "node:child_process";
+import { accessSync, constants } from "node:fs";
+import { delimiter, join } from "node:path";
 
 export class UserError extends Error {}
 
+/**
+ * Find an executable on PATH. Walks PATH directly rather than shelling out to
+ * `command -v`, which needs `shell: true` and trips Node's DEP0190 warning.
+ */
 export function which(cmd: string): string | undefined {
-  const r = spawnSync("command", ["-v", cmd], {
-    encoding: "utf8",
-    shell: "/bin/bash",
-  });
-  const path = r.stdout?.trim();
-  return r.status === 0 && path ? path : undefined;
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    if (!dir) continue;
+    const candidate = join(dir, cmd);
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch {
+      // Not here, or not executable — keep looking.
+    }
+  }
+  return undefined;
 }
 
 export function runInherit(

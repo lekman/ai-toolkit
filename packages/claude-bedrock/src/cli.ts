@@ -20,11 +20,12 @@ import {
   HOME_ENV_FILE,
   REPORTED,
   type EnvFile,
+  bedrockVarsInSettings,
   findEnvFile,
-  settingsHasBedrock,
+  migrateFromSettings,
 } from "./lib/config.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 const HELP = `
 ${pc.bold("claude-bedrock")} — run one Claude Code session on AWS Bedrock
@@ -33,6 +34,7 @@ ${pc.bold("claude-bedrock")} — run one Claude Code session on AWS Bedrock
   claude-bedrock --status         show what would be used, change nothing
   claude-bedrock --profile <name> override the AWS profile
   claude-bedrock --no-login       fail rather than opening a browser to log in
+  claude-bedrock --no-repair      leave global settings alone
 
   --help, -h       this text
   --version
@@ -48,12 +50,18 @@ ${pc.dim(`an env file at ${HOME_ENV_FILE} or .claude/bedrock.env in a repo.`)}
 interface Args {
   status: boolean;
   login: boolean;
+  repair: boolean;
   profile?: string;
   passthrough: string[];
 }
 
 function parseArgs(argv: string[]): Args {
-  const args: Args = { status: false, login: true, passthrough: [] };
+  const args: Args = {
+    status: false,
+    login: true,
+    repair: true,
+    passthrough: [],
+  };
   let i = 0;
   for (; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -63,6 +71,7 @@ function parseArgs(argv: string[]): Args {
     }
     if (arg === "--status") args.status = true;
     else if (arg === "--no-login") args.login = false;
+    else if (arg === "--no-repair") args.repair = false;
     else if (arg === "--profile") args.profile = argv[++i];
     else if (arg === "--help" || arg === "-h") {
       console.log(HELP);
@@ -77,33 +86,48 @@ function parseArgs(argv: string[]): Args {
 }
 
 /**
- * Build the environment for the child. An env file supplies it; failing that,
- * settings.json from `/setup-bedrock` already carries it and Claude Code will
- * read that itself, so we only need to not get in the way.
+ * Build the environment for the child.
+ *
+ * Repair comes first. `/setup-bedrock` writes into `~/.claude/settings.json`,
+ * whose `env` block applies to every session and outranks anything a parent
+ * process exports — so after running the wizard, bare `claude` is on Bedrock
+ * too and there is no way back to Claude.ai. Moving those variables into the
+ * env file is what makes the two coexist, so every run checks and fixes it.
  */
 function resolveEnv(args: Args): {
   file?: EnvFile;
   env: Record<string, string>;
+  repaired?: string[];
 } {
+  let repaired: string[] | undefined;
+  if (args.repair) {
+    const migration = migrateFromSettings();
+    if (migration) repaired = migration.moved;
+  }
+
   const file = findEnvFile();
   const env: Record<string, string> = { ...file?.vars };
 
-  if (!file && !settingsHasBedrock()) {
+  if (!file) {
+    // --no-repair leaves the variables in settings.json, where Claude Code
+    // reads them itself. Nothing to hand over, and nothing is wrong.
+    const inSettings = bedrockVarsInSettings();
+    if (Object.keys(inSettings).length > 0) return { file, env: inSettings };
+
     throw new UserError(
       `No Bedrock configuration found.\n\n` +
         `  Run ${pc.cyan("claude")} then ${pc.cyan("/setup-bedrock")} — it detects your AWS\n` +
-        `  profiles, checks which models your account can invoke, and pins them.\n\n` +
-        `  Or write an env file at ${HOME_ENV_FILE}, or .claude/bedrock.env\n` +
-        `  in a repo that must pin a specific account.`,
+        `  profiles, checks which models your account can invoke, and pins them.\n` +
+        `  Then run ${pc.cyan("claude-bedrock")} again: it moves what the wizard wrote into\n` +
+        `  ${HOME_ENV_FILE} so bare ${pc.cyan("claude")} stays on Claude.ai.\n\n` +
+        `  Or write that env file yourself, or .claude/bedrock.env in a repo\n` +
+        `  that must pin a specific account.`,
     );
   }
 
-  // Only force the flag on when an env file is driving this. If settings.json
-  // is the source, Claude Code reads it directly and setting it here would
-  // mask a deliberate change made through /setup-bedrock.
-  if (file) env.CLAUDE_CODE_USE_BEDROCK ??= "1";
+  env.CLAUDE_CODE_USE_BEDROCK ??= "1";
   if (args.profile) env.AWS_PROFILE = args.profile;
-  return { file, env };
+  return { file, env, repaired };
 }
 
 function report(file: EnvFile | undefined, env: Record<string, string>): void {

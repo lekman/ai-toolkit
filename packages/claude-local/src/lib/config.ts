@@ -1,101 +1,76 @@
 /**
- * The Claude Code side of the wiring: an env file and a `claude-local` wrapper.
+ * Persisted state: which model is current, which port serves it.
  *
- * The two are kept apart from your shell profile on purpose. Nothing is
- * exported globally, so a stray ANTHROPIC_BASE_URL can never silently send a
- * normal `claude` session to the weaker local model. You opt in per command.
+ * The environment variables that point Claude Code at localhost are built from
+ * this and handed to the child process at launch. They are never exported into
+ * your shell, and no wrapper script is written to disk. A stray
+ * ANTHROPIC_BASE_URL in a shell profile would silently send every ordinary
+ * `claude` session to the weaker local model, and you would notice it as
+ * confusing quality rather than as an error — so `claude-local` is local and
+ * `claude` stays untouched.
  */
 
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const ENV_FILE = join(homedir(), ".claude", "local-model.env");
-export const WRAPPER = join(homedir(), ".local", "bin", "claude-local");
+export const CONFIG_FILE = join(homedir(), ".claude", "claude-local.json");
 export const DEFAULT_PORT = 1234;
 
-export interface Wiring {
+export interface Config {
   port: number;
   mainModel: string;
   backgroundModel: string;
+  context: number;
 }
 
-export function writeEnvFile({
-  port,
-  mainModel,
-  backgroundModel,
-}: Wiring): void {
-  mkdirSync(dirname(ENV_FILE), { recursive: true });
-  writeFileSync(
-    ENV_FILE,
-    [
-      "# Point Claude Code at the local LM Studio server.",
-      "# Written by @lekman/claude-local. Sourced only by the claude-local wrapper.",
-      `export ANTHROPIC_BASE_URL="http://localhost:${port}"`,
-      'export ANTHROPIC_AUTH_TOKEN="lmstudio"',
-      `export ANTHROPIC_MODEL="${mainModel}"`,
-      `export ANTHROPIC_DEFAULT_OPUS_MODEL="${mainModel}"`,
-      `export ANTHROPIC_DEFAULT_SONNET_MODEL="${mainModel}"`,
-      `export ANTHROPIC_DEFAULT_HAIKU_MODEL="${backgroundModel}"`,
-      `export ANTHROPIC_SMALL_FAST_MODEL="${backgroundModel}"`,
-      "export CLAUDE_CODE_ATTRIBUTION_HEADER=0",
-      "export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
+export function readConfig(): Config | undefined {
+  if (!existsSync(CONFIG_FILE)) return undefined;
+  try {
+    const parsed = JSON.parse(
+      readFileSync(CONFIG_FILE, "utf8"),
+    ) as Partial<Config>;
+    if (!parsed.mainModel) return undefined;
+    return {
+      port: parsed.port ?? DEFAULT_PORT,
+      mainModel: parsed.mainModel,
+      backgroundModel: parsed.backgroundModel ?? parsed.mainModel,
+      context: parsed.context ?? 65536,
+    };
+  } catch {
+    // A corrupt config is treated as no config: setup will rewrite it.
+    return undefined;
+  }
 }
 
-export function writeWrapper(port: number): void {
-  mkdirSync(dirname(WRAPPER), { recursive: true });
-  writeFileSync(
-    WRAPPER,
-    [
-      "#!/usr/bin/env bash",
-      "# Run Claude Code against the local model. Written by @lekman/claude-local.",
-      "set -euo pipefail",
-      "# shellcheck disable=SC1091",
-      `source "${ENV_FILE}"`,
-      `if ! curl -sf -m 3 "http://localhost:${port}/v1/models" >/dev/null; then`,
-      `  echo "Local server is not responding on port ${port}. Run: switch-claude-local" >&2`,
-      "  exit 1",
-      "fi",
-      'exec claude "$@"',
-      "",
-    ].join("\n"),
-    "utf8",
-  );
-  chmodSync(WRAPPER, 0o755);
+export function writeConfig(config: Config): void {
+  mkdirSync(dirname(CONFIG_FILE), { recursive: true });
+  writeFileSync(CONFIG_FILE, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
-/** Rewrite one exported variable in place, leaving the rest of the file alone. */
-export function setEnvVar(name: string, value: string): void {
-  if (!existsSync(ENV_FILE)) return;
-  const line = `export ${name}="${value}"`;
-  const pattern = new RegExp(`^export ${name}=.*$`, "m");
-  const current = readFileSync(ENV_FILE, "utf8");
-  const next = pattern.test(current)
-    ? current.replace(pattern, line)
-    : `${current}${line}\n`;
-  writeFileSync(ENV_FILE, next, "utf8");
+export function updateConfig(patch: Partial<Config>): Config | undefined {
+  const current = readConfig();
+  if (!current) return undefined;
+  const next = { ...current, ...patch };
+  writeConfig(next);
+  return next;
 }
 
-export function readEnvVar(name: string): string | undefined {
-  if (!existsSync(ENV_FILE)) return undefined;
-  const match = readFileSync(ENV_FILE, "utf8").match(
-    new RegExp(`^export ${name}="?([^"\\n]*)"?$`, "m"),
-  );
-  return match?.[1];
-}
-
-export function configuredPort(): number {
-  const url = readEnvVar("ANTHROPIC_BASE_URL");
-  const port = url ? Number(new URL(url).port) : Number.NaN;
-  return Number.isFinite(port) && port > 0 ? port : DEFAULT_PORT;
+/**
+ * The variables Claude Code needs to talk to LM Studio instead of the hosted
+ * API. Opus and Sonnet both map to the loaded model so that switching models
+ * inside a session does not silently fail.
+ */
+export function claudeEnv(config: Config): Record<string, string> {
+  return {
+    ANTHROPIC_BASE_URL: `http://localhost:${config.port}`,
+    ANTHROPIC_AUTH_TOKEN: "lmstudio",
+    ANTHROPIC_MODEL: config.mainModel,
+    ANTHROPIC_DEFAULT_OPUS_MODEL: config.mainModel,
+    ANTHROPIC_DEFAULT_SONNET_MODEL: config.mainModel,
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: config.backgroundModel,
+    ANTHROPIC_SMALL_FAST_MODEL: config.backgroundModel,
+    CLAUDE_CODE_ATTRIBUTION_HEADER: "0",
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
+  };
 }

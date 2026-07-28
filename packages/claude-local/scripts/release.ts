@@ -165,7 +165,7 @@ async function main(): Promise<void> {
   // in version control.
   copyFileSync(join(repoRoot, "LICENSE"), join(root, "LICENSE"));
 
-  for (const bin of ["dist/setup.js", "dist/switch.js"]) {
+  for (const bin of ["dist/cli.js"]) {
     const path = join(root, bin);
     if (!existsSync(path)) fail(`Missing build output: ${bin}`);
     if (!readFileSync(path, "utf8").startsWith("#!/usr/bin/env node")) {
@@ -177,7 +177,7 @@ async function main(): Promise<void> {
   // The artifact must run under plain Node, not just under Bun. This is the
   // only check that would catch a Bun-only API sneaking into the bundle.
   step("Smoke-testing the built CLIs under Node");
-  for (const bin of ["dist/setup.js", "dist/switch.js"]) {
+  for (const bin of ["dist/cli.js"]) {
     const result = nodeRun([join(root, bin), "--help"]);
     if (result.code !== 0)
       fail(`${bin} failed to run under Node:\n${result.err}`);
@@ -236,7 +236,7 @@ async function main(): Promise<void> {
     );
   }
 
-  console.log(`\n${id} is live.\n  npx -p ${pkg.name} setup-claude-local`);
+  console.log(`\n${id} is live.\n  npx ${pkg.name}`);
 }
 
 main().catch((error: unknown) => {

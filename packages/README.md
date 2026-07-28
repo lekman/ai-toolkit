@@ -8,7 +8,8 @@ Built with Bun, published for Node. Dependencies are bundled into the build, so
 a published package installs nothing and runs under plain `npx` on Node 20 or
 later. Bun is a build-time tool here, not something users need.
 
-- [claude-local/](claude-local/README.md): `setup-claude-local` and
-  `switch-claude-local` — install a local model backend on Apple Silicon and
-  swap which model Claude Code talks to. The practice behind it is
+- [claude-local/](claude-local/README.md): `claude-local` — run Claude Code
+  against a model on your own machine. Installs the backend on first run, swaps
+  models with `--switch`, and passes everything it does not recognise straight
+  through to `claude`. The practice behind it is
   [practices/local-models/README.md](../practices/local-models/README.md).

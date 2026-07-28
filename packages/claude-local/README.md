@@ -1,7 +1,6 @@
 # @lekman/claude-local
 
-Run Claude Code against a model on your own machine. Two commands: one to
-install, one to swap models.
+Run Claude Code against a model on your own machine. One command.
 
 Apple Silicon only. The practice behind it — why local, what it costs, and when
 it is the wrong choice — is in
@@ -10,33 +9,63 @@ it is the wrong choice — is in
 ## Use
 
 ```bash
-npx -p @lekman/claude-local setup-claude-local
-npx -p @lekman/claude-local switch-claude-local
+npx @lekman/claude-local
 ```
 
-The `-p` is needed because the package ships two commands and neither is named
-after it. Or install once and drop the ceremony:
+That is the whole thing. On first run it installs the backend, downloads a
+model, and starts Claude Code against it. On every run after, it just starts.
+
+Install it properly once and the name is shorter:
 
 ```bash
 npm install -g @lekman/claude-local
-setup-claude-local
+claude-local
 ```
 
 The published package bundles its dependencies, so `npx` installs nothing and
 starts cold in about a second. Node 20 or later is the only requirement — Bun
-builds it, but users never need Bun.
+builds it, users never need Bun.
 
-## setup-claude-local
+## Commands
 
-Checkbox list of what to install. The core pack — LM Studio, its `lms` CLI, and
-the `claude-local` wrapper — is always included; models are yours to pick.
-Anything that will not fit in your machine's memory is left out of the list
-rather than offered and then failing.
-
+```bash
+claude-local                    # launch (installs the backend on first run)
+claude-local --switch           # pick a different model
+claude-local --model <key>      # switch to that model, then launch
+claude-local --setup            # re-run the installer
+claude-local --status           # what is downloaded, loaded, and serving
+claude-local --stop             # unload the model and free the memory
 ```
+
+| Flag            | Effect                                |
+| --------------- | ------------------------------------- |
+| `--port <n>`    | Server port (default 1234)            |
+| `--context <n>` | Context window when loading a model   |
+| `--yes`, `-y`   | Accept defaults during setup          |
+| `--no-launch`   | Do the work, do not start Claude Code |
+| `--help`, `-h`  | Usage                                 |
+
+### Passing flags to Claude Code
+
+The reserved flags above are handled here. The first token that is not one of
+them ends the parsing, and everything from there goes to `claude` untouched:
+
+```bash
+claude-local -p "fix the failing test"
+claude-local --model qwen/qwen3-coder-30b --resume
+claude-local -- --help              # claude's help, not this one
+```
+
+`--model` is the one word both tools use. Here it always means the local model,
+because choosing that is the reason this wrapper exists. To reach Claude Code's
+own `--model`, put it after `--`.
+
+## First run
+
+```text
 ◆  What should be installed?
 │  ◼ Core pack
-│     LM Studio, the lms CLI, and the claude-local wrapper — always installed
+│     LM Studio and its lms CLI — always installed
 │  ◼ Qwen3-Coder 30B A3B  17 GB
 │     The one you work with. MoE, 3.3B active, ~30 tok/s.
 │  ◼ Gemma 4 E4B  6 GB
@@ -45,53 +74,39 @@ rather than offered and then failing.
 │  ◻ Gemma 4 31B  19 GB
 ```
 
-It then downloads what is missing, starts the server, loads the main model with
-a context window sized to your RAM, and writes the wiring.
+Anything that will not fit in your machine's memory is left out of the list
+rather than offered and then failing. Setup then downloads what is missing,
+starts the server, and loads the main model with a context window sized to your
+RAM.
 
-| Flag          | Effect                                      |
-| ------------- | ------------------------------------------- |
-| `--yes`, `-y` | Take the recommended selection, no prompts  |
-| `--port <n>`  | Serve on this port (default 1234)           |
-| `--no-server` | Install only; do not start or load anything |
+## Switching models
 
-Re-running is safe. Every step checks first.
-
-## switch-claude-local
-
-Reads what is on disk and what is in memory, then runs the swap for the model
-you pick — start server, unload, load with the right context, and rewrite the
-wrapper's default so `claude-local` follows.
-
-Only one model fits in unified memory at a time, so this swaps rather than adds.
-Models in the catalog that are not downloaded yet are offered too, and fetched
-on demand.
-
-| Flag                       | Effect                                        |
-| -------------------------- | --------------------------------------------- |
-| `--list`, `-l`             | Show what is downloaded and loaded, then exit |
-| `--model <key>`            | Switch to this model without prompting        |
-| `--context <n>`            | Override the context window                   |
-| `--port <n>`               | Server port (default: whatever setup wrote)   |
-| `--launch` / `--no-launch` | Start `claude-local` when done, or never ask  |
+Only one model fits in unified memory at a time, so `--switch` swaps rather than
+adds: start the server, unload what is resident, load the new one at a size the
+machine can hold, and record it as current. Models in the catalog that are not
+downloaded yet are offered too, and fetched on demand.
 
 ## What It Writes
 
-| Path                        | Purpose                                           |
-| --------------------------- | ------------------------------------------------- |
-| `~/.claude/local-model.env` | The `ANTHROPIC_*` variables pointing at localhost |
-| `~/.local/bin/claude-local` | Wrapper that sources them and execs `claude`      |
+| Path                          | Purpose                             |
+| ----------------------------- | ----------------------------------- |
+| `~/.claude/claude-local.json` | Current model, port, context window |
+| LM Studio's own model store   | The weights, tens of GB             |
 
-Nothing is exported into your shell profile. That is deliberate: a stray
-`ANTHROPIC_BASE_URL` in `.zshrc` would silently send every normal `claude`
-session to the weaker local model, and you would notice as confusing quality
-rather than as an error. Here you opt in per command — `claude-local` is local,
-`claude` is untouched.
+Nothing else. No wrapper script, no shell profile edits, no exported variables.
+The `ANTHROPIC_*` variables that point at localhost are built at launch and
+handed to the child process only.
+
+That is deliberate. A stray `ANTHROPIC_BASE_URL` in a `.zshrc` would silently
+send every ordinary `claude` session to the weaker local model, and you would
+notice it as confusing quality rather than as an error. Here `claude-local` is
+local and `claude` is untouched, in the same terminal, at the same time.
 
 ## Undo
 
 ```bash
-lms server stop
-rm ~/.local/bin/claude-local ~/.claude/local-model.env
+claude-local --stop
+rm ~/.claude/claude-local.json
 npm uninstall -g @lekman/claude-local
 brew uninstall --cask lm-studio
 rm -rf ~/.lmstudio            # downloaded models, tens of GB
@@ -102,7 +117,7 @@ rm -rf ~/.lmstudio            # downloaded models, tens of GB
 ```bash
 bun install
 bun run check      # typecheck, then build
-bun src/setup.ts   # run from source
+bun src/cli.ts     # run from source
 ```
 
 ## Release (maintainers)
@@ -115,7 +130,7 @@ bun run release --tag next  # publish under a different dist-tag
 
 [scripts/release.ts](scripts/release.ts) refuses to publish anything that is not
 committed, checks the version is not already on the registry, builds, copies the
-repo `LICENSE` in, and then verifies the artifact before it goes out: each CLI
+repo `LICENSE` in, and then verifies the artifact before it goes out: the CLI
 must still carry its shebang, still be executable, and still run `--help` under
 plain Node. That last check is the only thing standing between a Bun-only API in
 the bundle and a package that installs fine and then crashes for every user.

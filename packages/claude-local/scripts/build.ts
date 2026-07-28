@@ -1,5 +1,5 @@
 /**
- * Build the two CLIs with Bun, targeting Node.
+ * Build the CLI with Bun, targeting Node.
  *
  * Prompt libraries are bundled into the output rather than declared as runtime
  * dependencies. The published package therefore installs nothing, so a cold
@@ -17,7 +17,7 @@ const outdir = join(root, "dist");
 await rm(outdir, { recursive: true, force: true });
 
 const result = await Bun.build({
-  entrypoints: [join(root, "src/setup.ts"), join(root, "src/switch.ts")],
+  entrypoints: [join(root, "src/cli.ts")],
   outdir,
   target: "node",
   format: "esm",

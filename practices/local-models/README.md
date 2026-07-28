@@ -22,26 +22,25 @@ get wrong.
 ## Install
 
 ```bash
-npx -p @lekman/claude-local setup-claude-local
+npx @lekman/claude-local
 ```
 
-A checkbox list of what to install: the core pack (LM Studio, its `lms` CLI, and
-a `claude-local` wrapper) is always included, models are yours to pick. It then
-downloads what is missing, starts the server, and loads the main model with a
-context window sized to your RAM. Re-running skips anything already done.
-
-Then:
+On first run it offers a checkbox list — the core pack (LM Studio and its `lms`
+CLI) is always included, models are yours to pick — then downloads what is
+missing, starts the server, loads the main model with a context window sized to
+your RAM, and hands you Claude Code. On every run after, it just starts.
 
 ```bash
 claude-local            # local model
 claude                  # hosted model, unchanged
-switch-claude-local     # swap which local model is loaded
+claude-local --switch   # swap which local model is loaded
 ```
 
-The first two are kept apart on purpose. The environment variables go in
-`~/.claude/local-model.env` and are sourced only by the wrapper, so a stray
-`ANTHROPIC_BASE_URL` in your shell profile can never silently redirect a normal
-session to a weaker model.
+The first two are kept apart on purpose. Nothing is exported into your shell and
+no wrapper script is written; the `ANTHROPIC_*` variables are built at launch and
+handed to the child process only. A stray `ANTHROPIC_BASE_URL` in a shell profile
+would silently redirect every ordinary session to the weaker model, and you would
+notice that as confusing quality rather than as an error.
 
 Flags and the full command reference are in
 [packages/claude-local/README.md](../../packages/claude-local/README.md).
@@ -67,9 +66,9 @@ not running both.
 To swap, at setup time or any time after:
 
 ```bash
-switch-claude-local                             # pick from a list
-switch-claude-local --model google/gemma-4-31b  # or name it
-switch-claude-local --list                      # what is downloaded and loaded
+claude-local --switch                         # pick from a list
+claude-local --model google/gemma-4-31b       # or name it, then launch
+claude-local --status                         # what is downloaded and loaded
 ```
 
 It downloads the model if it is missing, starts the server if it is down,
@@ -120,14 +119,14 @@ which is slower than the smaller context you were avoiding.
 ## Undo
 
 ```bash
-lms server stop
-rm ~/.local/bin/claude-local ~/.claude/local-model.env
+claude-local --stop
+rm ~/.claude/claude-local.json
 npm uninstall -g @lekman/claude-local     # if you installed it globally
 brew uninstall --cask lm-studio
 rm -rf ~/.lmstudio        # downloaded models, tens of GB
 ```
 
-`claude` itself is never modified, so removing the wrapper is enough to go back.
+`claude` itself is never modified, so uninstalling is enough to go back.
 
 ## Sources
 

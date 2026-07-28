@@ -57,7 +57,7 @@ export function requireLms(): string {
   const lms = findLms();
   if (!lms) {
     throw new UserError(
-      "LM Studio is not set up yet. Run `setup-claude-local` first.",
+      "LM Studio is not set up yet. Run `claude-local` to install it.",
     );
   }
   return lms;

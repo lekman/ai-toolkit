@@ -63,6 +63,17 @@ export function findModel(key: string): Model | undefined {
   return MODELS.find((m) => m.key === key);
 }
 
+/** Is this model key present among the entries `lms ls` reported? */
+export function isDownloaded(onDisk: string[], key: string): boolean {
+  const short = key.split("/").pop() ?? key;
+  return onDisk.some((entry) => {
+    const lower = entry.toLowerCase();
+    return (
+      lower.includes(key.toLowerCase()) || lower.includes(short.toLowerCase())
+    );
+  });
+}
+
 /** Match a catalog entry against a line of `lms ls` output. */
 export function matchModel(text: string): Model | undefined {
   const haystack = text.toLowerCase();

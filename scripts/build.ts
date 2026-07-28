@@ -1,17 +1,24 @@
 /**
- * Build the CLI with Bun, targeting Node.
+ * Build a package's CLI with Bun, targeting Node.
+ *
+ * Shared by every workspace package: `bun run build` inside a package runs
+ * this script with the package directory as the working directory.
  *
  * Prompt libraries are bundled into the output rather than declared as runtime
  * dependencies. The published package therefore installs nothing, so a cold
- * `npx @lekman/claude-local` starts in about a second and works on any machine
+ * `npx @lekman/<package>` starts in about a second and works on any machine
  * with Node 20 — Bun is a build-time tool here, not a requirement for users.
  */
 
-import { chmodSync } from "node:fs";
+import { chmodSync, existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 
-const root = join(import.meta.dir, "..");
+const root = process.cwd();
+if (!existsSync(join(root, "src/cli.ts"))) {
+  console.error(`No src/cli.ts under ${root} — run this from a package directory.`);
+  process.exit(1);
+}
 const outdir = join(root, "dist");
 
 await rm(outdir, { recursive: true, force: true });

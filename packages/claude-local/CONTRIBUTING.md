@@ -16,12 +16,15 @@ in it should assume you have the repo checked out.
 | `src/lib/lms.ts`     | Everything that shells out to LM Studio's `lms` CLI.    |
 | `src/lib/config.ts`  | Persisted state and the env vars handed to Claude Code. |
 | `src/lib/system.ts`  | Machine facts and process helpers. Node APIs only.      |
-| `scripts/`           | Build and release. Not published.                       |
+
+Build and release scripts are shared by every package and live at the repo root
+in [scripts/build.ts](../../scripts/build.ts) and
+[scripts/release.ts](../../scripts/release.ts).
 
 ## Develop
 
 ```bash
-bun install
+bun install        # at the repo root — one lockfile for all packages
 bun run check      # typecheck, then build
 bun src/cli.ts     # run from source, no build step
 ```
@@ -60,8 +63,10 @@ bun run release             # publish
 bun run release --tag next  # publish under a different dist-tag
 ```
 
-[scripts/release.ts](scripts/release.ts) refuses to publish anything that is not
-committed, checks the version is not already on the registry, builds, copies the
+[scripts/release.ts](../../scripts/release.ts) is shared by every package: it
+compares each workspace package's local version with the npm registry and
+publishes only the ones that are ahead. It refuses to publish anything that is
+not committed, builds, copies the
 repo `LICENSE` in, and then verifies the artifact before it goes out: the CLI
 must still carry its shebang, still be executable, and still run `--help` under
 plain Node. That last check is the only thing standing between a Bun-only API in

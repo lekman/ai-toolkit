@@ -39,10 +39,10 @@
     "arm64"
   ],
   "scripts": {
-    "build": "bun run scripts/build.ts",
+    "build": "bun run ../../scripts/build.ts",
     "typecheck": "bun --bun tsc --noEmit",
     "check": "bun run typecheck && bun run build",
-    "release": "bun run scripts/release.ts",
+    "release": "bun run ../../scripts/release.ts",
     "prepublishOnly": "bun run check"
   },
   "devDependencies": {

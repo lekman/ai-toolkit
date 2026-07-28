@@ -3,8 +3,29 @@
   "configVersion": 1,
   "workspaces": {
     "": {
+      "name": "@lekman/ai-toolkit",
+    },
+    "packages/claude-bedrock": {
       "name": "@lekman/claude-bedrock",
+      "version": "0.2.0",
+      "bin": {
+        "claude-bedrock": "./dist/cli.js",
+      },
       "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "@types/node": "^22.10.0",
+        "picocolors": "^1.1.1",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/claude-local": {
+      "name": "@lekman/claude-local",
+      "version": "0.2.1",
+      "bin": {
+        "claude-local": "./dist/cli.js",
+      },
+      "devDependencies": {
+        "@clack/prompts": "^0.11.0",
         "@types/bun": "^1.3.14",
         "@types/node": "^22.10.0",
         "picocolors": "^1.1.1",
@@ -13,6 +34,14 @@
     },
   },
   "packages": {
+    "@clack/core": ["@clack/core@0.5.0", "", { "dependencies": { "picocolors": "^1.0.0", "sisteransi": "^1.0.5" } }, "sha512-p3y0FIOwaYRUPRcMO7+dlmLh8PSRcrjuTndsiA0WAFbWES0mLZlrjVoBRZ9DzkPFJZG6KGkJmoEAY0ZcVWTkow=="],
+
+    "@clack/prompts": ["@clack/prompts@0.11.0", "", { "dependencies": { "@clack/core": "0.5.0", "picocolors": "^1.0.0", "sisteransi": "^1.0.5" } }, "sha512-pMN5FcrEw9hUkZA4f+zLlzivQSeQf5dRGJjSUbvVYDLvpKCdQx5OaknvKzgbtXOizhP+SJJJjqEbOe55uKKfAw=="],
+
+    "@lekman/claude-bedrock": ["@lekman/claude-bedrock@workspace:packages/claude-bedrock"],
+
+    "@lekman/claude-local": ["@lekman/claude-local@workspace:packages/claude-local"],
+
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
@@ -20,6 +49,8 @@
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
 
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
+
+    "sisteransi": ["sisteransi@1.0.5", "", {}, "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

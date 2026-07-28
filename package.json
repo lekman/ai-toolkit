@@ -1,0 +1,14 @@
+{
+  "name": "@lekman/ai-toolkit",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "check": "bun run --filter '*' check",
+    "release": "bun run scripts/release.ts"
+  }
+}

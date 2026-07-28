@@ -12,12 +12,15 @@ Consumer documentation is in [README.md](README.md) and stays that way.
 | `src/cli.ts`        | The only entrypoint. Argument parsing, env resolution, launch. |
 | `src/lib/config.ts` | Where the Bedrock environment comes from, and the env parser.  |
 | `src/lib/aws.ts`    | Session validity and SSO login. Node APIs only.                |
-| `scripts/`          | Build and release. Not published.                              |
+
+Build and release scripts are shared by every package and live at the repo root
+in [scripts/build.ts](../../scripts/build.ts) and
+[scripts/release.ts](../../scripts/release.ts).
 
 ## Develop
 
 ```bash
-bun install
+bun install        # at the repo root — one lockfile for all packages
 bun run check      # typecheck, then build
 bun src/cli.ts     # run from source
 ```
@@ -51,14 +54,15 @@ If you extend it, keep that boundary.
 ## Release
 
 ```bash
-bun run release --dry-run
+bun run release --dry-run   # from the repo root
 bun run release
 ```
 
-Same script and the same rules as
-[claude-local](../claude-local/CONTRIBUTING.md#release): refuses uncommitted
-work, verifies the built CLI still runs under plain Node, browser-based `npm
-login`, and tags `claude-bedrock-v<version>`.
+One shared script for every package: it compares each workspace package's local
+version with the npm registry and publishes only the ones that are ahead. Same
+rules as [claude-local](../claude-local/CONTRIBUTING.md#release): refuses
+uncommitted work, verifies the built CLI still runs under plain Node,
+browser-based `npm login`, and tags `claude-bedrock-v<version>`.
 
 Bump the version in `package.json` **and** the `VERSION` constant in
 [src/cli.ts](src/cli.ts).

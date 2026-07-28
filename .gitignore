@@ -11,3 +11,6 @@
 # (PreToolUse hooks, rules, settings.json). Keep personal local overrides out.
 !.claude/
 .claude/settings.local.json
+
+# Bun workspaces: one node_modules and lockfile at the root.
+node_modules/

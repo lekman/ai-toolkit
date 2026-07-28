@@ -1,7 +1,7 @@
 # ai-toolkit
 
-My practices for working with Claude. The README covers the *why* (concerns);
-this file is the *shape*, for navigation.
+My practices for working with Claude. The README covers the _why_ (concerns);
+this file is the _shape_, for navigation.
 
 Top level is flat and grouped by how each thing is consumed:
 
@@ -20,7 +20,8 @@ Top level is flat and grouped by how each thing is consumed:
 
 The repo also has its own `.claude/` — repo-level hooks, rules, and a
 `settings.json` that protect this repo. Each folder carries its own README.
-`standards/`, `security/`, `privacy/`, `observability/`, `docs/`, and `plugins/`
-exist today (the last also makes this repo a Claude Code plugin marketplace); the
-rest are added
-as content lands. Anthropic (Claude) only — no other ecosystems.
+`standards/`, `security/`, `privacy/`, `observability/`, `docs/`, `practices/`,
+`plugins/`, and `packages/` exist today (`plugins/` also makes this repo a Claude
+Code plugin marketplace); the rest are added as content lands. Packages are
+written in TypeScript, built with Bun, and published for Node — dependencies are
+bundled so a published CLI runs under plain `npx`. Anthropic (Claude) only — no other ecosystems.

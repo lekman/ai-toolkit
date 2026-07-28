@@ -8,6 +8,9 @@ Built with Bun, published for Node. Dependencies are bundled into the build, so
 a published package installs nothing and runs under plain `npx` on Node 20 or
 later. Bun is a build-time tool here, not something users need.
 
+Building and releasing: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md), then the
+`CONTRIBUTING.md` inside each package.
+
 - [claude-local/](claude-local/README.md): `claude-local` — run Claude Code
   against a model on your own machine. Installs the backend on first run, swaps
   models with `--switch`, and passes everything it does not recognise straight

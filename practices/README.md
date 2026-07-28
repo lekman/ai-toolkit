@@ -13,6 +13,10 @@ they add up to.
   by splitting work between a planning orchestrator that never touches code and
   disposable, scoped subagents that do. The operating model behind
   [isolated-agent security](../security/isolated/README.md).
+- [local-models/](local-models/README.md): run Claude Code against a model on
+  your own machine via LM Studio's Anthropic-compatible endpoint, for work that
+  must not leave the laptop. Installed and driven by
+  [@lekman/claude-local](../packages/claude-local/README.md).
 - [bedrock/](bedrock/README.md): run Claude Code on AWS Bedrock and keep the SSO
   session alive with a `SessionStart` auto-login hook, so a session never fails
   part way through on an expired token.

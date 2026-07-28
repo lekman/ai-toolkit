@@ -32,11 +32,18 @@ high-value; everything else is opt-in by need.
 
 ## Build with it (advanced)
 
-- **Packages** — runnable TypeScript: CLIs, MCP servers, and the Agent SDK on
-  AWS Bedrock base project. _Added as content lands._
+- **[Packages](packages/README.md)** — runnable TypeScript: CLIs, MCP servers,
+  and the Agent SDK on AWS Bedrock base project. First one out is
+  [@lekman/claude-local](packages/claude-local/README.md), which points Claude
+  Code at a model running on your own machine.
 
 ## Why it's shaped this way
 
 - [docs/principles.md](docs/principles.md) — the concerns behind the practices.
 - [docs/controls.md](docs/controls.md) — soft vs hard vs boundary controls, and
   why an agent may edit some things but not others.
+
+## Contributing
+
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — where things go, commit and
+  branch conventions, linting, and how packages are built and released.

@@ -23,5 +23,12 @@ lint:
     - prettier@3.8.4
     - trufflehog@3.95.6
 actions:
+  definitions:
+    - id: eslint-fix
+      display_name: eslint --fix staged files
+      run: bash scripts/pre-commit-eslint.sh
+      triggers:
+        - git_hooks: [pre-commit]
   enabled:
     - commitlint
+    - eslint-fix

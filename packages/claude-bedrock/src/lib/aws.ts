@@ -4,6 +4,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { accessSync, constants } from "node:fs";
 import { delimiter, join } from "node:path";
 
+/** An error whose message is shown to the user as-is, without a stack trace. */
 export class UserError extends Error {}
 
 /**
@@ -24,6 +25,7 @@ export function which(cmd: string): string | undefined {
   return undefined;
 }
 
+/** Run a command with output going straight to the terminal; resolves to its exit code. */
 export function runInherit(
   cmd: string,
   args: string[],

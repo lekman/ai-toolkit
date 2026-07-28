@@ -8,16 +8,17 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+
 import {
-  MODELS,
-  type Model,
   contextFor,
   findModel,
   isDownloaded,
+  type Model,
+  MODELS,
 } from "../lib/catalog.js";
 import {
-  CONFIG_FILE,
   type Config,
+  CONFIG_FILE,
   DEFAULT_PORT,
   writeConfig,
 } from "../lib/config.js";
@@ -30,7 +31,7 @@ import {
   startServer,
 } from "../lib/lms.js";
 import { cancelled } from "../lib/prompt.js";
-import { UserError, readMachine } from "../lib/system.js";
+import { readMachine, UserError } from "../lib/system.js";
 
 const CORE = "core";
 

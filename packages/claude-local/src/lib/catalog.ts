@@ -59,6 +59,7 @@ export const MODELS: Model[] = [
   },
 ];
 
+/** Look up a catalog entry by its exact model key. */
 export function findModel(key: string): Model | undefined {
   return MODELS.find((m) => m.key === key);
 }

@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+
 import { findBypass } from "./no-verify-guard";
 
 test("blocks --no-verify on commit", () => {

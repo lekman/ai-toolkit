@@ -24,12 +24,12 @@ import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   statSync,
 } from "node:fs";
-import { createInterface } from "node:readline/promises";
 import { join } from "node:path";
+import { createInterface } from "node:readline/promises";
 
 const repoRoot = join(import.meta.dir, "..");
 const packagesDir = join(repoRoot, "packages");

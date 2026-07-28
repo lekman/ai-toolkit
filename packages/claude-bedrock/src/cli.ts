@@ -15,14 +15,15 @@
 
 import { spawn } from "node:child_process";
 import pc from "picocolors";
-import { UserError, sessionValid, ssoLogin, which } from "./lib/aws.js";
+
+import { sessionValid, ssoLogin, UserError, which } from "./lib/aws.js";
 import {
-  HOME_ENV_FILE,
-  REPORTED,
-  type EnvFile,
   bedrockVarsInSettings,
+  type EnvFile,
   findEnvFile,
+  HOME_ENV_FILE,
   migrateFromSettings,
+  REPORTED,
 } from "./lib/config.js";
 
 const VERSION = "0.2.0";

@@ -8,7 +8,8 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import { MODELS, type Model, contextFor, matchModel } from "../lib/catalog.js";
+
+import { contextFor, matchModel, type Model, MODELS } from "../lib/catalog.js";
 import { type Config, writeConfig } from "../lib/config.js";
 import {
   download,
@@ -21,7 +22,7 @@ import {
   unloadAll,
 } from "../lib/lms.js";
 import { cancelled } from "../lib/prompt.js";
-import { UserError, readMachine } from "../lib/system.js";
+import { readMachine, UserError } from "../lib/system.js";
 
 export type Candidate = Model & { onDisk: boolean };
 
@@ -46,6 +47,7 @@ export function candidates(downloaded: string[]): Candidate[] {
   return [...known, ...extras];
 }
 
+/** The catalog key of the model currently loaded, if any. */
 export function loadedKey(lms: string): string | undefined {
   return listLoaded(lms).map((l) => matchModel(l)?.key ?? l)[0];
 }
@@ -56,6 +58,7 @@ export interface SwitchOptions {
   port?: number;
 }
 
+/** Switch the active model, loading it and persisting the choice. */
 export async function runSwitch(
   config: Config,
   opts: SwitchOptions,

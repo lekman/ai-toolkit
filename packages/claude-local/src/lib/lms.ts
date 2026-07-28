@@ -8,21 +8,24 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
 import {
-  UserError,
   appInstalled,
   run,
   runInherit,
   sleep,
+  UserError,
   which,
 } from "./system.js";
 
 const BUNDLED_LMS = join(homedir(), ".lmstudio", "bin", "lms");
 
+/** Locate the `lms` CLI: PATH first, then LM Studio's bundled copy. */
 export function findLms(): string | undefined {
   return which("lms") ?? (existsSync(BUNDLED_LMS) ? BUNDLED_LMS : undefined);
 }
 
+/** Install LM Studio via Homebrew, unless the app or CLI is already present. */
 export async function installLmStudio(): Promise<void> {
   // An existing CLI counts as installed even if the app was put somewhere other
   // than /Applications, so re-running setup never triggers a pointless reinstall.
@@ -53,6 +56,7 @@ export async function ensureLms(): Promise<string> {
   return lms;
 }
 
+/** Return the `lms` CLI path, or throw a UserError telling the user to run setup. */
 export function requireLms(): string {
   const lms = findLms();
   if (!lms) {
@@ -110,6 +114,7 @@ export function listLoaded(lms: string): string[] {
     .filter((token) => token.includes("/"));
 }
 
+/** Is an LM Studio server answering on this port? */
 export async function serverRunning(port: number): Promise<boolean> {
   try {
     const res = await fetch(`http://localhost:${port}/v1/models`, {
@@ -121,6 +126,7 @@ export async function serverRunning(port: number): Promise<boolean> {
   }
 }
 
+/** Start the LM Studio server on the given port if it is not already running. */
 export async function startServer(lms: string, port: number): Promise<void> {
   if (await serverRunning(port)) return;
   const code = await runInherit(lms, [
@@ -135,16 +141,19 @@ export async function startServer(lms: string, port: number): Promise<void> {
     );
 }
 
+/** Download a model in its MLX build; true on success. */
 export async function download(lms: string, key: string): Promise<boolean> {
   // --mlx picks the Apple Silicon build, which beats GGUF on M-series.
   const code = await runInherit(lms, ["get", key, "--mlx", "--yes"]);
   return code === 0;
 }
 
+/** Unload every model from memory. Best-effort; failures are ignored. */
 export function unloadAll(lms: string): void {
   run(lms, ["unload", "--all"]);
 }
 
+/** Load a model with the given context length, fully on GPU. */
 export async function load(
   lms: string,
   key: string,

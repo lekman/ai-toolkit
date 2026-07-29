@@ -1,6 +1,6 @@
 # ai-toolkit
 
-> > [!note] My practices, tools, and workflows for working with Anthropic Claude
+> My practices, tools, and workflows for working with Anthropic Claude
 
 ## Start here
 

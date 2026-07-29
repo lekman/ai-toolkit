@@ -10,8 +10,10 @@ export interface Machine {
   hasHomebrew: boolean;
 }
 
+/** An error whose message is shown to the user as-is, without a stack trace. */
 export class UserError extends Error {}
 
+/** Throw a UserError unless running on macOS with an M-series chip. */
 export function assertAppleSilicon(): void {
   if (os.platform() !== "darwin") {
     throw new UserError(
@@ -23,6 +25,7 @@ export function assertAppleSilicon(): void {
   }
 }
 
+/** Gather the machine facts that size the model catalog: RAM, free disk, Homebrew. */
 export function readMachine(): Machine {
   const free = spawnSync("df", ["-g", "/"], { encoding: "utf8" });
   const freeDiskGb = Number(
@@ -35,6 +38,7 @@ export function readMachine(): Machine {
   };
 }
 
+/** Find an executable on PATH, or undefined if it is not there. */
 export function which(cmd: string): string | undefined {
   const r = spawnSync("command", ["-v", cmd], {
     encoding: "utf8",
@@ -73,6 +77,7 @@ export function runInherit(cmd: string, args: string[]): Promise<number> {
   });
 }
 
+/** Is a macOS app of this name present in /Applications? */
 export function appInstalled(name: string): boolean {
   return existsSync(`/Applications/${name}.app`);
 }

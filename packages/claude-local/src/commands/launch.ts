@@ -6,10 +6,11 @@
  * `claude` in the same terminal still reaches the hosted model.
  */
 
-import { spawn } from "node:child_process";
 import * as p from "@clack/prompts";
-import { type Config, claudeEnv } from "../lib/config.js";
+import { spawn } from "node:child_process";
+
 import { findModel } from "../lib/catalog.js";
+import { claudeEnv, type Config } from "../lib/config.js";
 import {
   listLoaded,
   load,

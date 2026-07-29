@@ -4,6 +4,24 @@ Running Claude Code against the model over AWS Bedrock, and keeping the session
 authenticated. Bedrock gives you IAM-scoped access and per-team cost allocation;
 AWS SSO gives credentials that refresh instead of being pasted.
 
+## Set It Up With the Built-In Wizard
+
+Run `claude`, then `/setup-bedrock`. It reads your AWS profiles, resolves the
+region, checks which Claude models your account can actually invoke, and pins
+them into your settings. Use it rather than writing the environment variables by
+hand — inference profile IDs are account- and region-scoped, and a wrong one
+fails at request time with an unhelpful error.
+
+Two consequences worth knowing:
+
+- **It writes global settings.** Bedrock then applies to every session. If you
+  mix backends, [@lekman/claude-bedrock](../../packages/claude-bedrock/README.md)
+  gives you one session on Bedrock without changing the global default.
+- **`awsAuthRefresh` may replace the hook below.** Claude Code has a first-party
+  setting that runs your login command when it detects expired credentials. It
+  covers the same ground as the script here, from inside the product. Prefer it;
+  keep the hook only where you need behaviour it does not give you.
+
 ## Keep the SSO Session Alive
 
 [aws-auto-login.sh](aws-auto-login.sh) is a `SessionStart` hook. On each session

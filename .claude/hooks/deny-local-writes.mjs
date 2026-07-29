@@ -32,8 +32,8 @@
  */
 
 import { realpathSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { isAbsolute, join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /**
  * Decide whether editing `absPath` violates the shared-mode guard.

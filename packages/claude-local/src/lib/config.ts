@@ -24,6 +24,7 @@ export interface Config {
   context: number;
 }
 
+/** Read the persisted config; undefined when missing, incomplete, or corrupt. */
 export function readConfig(): Config | undefined {
   if (!existsSync(CONFIG_FILE)) return undefined;
   try {
@@ -43,11 +44,13 @@ export function readConfig(): Config | undefined {
   }
 }
 
+/** Write the config, creating ~/.claude on first use. */
 export function writeConfig(config: Config): void {
   mkdirSync(dirname(CONFIG_FILE), { recursive: true });
   writeFileSync(CONFIG_FILE, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
+/** Merge a patch into the existing config; undefined when setup has not run. */
 export function updateConfig(patch: Partial<Config>): Config | undefined {
   const current = readConfig();
   if (!current) return undefined;

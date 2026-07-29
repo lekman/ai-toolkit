@@ -10,12 +10,13 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+
 import { runLaunch } from "./commands/launch.js";
 import { runSetup } from "./commands/setup.js";
 import { runList, runSwitch } from "./commands/switch.js";
 import { type Config, readConfig } from "./lib/config.js";
 import { findLms, unloadAll } from "./lib/lms.js";
-import { UserError, assertAppleSilicon, run } from "./lib/system.js";
+import { assertAppleSilicon, run, UserError } from "./lib/system.js";
 
 const VERSION = "0.2.0";
 

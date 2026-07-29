@@ -16,3 +16,7 @@ Building and releasing: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md), then th
   models with `--switch`, and passes everything it does not recognise straight
   through to `claude`. The practice behind it is
   [practices/local-models/README.md](../practices/local-models/README.md).
+- [claude-bedrock/](claude-bedrock/README.md): `claude-bedrock` — run one
+  Claude Code session on AWS Bedrock without switching your global settings.
+  A launcher only; setup stays with Claude Code's own `/setup-bedrock`. The
+  practice behind it is [practices/bedrock/README.md](../practices/bedrock/README.md).

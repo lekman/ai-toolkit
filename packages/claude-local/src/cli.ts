@@ -9,6 +9,7 @@
  */
 
 import * as p from "@clack/prompts";
+import { readFileSync } from "node:fs";
 import pc from "picocolors";
 
 import { runLaunch } from "./commands/launch.js";
@@ -18,7 +19,13 @@ import { type Config, readConfig } from "./lib/config.js";
 import { findLms, unloadAll } from "./lib/lms.js";
 import { assertAppleSilicon, run, UserError } from "./lib/system.js";
 
-const VERSION = "0.2.0";
+// package.json sits one level above both src/ (dev) and dist/ (published), so
+// the version can never drift from what npm shows.
+const VERSION = (
+  JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { version: string }
+).version;
 
 const HELP = `
 ${pc.bold("claude-local")} — run Claude Code against a local model

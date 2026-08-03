@@ -71,6 +71,23 @@ gh pr create --fill
 State in the PR what you did **not** test. Unverified work described as done is
 worse than work described as unverified.
 
+## Tooling
+
+Development tools are pinned per directory in [mise.toml](../mise.toml):
+
+```bash
+mise trust && mise install
+```
+
+That gets you Bun and Node for the packages, Trunk for linting, and the AWS and
+Azure CLIs the cloud launchers use for their session checks. Everything is a
+binary download except `azure-cli`, which mise installs through pipx — that one
+compiles a large Python package and takes a few minutes, and it is why `python`
+and `uv` are in the tool list too.
+
+None of it is needed to _use_ what this repo publishes. A released CLI bundles
+its dependencies and runs under plain Node 20 or later.
+
 ## Linting
 
 [Trunk](https://trunk.io) runs markdownlint, prettier, gitleaks, trufflehog, and
@@ -102,6 +119,12 @@ process, and whatever is specific to it:
 - [packages/claude-local/CONTRIBUTING.md](../packages/claude-local/CONTRIBUTING.md)
   — the `claude-local` CLI: building, adding a model to the catalog, and
   publishing to npm.
+- [packages/claude-bedrock/CONTRIBUTING.md](../packages/claude-bedrock/CONTRIBUTING.md)
+  — the `claude-bedrock` CLI, and why it validates nothing that
+  `/setup-bedrock` already does.
+- [packages/claude-foundry/CONTRIBUTING.md](../packages/claude-foundry/CONTRIBUTING.md)
+  — the `claude-foundry` CLI, why it validates more than the Bedrock one, and
+  the environment variables it must not claim from other backends.
 
 ### Releasing
 

@@ -25,9 +25,22 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/claude-foundry": {
+      "name": "@lekman/claude-foundry",
+      "version": "0.1.0",
+      "bin": {
+        "claude-foundry": "./dist/cli.js",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "@types/node": "^22.10.0",
+        "picocolors": "^1.1.1",
+        "typescript": "^5.7.0",
+      },
+    },
     "packages/claude-local": {
       "name": "@lekman/claude-local",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "bin": {
         "claude-local": "./dist/cli.js",
       },
@@ -76,6 +89,8 @@
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
     "@lekman/claude-bedrock": ["@lekman/claude-bedrock@workspace:packages/claude-bedrock"],
+
+    "@lekman/claude-foundry": ["@lekman/claude-foundry@workspace:packages/claude-foundry"],
 
     "@lekman/claude-local": ["@lekman/claude-local@workspace:packages/claude-local"],
 

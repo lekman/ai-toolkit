@@ -23,3 +23,4 @@
 
 - **[@lekman/claude-local](packages/claude-local/README.md)** run fully private, offline and uncensored LLMs on your local machine.
 - **[@lekman/claude-bedrock](packages/claude-bedrock/README.md)** run Claude inside a private model on AWS where data is never shared with Anthropic.
+- **[@lekman/claude-foundry](packages/claude-foundry/README.md)** run Claude on Azure under Entra ID and RBAC — each deployment's hosting option decides whether inference stays on Azure.

@@ -52,6 +52,7 @@ claude-bedrock                    # launch
 claude-bedrock --status           # what would be used; changes nothing
 claude-bedrock --profile <name>   # override the AWS profile
 claude-bedrock --no-login         # fail rather than opening a browser
+claude-bedrock --no-repair        # leave global settings alone
 ```
 
 Reserved flags are handled here. The first token that is not one of them ends
@@ -70,7 +71,7 @@ Checked in order:
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `.claude/bedrock.env` in cwd | A repo must run on a specific account — commit it, and everyone in the directory picks it up |
 | `~/.claude/bedrock.env`      | Your own default across repos                                                                |
-| `~/.claude/settings.json`    | Written by `/setup-bedrock`; used as-is, nothing is overridden                               |
+| `~/.claude/settings.json`    | Written by `/setup-bedrock`. Read, then moved into the env file above — see below           |
 
 An env file is shell-style and read, not executed — `export KEY=value`, plain
 `KEY=value`, quoted values, and `#` comments:
@@ -89,6 +90,18 @@ differ by partition (`us.`, `eu.`, `us-gov.` in GovCloud).
 
 Nothing is exported into your shell and no wrapper script is written.
 
+Bedrock variables found in `~/.claude/settings.json` are moved into
+`~/.claude/bedrock.env`, because settings `env` applies to every session and
+outranks anything a parent process exports. Left there, bare `claude` is on
+Bedrock too and there is no way back, which makes this launcher pointless. So
+every run checks and repairs it, and `/setup-bedrock` can be re-run at any time:
+the next launch picks up the new values the same way. Settings win on conflict,
+because whoever just ran the wizard has the values their account can invoke.
+
+Model pins are only moved when a Bedrock-specific variable sits beside them, so
+a Foundry setup that pins models through the same names is left alone.
+`--no-repair` skips the whole step and reads the variables where they are.
+
 ## Requirements
 
 - Claude Code on your PATH.
@@ -102,10 +115,12 @@ Nothing is exported into your shell and no wrapper script is written.
 
 ```bash
 npm uninstall -g @lekman/claude-bedrock
-rm ~/.claude/bedrock.env        # if you wrote one
+rm ~/.claude/bedrock.env        # if you wrote one, or the repair did
 ```
 
-`claude` itself is never modified.
+The `claude` binary is never modified. `~/.claude/settings.json` is, but only to
+move Bedrock variables out of it — to put them back, copy them from the env file
+into the `env` block before deleting it, or just re-run `/setup-bedrock`.
 
 ## Contributing
 

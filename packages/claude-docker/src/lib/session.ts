@@ -18,14 +18,15 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 import { docker, UserError } from "./engine.js";
-import { CONTAINER_HOME, WORKDIR } from "./image.js";
+import { CONTAINER_HOME, MANAGED_SETTINGS, WORKDIR } from "./image.js";
 
 /** Everything this tool keeps on the host lives under one directory. */
 export const ROOT = join(homedir(), ".claude", "docker");
@@ -45,6 +46,55 @@ export const CONFIG_VOLUME = "claude-docker-config";
 export const SETTINGS_FILE = join(ROOT, "settings.json");
 export const MEMORY_FILE = join(ROOT, "CLAUDE.md");
 
+/**
+ * Shared instruction files, mounted so `CLAUDE.md` can import them.
+ *
+ * Your own `~/.claude/CLAUDE.md` usually imports standards from a repo with
+ * `@~/Repo/.../standards/CLAUDE.md`. That path does not exist in the container,
+ * so the import silently resolves to nothing and the agent quietly loses every
+ * standing instruction you have.
+ *
+ * Point this at the directory instead and the imports resolve. A symlink is the
+ * usual answer, so the container reads whatever the repo currently says rather
+ * than a copy that drifts.
+ */
+export const STANDARDS_LINK = join(ROOT, "standards");
+export const CONTAINER_STANDARDS = `${CONTAINER_HOME}/.claude/standards`;
+
+/**
+ * Where shared instructions come from: the flag, the environment, or the
+ * conventional path. Symlinks are resolved here rather than handed to the
+ * container engine, which is inconsistent about following them.
+ */
+export function resolveStandards(explicit?: string): string | undefined {
+  const path =
+    explicit ?? process.env.CLAUDE_DOCKER_STANDARDS ?? STANDARDS_LINK;
+  if (!existsSync(path)) {
+    if (explicit) {
+      throw new UserError(`No such directory: ${path}`);
+    }
+    return undefined;
+  }
+  const real = realpathSync(path);
+  if (!statSync(real).isDirectory()) {
+    throw new UserError(`Not a directory: ${path}`);
+  }
+  return real;
+}
+
+/**
+ * No key yet. Carries the path so the caller can offer to create one there.
+ *
+ * A distinct type rather than a `UserError` because this is the one failure
+ * with a good answer the tool can offer, instead of a message to act on.
+ */
+export class MissingKeyError extends Error {
+  constructor(public readonly path: string) {
+    super(`No SSH key at ${path}.`);
+    this.name = "MissingKeyError";
+  }
+}
+
 export interface Session {
   /** As typed, for display. */
   task: string;
@@ -61,12 +111,15 @@ export interface Session {
  *
  * Ticket identifiers are the expected input and pass through nearly unchanged;
  * a sentence-shaped task name becomes a readable slug rather than an error.
+ *
+ * Case is preserved. Ticket keys are conventionally uppercase, and the slug is
+ * the branch name and the Remote Control session name, both of which people
+ * read and search for — `feat/JIRA-12345` rather than `feat/jira-12345`.
  */
 export function slugify(task: string): string {
   const slug = task
     .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._/-]+/g, "-")
+    .replace(/[^A-Za-z0-9._/-]+/g, "-")
     .replace(/^[-._/]+|[-._/]+$/g, "")
     .replace(/-{2,}/g, "-")
     .slice(0, 60);
@@ -143,6 +196,19 @@ function repoSlug(sshUrl: string): string {
 }
 
 /**
+ * The task to use when none is given: the repository's own name.
+ *
+ * Running `claude-docker` bare is the "get me a container for this repo" case
+ * rather than a mistake, so it names the session after the repo and reuses the
+ * same checkout each time. Ticket-shaped tasks are still the normal way in; this
+ * is the one you reach for when the work does not have a ticket yet.
+ */
+export function defaultTask(): string {
+  const name = /\/([^/]+?)(?:\.git)?$/.exec(resolveRepo())?.[1];
+  return name ?? basename(process.cwd());
+}
+
+/**
  * Check the key before the container needs it.
  *
  * A missing or group-readable key fails inside the clone, several seconds in,
@@ -152,18 +218,10 @@ function repoSlug(sshUrl: string): string {
 export function resolveKey(explicit?: string): string {
   const path = explicit ?? DEFAULT_KEY;
   if (!existsSync(path)) {
-    throw new UserError(
-      `No SSH key at ${path}.\n\n` +
-        `  The container clones over SSH using a key that belongs to a separate,\n` +
-        `  dedicated account — never your own. That is what limits what an agent\n` +
-        `  with permissions bypassed can reach.\n\n` +
-        `  Create one and add the public half to that account:\n\n` +
-        `    mkdir -p ${ROOT}\n` +
-        `    ssh-keygen -t ed25519 -N "" -C claude-docker -f ${DEFAULT_KEY}\n` +
-        `    cat ${DEFAULT_KEY}.pub\n\n` +
-        `  Give the account read and write access to only the repos it should\n` +
-        `  touch. Use --ssh-key to point somewhere else.`,
-    );
+    // The caller runs the guided setup instead. Creating a key is easy; getting
+    // it onto an account that is not yours is the part worth walking through,
+    // so this is not something to solve with a longer error message.
+    throw new MissingKeyError(path);
   }
   const mode = statSync(path).mode & 0o777;
   if (mode & 0o077) {
@@ -217,16 +275,27 @@ export function listSessions(): { repo: string; task: string; dir: string }[] {
   return found;
 }
 
+/**
+ * The Remote Control session name.
+ *
+ * Prefixed so containerised work is distinguishable at a glance from a session
+ * running on the machine itself, and suffixed with the branch so the session,
+ * the branch, and the pull request all read as the same thing.
+ */
+export function remoteControlName(session: Session): string {
+  return `@docker ${session.slug}`;
+}
+
 export interface RunOptions {
   session: Session;
   image: string;
   keyPath: string;
   gitName: string;
   gitEmail: string;
-  remoteControl: boolean;
-  bypassPermissions: boolean;
   /** Relax the container's seccomp profile so the inner sandbox can start. */
   sandbox: boolean;
+  /** Host directory of shared instruction files, if one is configured. */
+  standards?: string;
   /** Open a shell instead of starting Claude Code. */
   shell: boolean;
   /** Extra arguments passed through to `claude`. */
@@ -257,14 +326,21 @@ export function runArgs(options: RunOptions): string[] {
     // without ever touching your host ~/.claude.
     "--volume",
     `${CONFIG_VOLUME}:${CONTAINER_HOME}/.claude`,
-    // Settings and memory are mounted over the volume so they stay editable on
-    // the host. A single-file mount takes precedence over the directory mount
-    // beneath it, which is what lets these two be host files while the login
-    // and history stay in the volume.
+    // Settings go in as *managed* settings, not user settings.
+    //
+    // The checkout is writable by design — that is the work — so a project-level
+    // .claude/settings.local.json is always within reach. User settings lose to
+    // it; managed settings cannot be overridden by anything, and the file is
+    // root-owned inside a container running as `claude`. Mounted read-only so
+    // it stays an ordinary host file you can edit, diff, and commit, while the
+    // agent has no path to it at all.
     "--volume",
-    `${SETTINGS_FILE}:${CONTAINER_HOME}/.claude/settings.json`,
+    `${SETTINGS_FILE}:${MANAGED_SETTINGS}:ro`,
+    // Memory is advice, so the agent may reasonably rewrite it. It is still
+    // mounted read-only: a change made inside would be invisible on the host
+    // and silently discarded with the container.
     "--volume",
-    `${MEMORY_FILE}:${CONTAINER_HOME}/.claude/CLAUDE.md`,
+    `${MEMORY_FILE}:${CONTAINER_HOME}/.claude/CLAUDE.md:ro`,
     "--env",
     `CD_REPO=${session.repo}`,
     "--env",
@@ -276,6 +352,13 @@ export function runArgs(options: RunOptions): string[] {
     "--env",
     `CD_GIT_EMAIL=${options.gitEmail}`,
   ];
+
+  // Shared instructions, so an `@standards/...` import in CLAUDE.md resolves.
+  // Read-only: they are the same files your other sessions read, and a
+  // container is not the place they should be edited from.
+  if (options.standards) {
+    args.push("--volume", `${options.standards}:${CONTAINER_STANDARDS}:ro`);
+  }
 
   // Claude Code's sandbox uses bubblewrap, which needs to create a user
   // namespace. Docker's default seccomp profile blocks the syscalls that takes,
@@ -292,9 +375,14 @@ export function runArgs(options: RunOptions): string[] {
     return args;
   }
 
-  args.push(options.image, "claude");
-  if (options.remoteControl) args.push("--remote-control", session.slug);
-  if (options.bypassPermissions) args.push("--dangerously-skip-permissions");
+  // Remote Control is always on. A containerised task is an unattended task by
+  // definition, and one you cannot watch from anywhere is one you will end up
+  // babysitting from the terminal that started it.
+  //
+  // The permission mode is not passed here. It comes from the managed settings
+  // file, which the container cannot edit — a CLI flag sits below managed
+  // settings in the precedence order and would only be noise.
+  args.push(options.image, "claude", "--remote-control", remoteControlName(session));
   args.push(...options.passthrough);
   return args;
 }
@@ -307,37 +395,95 @@ export function ensureConfigVolume(): void {
 }
 
 /**
- * Settings seeded on first use.
+ * Settings seeded on first use, mounted as the container's managed policy.
  *
- * The sandbox is the reason this file exists. It is a second, inner boundary:
- * the container decides what exists, and the sandbox decides which domains a
- * Bash command may reach from inside it. Enforced by the OS, so it holds
- * regardless of what the model decided to run.
+ * Three things live here, in descending order of how much they matter.
  *
- * It ships off. Turning it on narrows egress to the list below and breaks
- * anything missing from it, which should be a decision rather than a surprise.
- * Everything is pre-filled so enabling it is a one-line change.
+ * The permission floor. Auto mode rather than bypass: bypass explicitly skips
+ * prompts for writes to `.claude`, `.git`, and friends, so it is incompatible
+ * with protecting them. `disableBypassPermissionsMode` closes it for good, and
+ * because this is a managed file nothing in the checkout can reopen it.
+ *
+ * The lock. `allowManagedPermissionRulesOnly` stops user and project settings
+ * defining any rule, and `allowManagedHooksOnly` stops a cloned repo
+ * registering a hook that would run a shell command on every tool call. Both
+ * are managed-only settings: they have no effect anywhere else.
+ *
+ * The sandbox, off by default. A second, inner boundary: the container decides
+ * what exists, the sandbox decides which domains a Bash command may reach.
+ * Turning it on narrows egress and breaks anything missing from the list, which
+ * should be a decision rather than a surprise, so it is pre-filled and off.
  */
 const DEFAULT_SETTINGS = `{
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
 
-  "//": "Read by Claude Code inside the claude-docker container only.",
+  "//": [
+    "Mounted read-only at ${MANAGED_SETTINGS} inside the claude-docker",
+    "container, so it is Claude Code's managed policy: nothing in the cloned",
+    "repo can override it. Edit it here on the host with 'claude-docker --config'."
+  ],
+
+  "//permissions": [
+    "auto, never bypass. bypassPermissions skips prompts for writes to .claude,",
+    ".git, .vscode and others, which is exactly what the deny rules below cover.",
+    "Paths use the // absolute form on purpose: a bare '.claude/**' in a settings",
+    "file resolves against that file's own directory, not the project."
+  ],
+  "permissions": {
+    "defaultMode": "auto",
+    "disableBypassPermissionsMode": "disable",
+    "deny": [
+      "Write(//**/.claude/**)",
+      "Edit(//**/.claude/**)",
+      "Read(//**/.env)",
+      "Read(//**/*.pem)",
+      "Read(//**/id_rsa)",
+      "Read(//**/id_ed25519)"
+    ]
+  },
+
+  "//managedOnly": [
+    "These two are read from managed settings only. They are what stops the",
+    "checkout — which the agent must be able to write — becoming a way to",
+    "grant itself rules or run its own hooks.",
+    "Hooks you want must therefore live in this file, not in the repo."
+  ],
+  "allowManagedPermissionRulesOnly": true,
+  "allowManagedHooksOnly": true,
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "/usr/local/bin/claude-docker-guard" }
+        ]
+      }
+    ]
+  },
+
   "//sandbox": [
     "Set sandbox.enabled to true to narrow egress to allowedDomains below.",
     "It covers Bash commands and their children — not WebFetch or MCP, which",
     "follow permission rules instead. deniedDomains always beats allowedDomains.",
-    "strictAllowlist denies an unlisted host outright; without it the sandbox",
-    "prompts for one, which nobody is present to answer in an unattended run.",
+    "network.strictAllowlist denies an unlisted host outright; without it the",
+    "sandbox prompts for one, which nobody is present to answer unattended.",
     "enableWeakerNestedSandbox is required for a sandbox inside a container:",
     "bubblewrap cannot mount a fresh /proc unprivileged. It weakens the inner",
-    "boundary, which is acceptable only because the container is the outer one."
+    "boundary, which is acceptable only because the container is the outer one.",
+    "excludedCommands is where docker goes if a task needs it: docker and the",
+    "sandbox are incompatible.",
+    "Do not add comment keys inside sandbox or network. Both are strict, and",
+    "one unknown key makes Claude Code discard the entire block."
   ],
 
   "sandbox": {
     "enabled": false,
-    "strictAllowlist": true,
     "enableWeakerNestedSandbox": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": [],
     "network": {
+      "strictAllowlist": true,
       "allowedDomains": [
         "api.anthropic.com",
         "registry.npmjs.org",
@@ -345,29 +491,35 @@ const DEFAULT_SETTINGS = `{
         "*.githubusercontent.com"
       ],
       "deniedDomains": [],
-      "allowUnixSockets": false,
+      "allowUnixSockets": [],
       "allowLocalBinding": true
-    },
-    "//excludedCommands": "docker is incompatible with the sandbox.",
-    "excludedCommands": []
-  },
-
-  "//autoAllow": "Skip the Bash prompt when a command is sandboxed anyway.",
-  "autoAllowBashIfSandboxed": true
+    }
+  }
 }
 `;
 
-/** Memory seeded on first use. Applies to every task in every container. */
+/**
+ * Memory seeded on first use. Applies to every task in every container.
+ *
+ * The import matters more than it looks. A `~/.claude/CLAUDE.md` on the host
+ * usually pulls in standards from a repo by absolute path, and that path does
+ * not exist in the container — so without this the agent loses every standing
+ * instruction you have, silently, and you notice it as the agent behaving
+ * unlike itself rather than as a missing file.
+ */
 const DEFAULT_MEMORY = `# claude-docker
 
 Global memory for every task run by \`claude-docker\`. Per-repo \`CLAUDE.md\`
 files in the cloned checkout still apply and are read after this one.
 
+@standards/CLAUDE.md
+
 ## Where you are
 
 You are in a container holding one repository, on one branch, cloned for a
-single task. Nothing else of the user's machine is reachable, which is why
-permissions are bypassed. Push the task branch; never push to the default
+single task. Nothing else of the user's machine is reachable. Sessions run in
+auto mode; bypass is disabled and the permission rules come from a managed
+settings file you cannot edit. Push the task branch; never push to the default
 branch.
 
 ## Notes

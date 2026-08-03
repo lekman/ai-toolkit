@@ -13,6 +13,11 @@ This is less relevant to a hardened Agent SDK deployment that ships its own
 controls. It matters most for an isolated, interactive-style agent working in a
 repo.
 
+[@lekman/claude-docker](../../packages/claude-docker/README.md) creates the
+container this level assumes. It clones one repo on one branch with a dedicated
+account's key and mounts nothing else, which is what lets it bypass permissions
+inside: the boundary does the work the per-call prompt would otherwise do.
+
 ## Layered, so no single failure unblocks it
 
 "An agent may offer to change a guard rail, but a human must approve it" is

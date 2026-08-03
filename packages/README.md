@@ -20,3 +20,8 @@ Building and releasing: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md), then th
   Claude Code session on AWS Bedrock without switching your global settings.
   A launcher only; setup stays with Claude Code's own `/setup-bedrock`. The
   practice behind it is [practices/bedrock/README.md](../practices/bedrock/README.md).
+- [claude-docker/](claude-docker/README.md): `claude-docker` — run one Claude
+  Code task in a container that clones only that task's repo and branch, using
+  a dedicated account's key. Permissions are bypassed inside, because the
+  boundary replaces the prompt. The concern behind it is
+  [security/isolated/README.md](../security/isolated/README.md).

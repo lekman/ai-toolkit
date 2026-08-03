@@ -78,6 +78,25 @@ export const REPORTED = [
  */
 const OWNED = new Set<string>([...REPORTED, "AWS_BEARER_TOKEN_BEDROCK"]);
 
+/**
+ * The subset that only ever means Bedrock.
+ *
+ * `ANTHROPIC_DEFAULT_*_MODEL` is shared with every other backend — Foundry pins
+ * models through the same names. Seeing them alone in settings.json says
+ * nothing about Bedrock, so they are moved only alongside one of these.
+ * Without this guard, a single `claude-bedrock` run would move a Foundry user's
+ * model pins into bedrock.env and delete them from settings.json.
+ *
+ * `AWS_REGION` and `AWS_PROFILE` are not markers either: they are ordinary AWS
+ * variables that may be in settings for something other than Bedrock.
+ */
+const BEDROCK_ONLY = new Set<string>([
+  "CLAUDE_CODE_USE_BEDROCK",
+  "CLAUDE_CODE_USE_MANTLE",
+  "ANTHROPIC_BEDROCK_SERVICE_TIER",
+  "AWS_BEARER_TOKEN_BEDROCK",
+]);
+
 interface Settings {
   env?: Record<string, string>;
   [key: string]: unknown;
@@ -134,6 +153,9 @@ export interface Migration {
  * Settings win on conflict. Someone who just ran the wizard has the fresher
  * values, and those are the ones their account can actually invoke.
  *
+ * Model pins are only taken when a Bedrock-specific variable sits beside them,
+ * so a Foundry setup that pins models the same way is left intact.
+ *
  * Returns undefined when there is nothing to do, which is the normal case.
  */
 export function migrateFromSettings(): Migration | undefined {
@@ -142,6 +164,7 @@ export function migrateFromSettings(): Migration | undefined {
     ? Object.entries(settings.env).filter(([key]) => OWNED.has(key))
     : [];
   if (!settings?.env || owned.length === 0) return undefined;
+  if (!owned.some(([key]) => BEDROCK_ONLY.has(key))) return undefined;
 
   const existing = existsSync(HOME_ENV_FILE)
     ? parseEnvFile(readFileSync(HOME_ENV_FILE, "utf8"))

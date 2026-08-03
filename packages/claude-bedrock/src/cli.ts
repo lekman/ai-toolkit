@@ -14,6 +14,7 @@
  */
 
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import pc from "picocolors";
 
 import { sessionValid, ssoLogin, UserError, which } from "./lib/aws.js";
@@ -26,7 +27,13 @@ import {
   REPORTED,
 } from "./lib/config.js";
 
-const VERSION = "0.2.0";
+// package.json sits one level above both src/ (dev) and dist/ (published), so
+// the version can never drift from what npm shows.
+const VERSION = (
+  JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { version: string }
+).version;
 
 const HELP = `
 ${pc.bold("claude-bedrock")} — run one Claude Code session on AWS Bedrock

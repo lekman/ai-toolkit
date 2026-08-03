@@ -8,6 +8,12 @@ Built with Bun, published for Node. Dependencies are bundled into the build, so
 a published package installs nothing and runs under plain `npx` on Node 20 or
 later. Bun is a build-time tool here, not something users need.
 
+TBD add table here instead for packages.
+
+TBD add "related information" or something with contributing links instead.
+
+Below: move to above instead.
+
 Building and releasing: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md), then the
 `CONTRIBUTING.md` inside each package.
 

@@ -1,0 +1,37 @@
+# Development tooling for this repo, pinned per directory.
+#
+#   mise trust && mise install
+#
+# Nothing here is needed to *use* anything this repo publishes. A released CLI
+# bundles its dependencies and runs under plain Node — see docs/CONTRIBUTING.md.
+# These are the tools needed to build it and to exercise the cloud launchers.
+
+[tools]
+# Builds every package under packages/. Build-time only, never a user requirement.
+bun = "latest"
+
+# The runtime published packages target. package.json declares engines >=20, so
+# a release must keep working there; 22 is what development runs against.
+node = "22"
+
+# Both back the azure-cli install below, which mise runs through pipx. mise's
+# pipx backend drives `uv tool install`, so uv has to be declared here or the
+# azure-cli install fails with "No version is set for shim: uv". Neither is
+# used by any package.
+python = "3.12"
+uv = "latest"
+
+# Lint and format, per docs/CONTRIBUTING.md. The repo is checked against
+# prettier's defaults either way, so this is convenience rather than a gate.
+trunk = "latest"
+
+# Session pre-flight for @lekman/claude-bedrock: `aws sts get-caller-identity`
+# and `aws sso login`. Must be v2 — the sso-session config block does not exist
+# in v1. The aqua backend ships v2 binaries.
+awscli = "latest"
+
+# Session pre-flight for @lekman/claude-foundry: `az account get-access-token`
+# and `az login`. Only available through pipx, so the first install compiles a
+# large Python package and takes a few minutes. Everything else here is a
+# binary download.
+azure-cli = "latest"

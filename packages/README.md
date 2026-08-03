@@ -33,3 +33,8 @@ Building and releasing: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md), then th
   is the missing wizard: it deploys the models through the Azure CLI and writes
   the env file. The practice behind it is
   [practices/foundry/README.md](../practices/foundry/README.md).
+- [claude-docker/](claude-docker/README.md): `claude-docker` — run one Claude
+  Code task in a container that clones only that task's repo and branch, using
+  a dedicated account's key. Permissions are bypassed inside, because the
+  boundary replaces the prompt. The concern behind it is
+  [security/isolated/README.md](../security/isolated/README.md).

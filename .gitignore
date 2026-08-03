@@ -14,3 +14,9 @@
 
 # Bun workspaces: one node_modules and lockfile at the root.
 node_modules/
+
+# Per-package build output and generated licences. Each package also carries its
+# own .gitignore, but that only exists on branches where the package does — so a
+# branch without it would otherwise track another branch's build artifacts.
+packages/*/dist/
+packages/*/LICENSE

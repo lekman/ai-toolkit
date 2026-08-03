@@ -20,3 +20,10 @@ Building and releasing: [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md), then th
   Claude Code session on AWS Bedrock without switching your global settings.
   A launcher only; setup stays with Claude Code's own `/setup-bedrock`. The
   practice behind it is [practices/bedrock/README.md](../practices/bedrock/README.md).
+- [claude-foundry/](claude-foundry/README.md): `claude-foundry` — the same for
+  Claude on Microsoft Foundry (Azure). Foundry has no setup wizard and checks
+  nothing before the first request, so this one also validates the
+  configuration and the Azure session before it launches, and its `--setup`
+  is the missing wizard: it deploys the models through the Azure CLI and writes
+  the env file. The practice behind it is
+  [practices/foundry/README.md](../practices/foundry/README.md).

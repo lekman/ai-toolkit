@@ -20,3 +20,8 @@ they add up to.
 - [bedrock/](bedrock/README.md): run Claude Code on AWS Bedrock and keep the SSO
   session alive with a `SessionStart` auto-login hook, so a session never fails
   part way through on an expired token.
+- [foundry/](foundry/README.md): run Claude Code on Claude in Microsoft Foundry
+  (Azure), where there is no setup wizard and nothing checks the configuration
+  before the first request — so pinning models and checking the Azure session
+  are yours to do. Driven by
+  [@lekman/claude-foundry](../packages/claude-foundry/README.md).

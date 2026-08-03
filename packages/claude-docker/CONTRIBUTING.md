@@ -58,6 +58,17 @@ image creates a `claude` user and why `USER` is set before the entrypoint.
 an interactive host-key prompt, which in a non-interactive container looks
 exactly like a hang. `ssh-keyscan` at build time is what avoids that.
 
+**The sandbox needs `seccomp=unconfined` on the container.** Claude Code's
+sandbox uses bubblewrap, which creates a user namespace; Docker's default
+seccomp profile blocks those syscalls, and bubblewrap fails with "No permissions
+to create new namespace". `--cap-add SYS_ADMIN` does not fix it — it fails later
+on `pivot_root` instead. So `runArgs` adds `--security-opt seccomp=unconfined`,
+but only when `sandbox.enabled` is true in the settings file, because it trades
+part of the outer boundary for the inner one. Reading the setting rather than
+taking a flag is deliberate: Claude Code's own fallback when the sandbox cannot
+start is a warning and unsandboxed execution, so a user who set `enabled: true`
+and got no sandbox would not notice.
+
 ## The isolation model is the product
 
 Changes that widen what the container can reach need a strong reason, because

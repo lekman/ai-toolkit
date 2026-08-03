@@ -86,9 +86,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \\
       procps \\
       ripgrep \\
       unzip \\
+      bubblewrap \\
+      socat \\
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @anthropic-ai/claude-code && npm cache clean --force
+# The sandbox runtime supplies the seccomp filter that blocks Unix domain
+# sockets. Optional, but without it the sandbox's isolation is weaker in exactly
+# the place that matters here — a reachable docker socket is a way out.
+RUN npm install -g @anthropic-ai/claude-code @anthropic-ai/sandbox-runtime \\
+    && npm cache clean --force
 
 # Baked in so a first clone never stops on an interactive host-key prompt,
 # which in a non-interactive container reads as a hang.

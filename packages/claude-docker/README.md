@@ -98,10 +98,91 @@ Do that once. The volume keeps it across tasks and across image rebuilds. Your
 own Claude config, history, hooks, and memory are never mounted, so an agent
 with permissions bypassed cannot rewrite them.
 
+## Configure the container
+
+```bash
+claude-docker --config
+```
+
+Opens two files in VS Code (or `$EDITOR`), created with sensible defaults on
+first use:
+
+| File | What it is |
+| ---- | ---------- |
+| `~/.claude/docker/settings.json` | Claude Code settings for every container, including the sandbox network lists |
+| `~/.claude/docker/CLAUDE.md` | Global memory for every containerised task |
+
+Both live on your host and are mounted into the container over the config
+volume, so they are ordinary files you can edit, diff, and commit. Everything
+else Claude Code writes — the login, session history — stays in the volume.
+
+### Narrowing egress with the sandbox
+
+The container has open egress by default, because the container is the boundary.
+For a second, inner boundary, Claude Code's sandbox is a simpler lever than
+firewall rules: it enforces a domain allowlist at the OS level, so it holds
+regardless of what the model decided to run.
+
+The seeded `settings.json` has it pre-filled and switched off. Turn it on with
+one line — `"enabled": true`:
+
+```json
+{
+  "sandbox": {
+    "enabled": false,
+    "strictAllowlist": true,
+    "enableWeakerNestedSandbox": true,
+    "network": {
+      "allowedDomains": [
+        "api.anthropic.com",
+        "registry.npmjs.org",
+        "github.com",
+        "*.githubusercontent.com"
+      ],
+      "deniedDomains": [],
+      "allowUnixSockets": false,
+      "allowLocalBinding": true
+    }
+  },
+  "autoAllowBashIfSandboxed": true
+}
+```
+
+`claude-docker` reads that file and, when the sandbox is on, runs the container
+with `--security-opt seccomp=unconfined`. That is not optional: the sandbox uses
+bubblewrap, bubblewrap creates a user namespace, and Docker's default seccomp
+profile blocks the syscalls it needs — so without it the sandbox cannot start,
+and Claude Code's fallback is to warn once and run **unsandboxed**, which is the
+worst outcome. Note the trade: this relaxes the outer boundary to enable the
+inner one. It is only worth it because the inner one then exists.
+
+Five things are worth knowing before you rely on it:
+
+- **It covers Bash commands and their child processes only.** `WebFetch` and MCP
+  servers follow [permission rules](https://code.claude.com/docs/en/permissions)
+  instead, so an allowlist here does not constrain them.
+- **`strictAllowlist` is what makes it deny.** Without it the sandbox *prompts*
+  for an unlisted host — no use in an unattended run, which is the whole point
+  here. It requires Claude Code 2.1.219 or later.
+- **`enableWeakerNestedSandbox` is required inside a container.** Bubblewrap
+  cannot mount a fresh `/proc` unprivileged, so a sandbox nested in a container
+  will not start without it. It weakens the inner boundary, which is acceptable
+  only because the container is the outer one.
+- **`docker` is incompatible with the sandbox.** Add it to `excludedCommands` if
+  a task needs it.
+- **It is the inner of two boundaries, not a replacement for either.** If you
+  only want one, keep the container and leave this off.
+
+The image ships `bubblewrap`, `socat`, and `@anthropic-ai/sandbox-runtime`, so
+the dependencies are already in place. `deniedDomains` always beats
+`allowedDomains`, and a broad entry such as `github.com` is a plausible
+exfiltration path — the proxy does not inspect TLS by default.
+
 ## Commands
 
 ```bash
 claude-docker <task>              # clone and start work
+claude-docker --config            # edit settings.json and CLAUDE.md
 claude-docker --status            # engine, image, sessions; changes nothing
 claude-docker --clean             # remove built images
 ```

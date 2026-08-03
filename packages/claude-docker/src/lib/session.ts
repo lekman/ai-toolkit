@@ -12,7 +12,15 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -25,6 +33,17 @@ export const SESSIONS = join(ROOT, "sessions");
 export const DEFAULT_KEY = join(ROOT, "id_ed25519");
 /** Claude Code's own config, kept in a volume so a login survives a rebuild. */
 export const CONFIG_VOLUME = "claude-docker-config";
+
+/**
+ * The two config files that are yours to edit rather than the container's.
+ *
+ * They live on the host and are mounted over the config volume, so they can be
+ * edited, diffed, and version-controlled like any other file — a volume you can
+ * only reach through a running container is not somewhere config should hide.
+ * Everything else Claude Code writes (the login, history) stays in the volume.
+ */
+export const SETTINGS_FILE = join(ROOT, "settings.json");
+export const MEMORY_FILE = join(ROOT, "CLAUDE.md");
 
 export interface Session {
   /** As typed, for display. */
@@ -206,6 +225,8 @@ export interface RunOptions {
   gitEmail: string;
   remoteControl: boolean;
   bypassPermissions: boolean;
+  /** Relax the container's seccomp profile so the inner sandbox can start. */
+  sandbox: boolean;
   /** Open a shell instead of starting Claude Code. */
   shell: boolean;
   /** Extra arguments passed through to `claude`. */
@@ -236,6 +257,14 @@ export function runArgs(options: RunOptions): string[] {
     // without ever touching your host ~/.claude.
     "--volume",
     `${CONFIG_VOLUME}:${CONTAINER_HOME}/.claude`,
+    // Settings and memory are mounted over the volume so they stay editable on
+    // the host. A single-file mount takes precedence over the directory mount
+    // beneath it, which is what lets these two be host files while the login
+    // and history stay in the volume.
+    "--volume",
+    `${SETTINGS_FILE}:${CONTAINER_HOME}/.claude/settings.json`,
+    "--volume",
+    `${MEMORY_FILE}:${CONTAINER_HOME}/.claude/CLAUDE.md`,
     "--env",
     `CD_REPO=${session.repo}`,
     "--env",
@@ -247,6 +276,16 @@ export function runArgs(options: RunOptions): string[] {
     "--env",
     `CD_GIT_EMAIL=${options.gitEmail}`,
   ];
+
+  // Claude Code's sandbox uses bubblewrap, which needs to create a user
+  // namespace. Docker's default seccomp profile blocks the syscalls that takes,
+  // so a sandbox nested in a container cannot start without relaxing it. Only
+  // done when the sandbox is actually switched on: it trades a little of the
+  // outer boundary for the inner one, and that is only worth it if the inner
+  // one exists.
+  if (options.sandbox) {
+    args.push("--security-opt", "seccomp=unconfined");
+  }
 
   if (options.shell) {
     args.push(options.image, "bash", "-l");
@@ -265,4 +304,100 @@ export function ensureConfigVolume(): void {
   if (docker(["volume", "inspect", CONFIG_VOLUME]) === undefined) {
     docker(["volume", "create", CONFIG_VOLUME]);
   }
+}
+
+/**
+ * Settings seeded on first use.
+ *
+ * The sandbox is the reason this file exists. It is a second, inner boundary:
+ * the container decides what exists, and the sandbox decides which domains a
+ * Bash command may reach from inside it. Enforced by the OS, so it holds
+ * regardless of what the model decided to run.
+ *
+ * It ships off. Turning it on narrows egress to the list below and breaks
+ * anything missing from it, which should be a decision rather than a surprise.
+ * Everything is pre-filled so enabling it is a one-line change.
+ */
+const DEFAULT_SETTINGS = `{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "//": "Read by Claude Code inside the claude-docker container only.",
+  "//sandbox": [
+    "Set sandbox.enabled to true to narrow egress to allowedDomains below.",
+    "It covers Bash commands and their children — not WebFetch or MCP, which",
+    "follow permission rules instead. deniedDomains always beats allowedDomains.",
+    "strictAllowlist denies an unlisted host outright; without it the sandbox",
+    "prompts for one, which nobody is present to answer in an unattended run.",
+    "enableWeakerNestedSandbox is required for a sandbox inside a container:",
+    "bubblewrap cannot mount a fresh /proc unprivileged. It weakens the inner",
+    "boundary, which is acceptable only because the container is the outer one."
+  ],
+
+  "sandbox": {
+    "enabled": false,
+    "strictAllowlist": true,
+    "enableWeakerNestedSandbox": true,
+    "network": {
+      "allowedDomains": [
+        "api.anthropic.com",
+        "registry.npmjs.org",
+        "github.com",
+        "*.githubusercontent.com"
+      ],
+      "deniedDomains": [],
+      "allowUnixSockets": false,
+      "allowLocalBinding": true
+    },
+    "//excludedCommands": "docker is incompatible with the sandbox.",
+    "excludedCommands": []
+  },
+
+  "//autoAllow": "Skip the Bash prompt when a command is sandboxed anyway.",
+  "autoAllowBashIfSandboxed": true
+}
+`;
+
+/** Memory seeded on first use. Applies to every task in every container. */
+const DEFAULT_MEMORY = `# claude-docker
+
+Global memory for every task run by \`claude-docker\`. Per-repo \`CLAUDE.md\`
+files in the cloned checkout still apply and are read after this one.
+
+## Where you are
+
+You are in a container holding one repository, on one branch, cloned for a
+single task. Nothing else of the user's machine is reachable, which is why
+permissions are bypassed. Push the task branch; never push to the default
+branch.
+
+## Notes
+
+<!-- Add standing instructions for containerised tasks here. -->
+`;
+
+/**
+ * Is the inner sandbox switched on in the settings file?
+ *
+ * Worth reading before launching, because turning it on needs a change to how
+ * the container itself is run — see `runArgs`. Left to fail on its own, Claude
+ * Code warns once and then runs unsandboxed, which is the worst outcome: you
+ * believe there is a boundary and there is not.
+ */
+export function sandboxEnabled(): boolean {
+  try {
+    const settings = JSON.parse(readFileSync(SETTINGS_FILE, "utf8")) as {
+      sandbox?: { enabled?: boolean };
+    };
+    return settings.sandbox?.enabled === true;
+  } catch {
+    // Missing or malformed. Claude Code will report a bad file itself.
+    return false;
+  }
+}
+
+/** Create the host-side config files if they are not there yet. */
+export function ensureConfigFiles(): void {
+  mkdirSync(ROOT, { recursive: true, mode: 0o700 });
+  if (!existsSync(SETTINGS_FILE)) writeFileSync(SETTINGS_FILE, DEFAULT_SETTINGS);
+  if (!existsSync(MEMORY_FILE)) writeFileSync(MEMORY_FILE, DEFAULT_MEMORY);
 }

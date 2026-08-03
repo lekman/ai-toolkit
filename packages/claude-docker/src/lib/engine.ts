@@ -53,13 +53,18 @@ export function docker(args: string[], timeoutMs = 60_000): string | undefined {
   return result.stdout.trim();
 }
 
-/** Run docker with output going to the terminal; resolves to its exit code. */
-export function dockerInherit(args: string[]): Promise<number> {
+/** Run a command with output going to the terminal; resolves to its exit code. */
+export function run(cmd: string, args: string[]): Promise<number> {
   return new Promise((resolve) => {
-    const child = spawn("docker", args, { stdio: "inherit" });
+    const child = spawn(cmd, args, { stdio: "inherit" });
     child.on("close", (code) => resolve(code ?? 1));
     child.on("error", () => resolve(1));
   });
+}
+
+/** Run docker with output going to the terminal; resolves to its exit code. */
+export function dockerInherit(args: string[]): Promise<number> {
+  return run("docker", args);
 }
 
 /**

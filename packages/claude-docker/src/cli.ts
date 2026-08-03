@@ -15,22 +15,31 @@
  * cover, and Remote Control means you can watch it from anywhere.
  */
 
-import { readFileSync } from "node:fs";
-import { rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import pc from "picocolors";
 
-import { dockerInherit, ensureEngine, UserError, which } from "./lib/engine.js";
+import {
+  dockerInherit,
+  ensureEngine,
+  run,
+  UserError,
+  which,
+} from "./lib/engine.js";
 import { buildImage, imageExists, imageTag, pruneImages } from "./lib/image.js";
 import {
   CONFIG_VOLUME,
   DEFAULT_KEY,
+  ensureConfigFiles,
   ensureConfigVolume,
   isCloned,
   listSessions,
+  MEMORY_FILE,
   prepare,
   resolveKey,
   ROOT,
   runArgs,
+  sandboxEnabled,
+  SETTINGS_FILE,
 } from "./lib/session.js";
 
 // package.json sits one level above both src/ (dev) and dist/ (published), so
@@ -45,6 +54,7 @@ const HELP = `
 ${pc.bold("claude-docker")} — run one Claude Code task in an isolated container
 
   claude-docker <task>             clone the repo and start work on <task>
+  claude-docker --config           edit the container's settings.json and CLAUDE.md
   claude-docker --status           engine, image, and sessions; changes nothing
   claude-docker --clean            remove built images and the config volume
 
@@ -74,6 +84,7 @@ interface Args {
   task?: string;
   status: boolean;
   clean: boolean;
+  config: boolean;
   start: boolean;
   rebuild: boolean;
   shell: boolean;
@@ -92,6 +103,7 @@ function parseArgs(argv: string[]): Args {
   const args: Args = {
     status: false,
     clean: false,
+    config: false,
     start: true,
     rebuild: false,
     shell: false,
@@ -110,6 +122,7 @@ function parseArgs(argv: string[]): Args {
       break;
     }
     if (arg === "--status") args.status = true;
+    else if (arg === "--config") args.config = true;
     else if (arg === "--clean") args.clean = true;
     else if (arg === "--no-start") args.start = false;
     else if (arg === "--rebuild") args.rebuild = true;
@@ -170,6 +183,14 @@ async function status(args: Args): Promise<void> {
     // Reported as missing; --status never creates anything.
   }
   console.log(`  ssh key  ${key} ${keyState}`);
+  console.log(
+    `  config   ${SETTINGS_FILE} ` +
+      (existsSync(SETTINGS_FILE) ? pc.green("present") : pc.dim("not yet written")),
+  );
+  console.log(
+    `           ${MEMORY_FILE} ` +
+      (existsSync(MEMORY_FILE) ? pc.green("present") : pc.dim("not yet written")),
+  );
 
   const sessions = listSessions();
   console.log(`\n  ${pc.bold("Sessions")}\n`);
@@ -182,6 +203,35 @@ async function status(args: Args): Promise<void> {
     }
   }
   console.log();
+}
+
+/**
+ * Open the container's global config for editing.
+ *
+ * Both files live on the host and are mounted into the container, so this is an
+ * ordinary editor on ordinary files rather than an exec into a running
+ * container. `code` is preferred because it opens both at once and returns
+ * immediately; anything else falls back to $EDITOR, opened one at a time.
+ */
+async function config(): Promise<void> {
+  ensureConfigFiles();
+  const files = [SETTINGS_FILE, MEMORY_FILE];
+
+  if (which("code")) {
+    await run("code", files);
+    console.log(`Opened in VS Code:\n  ${files.join("\n  ")}`);
+    return;
+  }
+
+  const editor = process.env.VISUAL ?? process.env.EDITOR;
+  if (!editor) {
+    console.log(
+      `Neither \`code\` nor $EDITOR is available. Edit these directly:\n\n` +
+        `  ${files.join("\n  ")}\n`,
+    );
+    return;
+  }
+  for (const file of files) await run(editor, [file]);
 }
 
 async function clean(): Promise<void> {
@@ -204,6 +254,7 @@ async function clean(): Promise<void> {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
+  if (args.config) return config();
   if (args.status) return status(args);
   if (args.clean) return clean();
 
@@ -229,6 +280,10 @@ async function main(): Promise<void> {
   const tag = imageTag();
   if (args.rebuild || !imageExists(tag)) await buildImage(tag);
   ensureConfigVolume();
+  ensureConfigFiles();
+
+  // Read after seeding, so a first run sees the file that was just written.
+  const sandbox = sandboxEnabled();
 
   console.error(
     pc.dim(
@@ -244,6 +299,14 @@ async function main(): Promise<void> {
       ),
     );
   }
+  if (sandbox) {
+    console.error(
+      pc.dim(
+        `[claude-docker] sandbox on — running with seccomp=unconfined so` +
+          ` bubblewrap can start. Egress follows sandbox.network in settings.json.`,
+      ),
+    );
+  }
 
   const code = await dockerInherit(
     runArgs({
@@ -254,6 +317,7 @@ async function main(): Promise<void> {
       gitEmail: args.gitEmail,
       remoteControl: args.remoteControl,
       bypassPermissions: args.bypassPermissions,
+      sandbox,
       shell: args.shell,
       passthrough: args.passthrough,
     }),

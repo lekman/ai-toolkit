@@ -9,17 +9,11 @@
     ],
     "ask": [
       "Edit(commitlint.config.mjs)",
-      "Write(commitlint.config.mjs)",
       "Edit(.trunk/trunk.yaml)",
-      "Write(.trunk/trunk.yaml)",
       "Edit(.trunk/configs/**)",
-      "Write(.trunk/configs/**)",
       "Edit(.claude/settings.json)",
-      "Write(.claude/settings.json)",
       "Edit(.claude/settings.local.json)",
-      "Write(.claude/settings.local.json)",
-      "Edit(.claude/hooks/**)",
-      "Write(.claude/hooks/**)"
+      "Edit(.claude/hooks/**)"
     ]
   },
   "hooks": {

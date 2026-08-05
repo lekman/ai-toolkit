@@ -1,0 +1,6 @@
+{
+  "name": "wrap",
+  "description": "End-of-day and end-of-session wrap skills: reconcile the Obsidian dashboard and prune git at day end; extract learnings and write a session handover the next session picks up automatically",
+  "version": "0.1.0",
+  "hooks": "./hooks/hooks.json"
+}

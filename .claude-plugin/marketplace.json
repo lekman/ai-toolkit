@@ -43,6 +43,13 @@
       "tags": ["planning", "handoff", "dispatch", "briefs", "day-plan"]
     },
     {
+      "name": "wrap",
+      "source": "./plugins/wrap",
+      "description": "End-of-day and end-of-session wrap skills: reconcile the Obsidian dashboard and prune git at day end; extract learnings and write a session handover the next session picks up automatically",
+      "category": "workflow",
+      "tags": ["wrapup", "handover", "learnings", "dashboard", "workflow"]
+    },
+    {
       "name": "dependabot",
       "source": "./plugins/dependabot",
       "description": "Dependabot lifecycle skills: scan repositories for alert coverage and open PRs, then onboard a repo with alerts, grouped update config, and auto-merge on green",

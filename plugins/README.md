@@ -13,6 +13,7 @@ path, or a spec.
 /plugin install goal@ai-toolkit
 /plugin install obsidian@ai-toolkit
 /plugin install handoff@ai-toolkit
+/plugin install wrap@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -37,3 +38,9 @@ Then invoke a skill, for example `/git:commit`.
   fresh Claude Code session can execute without the planning conversation. The
   operating model is described in
   [practices/planning-handoff.md](../practices/planning-handoff.md).
+- **wrap** — [day](wrap/skills/day/SKILL.md) /
+  [session](wrap/skills/session/SKILL.md): close the working day (dashboard
+  reconcile, rollover, archive, git prune, day report) and close a long session
+  by writing a `.tmp/session-handover.md` — with learning recommendations the
+  next session judges — injected automatically at session start by the
+  plugin's hook. See [wrap/README.md](wrap/README.md).

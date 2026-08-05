@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f .tmp/session-handover.md ]; then echo 'A handover from the previous session exists. Read it now and follow its \"Next session\" instructions before anything else:'; cat .tmp/session-handover.md; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

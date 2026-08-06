@@ -47,8 +47,12 @@ Each recommendation needs: the behaviour, the signal from this session
 
 ## Step 3 — Write the handover file
 
-Overwrite `.tmp/session-handover.md` (create `.tmp/` if needed; verify `.tmp/`
-is gitignored and warn if not). Use exactly this template:
+Write `.tmp/session-handover.md` (create `.tmp/` if needed; verify `.tmp/` is
+gitignored and warn if not). The file is one-shot: the SessionStart hook
+injects it into the next session and immediately renames it to
+`session-handover-<timestamp>.md`, so a fresh wrap normally finds no file to
+overwrite — archived copies stay behind for manual replay. Use exactly this
+template:
 
 ```markdown
 # Session handover
@@ -97,7 +101,11 @@ You are the next agent. Start by:
 
 Report to the user in two or three lines: handover written, how many
 recommendations it carries, and that they can now start a fresh session — the
-SessionStart hook will inject the handover automatically.
+SessionStart hook injects the handover automatically and archives it as
+`session-handover-<timestamp>.md` so it is processed exactly once.
+
+If `.tmp/` has archived handovers older than 30 days, mention they can be
+deleted (do not delete them unasked).
 
 If the dashboard likely has completions to tick, suggest `/obsidian:wrapup`
 (do not run it unasked).
@@ -106,6 +114,7 @@ If the dashboard likely has completions to tick, suggest `/obsidian:wrapup`
 
 - Never write to `.claude/rules/`, skills, or memory from this skill — defer
   every codification decision to the next session.
-- Overwrite the handover file; do not append to an old one.
+- Write a fresh handover file; never append to or edit an archived
+  `session-handover-<timestamp>.md`.
 - Keep the summary and carry-overs short enough that injecting the file at
   session start costs little context.

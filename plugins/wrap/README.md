@@ -23,6 +23,12 @@ in that repo. The file ends with a "Next session" contract telling the fresh
 agent to pick up carry-overs and judge the recommendations first. No global
 settings edit needed — installing the plugin wires it.
 
+Pickup is one-shot: right after injecting the file, the hook renames it to
+`.tmp/session-handover-<timestamp>.md`. A handover is therefore processed
+exactly once, but never lost — if the session that consumed it fails, rename
+the archived copy back to `session-handover.md` and it replays on the next
+start.
+
 Keep `.tmp/` gitignored: the handover is per-machine working state, not code.
 
 ## Client detection

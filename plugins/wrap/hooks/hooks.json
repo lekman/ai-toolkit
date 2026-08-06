@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .tmp/session-handover.md ]; then echo 'A handover from the previous session exists. Read it now and follow its \"Next session\" instructions before anything else:'; cat .tmp/session-handover.md; fi"
+            "command": "if [ -f .tmp/session-handover.md ]; then echo 'A handover from the previous session exists. Read it now and follow its \"Next session\" instructions before anything else:'; cat .tmp/session-handover.md; TS=$(date +%Y%m%d-%H%M%S); mv .tmp/session-handover.md \".tmp/session-handover-$TS.md\"; echo \"(Handover consumed and archived to .tmp/session-handover-$TS.md — rename it back to session-handover.md to replay it.)\"; fi"
           }
         ]
       }

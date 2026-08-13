@@ -6,37 +6,37 @@ allowed-tools: Bash, Bash(gh *), Bash(git *), Read, Write
 user-invocable: true
 ---
 
-# Dependabot onboard: $ARGUMENTS
+# Dependabot Onboard: $ARGUMENTS
 
 Bring one repository under the Dependabot flow: alerts on, grouped update
 config in place, and safe updates set to auto-merge once checks pass. This
-skill writes files and changes repo settings — confirm the target before
+skill writes files and changes repo settings; confirm the target before
 running.
 
 ## Inputs
 
-- `repo-path-or-slug` — a local checkout path, or an `owner/name` slug to clone
+- `repo-path-or-slug`: a local checkout path, or an `owner/name` slug to clone
   first. Default: the current directory.
-- `--dry-run` — print every action, change nothing.
-- `--no-auto-merge` — install alerts + `dependabot.yml` only; skip the workflow.
-- `--pr` — deliver the file changes on a branch and open a PR instead of leaving
+- `--dry-run`: print every action, change nothing.
+- `--no-auto-merge`: install alerts + `dependabot.yml` only; skip the workflow.
+- `--pr`: deliver the file changes on a branch and open a PR instead of leaving
   them staged on the current branch. Recommended when `main` is protected.
 
-## What the flow installs
+## What the Flow Installs
 
 1. Dependabot **vulnerability alerts** (repo setting).
 2. **Automated security fixes** (repo setting).
-3. **Native auto-merge** (`allow_auto_merge` repo setting) — so the workflow can
+3. **Native auto-merge** (`allow_auto_merge` repo setting), so the workflow can
    enable auto-merge on PRs.
-4. `.github/dependabot.yml` — weekly, grouped updates (see `assets/`).
-5. `.github/workflows/dependabot-auto-merge.yml` — enables native auto-merge for
+4. `.github/dependabot.yml`: weekly, grouped updates (see `assets/`).
+5. `.github/workflows/dependabot-auto-merge.yml`: enables native auto-merge for
    github-actions and non-major bumps; holds majors for review.
 
 The auto-merge workflow only completes a merge after required checks are green.
 The `allow_auto_merge` repo setting it depends on is enabled by the bootstrap
-script via `PATCH /repos/{owner}/{repo}` — no manual settings step.
+script via `PATCH /repos/{owner}/{repo}`: no manual settings step.
 
-## Step 1 — run the bootstrap
+## Step 1: Run the Bootstrap
 
 The plugin ships a script that does settings + file writes idempotently (it
 never overwrites existing config):
@@ -52,7 +52,7 @@ SKILL.md: `plugins/dependabot/assets/bootstrap.sh`.
 For `--no-auto-merge`, run the script, then delete the workflow file it wrote
 before committing.
 
-## Step 2 — deliver the changes
+## Step 2: Deliver the Changes
 
 - Default: leave the new files staged; show the operator `git status` and the
   diff, and let them commit.
@@ -60,7 +60,7 @@ before committing.
   conventional message (`chore(dependabot): enable alerts, grouped updates,
   auto-merge`), push, and open a PR. Follow the account's PR conventions.
 
-## Step 3 — verify
+## Step 3: Verify
 
 Confirm the settings took:
 
@@ -71,7 +71,7 @@ gh api "repos/$REPO" --jq '.allow_auto_merge'
 ```
 
 Report: settings state and which files were written vs skipped (pre-existing).
-No manual settings step remains — alerts, security fixes, and auto-merge are all
+No manual settings step remains: alerts, security fixes, and auto-merge are all
 set by the script.
 
 ## Notes

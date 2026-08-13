@@ -4,7 +4,7 @@ PR conventions:
 - Title is a Conventional Commit subject: type(scope): description. No ticket prefix.
 - Keep it short. Reviewers skim. Long prose gets skipped.
 - Link the work item by id and the design/plan doc by path. The work item
-  management system may be Jira, Monday.com, GitHub Issues, or none — name it
+  management system may be Jira, Monday.com, GitHub Issues, or none; name it
   the way this repo names it, and if there is none, link the plan doc instead.
 - Replace the italic guidance below; delete any section that does not apply.
 -->
@@ -29,7 +29,7 @@ Closes [PROJ-xxx]
 <!-- Link the design/plan doc, e.g.: Design: docs/design/<name>.md -->
 <!-- If this PR is stacked, add a line: Stacked on #N -->
 
-## Change type
+## Change Type
 
 <!-- Tick all that apply. -->
 
@@ -52,25 +52,25 @@ Closes [PROJ-xxx]
 1.
 
 <!--
-REGULATED CLIENTS ONLY — delete this whole section when the client this repo
+REGULATED CLIENTS ONLY: delete this whole section when the client this repo
 belongs to has no entry in the `regulatory` map of ~/.claude/obsidian.json.
 An unregulated repo carrying an unanswered risk question reads as an
 unfinished PR, not as diligence.
 -->
 
-## Regulatory impact
+## Regulatory Impact
 
 **Does this change affect a regulated process or the data it produces?**
 
 - [ ] No
-- [ ] Yes — complete the risk assessment below
+- [ ] Yes: complete the risk assessment below
 
 _Apply this repository's regulated / not-regulated label to match the answer;
 the label is what the reviewer and any audit read, not this checkbox. Changes
-that cannot reach the runtime artefact — documentation, agent configuration —
+that cannot reach the runtime artefact (documentation, agent configuration)
 are normally out of scope, but say so rather than leaving it implied._
 
-### Risk assessment _(required when the answer is Yes)_
+### Risk Assessment _(Required When the Answer Is Yes)_
 
 **What could go wrong?**
 
@@ -82,7 +82,7 @@ are normally out of scope, but say so rather than leaving it implied._
 
 <!-- What control keeps the risk acceptable. -->
 
-## Testing evidence
+## Testing Evidence
 
 <!--
 One row per evidence base in scope.
@@ -95,7 +95,7 @@ Replace the example rows with this repo's own commands.
 | _behaviour under test_ | Unit                | src/    | 🟢     | `<test command>` pass  |
 | _formatting + hygiene_ | Static              | repo    | 🟢     | `<lint command>` clean |
 
-### Deferred verification
+### Deferred Verification
 
 <!--
 Delete unless a row above is 🟡 or ⚪ because its proof depends on future work:
@@ -106,7 +106,7 @@ Per deferred row: what is proven now, what is still to come, and where it lands
 (the follow-on PR, ticket, or plan row that carries it).
 -->
 
-## Intended use verification
+## Intended Use Verification
 
 <!--
 Delete for trivial changes. Add when step-by-step manual verification helps a
@@ -114,7 +114,7 @@ reviewer confirm the change does what it intends: prerequisites, the exact
 steps, and the expected observation at each step.
 -->
 
-## Validations passed
+## Validations Passed
 
 <!-- Completed checks, not tasks for the reviewer. -->
 

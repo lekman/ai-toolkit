@@ -8,16 +8,16 @@ directory), so no client name is ever written into a skill.
 Invoke as `/obsidian:dashboard`, `/obsidian:add`, `/obsidian:tick`,
 `/obsidian:today`, `/obsidian:wrapup`, `/obsidian:sync-todo`, `/obsidian:focus`.
 
-## Privacy model: three tiers, only one is shareable
+## Privacy Model: Three Tiers, Only One Is Shareable
 
 This plugin is built so that client identities never leave your machine:
 
-1. **Logic (these skills)** — generic. They read a config file and resolve the
+1. **Logic (these skills)**: generic. They read a config file and resolve the
    active client at runtime. Safe to share; this is what lives here.
-2. **Config (`~/.claude/obsidian.json`)** — your private map of repository path to
+2. **Config (`~/.claude/obsidian.json`)**: your private map of repository path to
    client name, plus the vault location and Jira host. This is the discovery
    source. **Never commit it.** It is not part of this plugin.
-3. **Vault (your Obsidian notes)** — the actual dashboard and client data. Reached
+3. **Vault (your Obsidian notes)**: the actual dashboard and client data. Reached
    through the filesystem, never through git.
 
 The skills only ever name a client that they read from tier 2 at runtime. Grep
@@ -59,11 +59,11 @@ discovery idea applied to compliance: the standard is a property of the client,
 recorded once here, so no repository has to state which regime it falls under.
 A client with no entry is unregulated. `/git:pr` reads it to decide whether the
 default pull request template's **Regulatory impact** section applies, and
-deletes that section outright when the list is empty — an unregulated repo
+deletes that section outright when the list is empty: an unregulated repo
 carrying an unanswered risk question reads as an unfinished PR, not as
 diligence.
 
-## Using it on an isolated agent
+## Using It on an Isolated Agent
 
 If you run an isolated per-client agent (for example a dedicated macOS user on a
 separate machine), sharing these skills through git gives the agent the _logic_.
@@ -82,7 +82,7 @@ It still needs two things, and **neither goes through git**:
 The rule of thumb: the skill is generic and public; the config is one client and
 private; the vault is data and never in git.
 
-### In a container
+### In a Container
 
 [`claude-docker`](../../packages/claude-docker/README.md) does the client-scoped
 half automatically. Point it at your vault once, using the path already in your
@@ -118,15 +118,15 @@ second config: every other client's name, repo path, and tracker settings stay o
 the host.
 
 The vault mount is still the whole vault. Read-only stops the agent changing
-notes, not reading them — see the boundary notes in the
+notes, not reading them. See the boundary notes in the
 [claude-docker README](../../packages/claude-docker/README.md).
 
 ## Skills
 
-- **dashboard** — open `Dashboard.md` and report the active client.
-- **add** — append `- [ ] <client>: <text>` under today's heading.
-- **tick** — mark a task done by substring match, scoped to the active client.
-- **today** — list today's open tasks, filtered to the active client.
-- **wrapup** — end-of-session multi-select tick across all clients.
-- **sync-todo** — reconcile a repo's `.tmp/TODO.md` into the dashboard.
-- **focus** — load the most recently edited vault note as working context.
+- **dashboard**: open `Dashboard.md` and report the active client.
+- **add**: append `- [ ] <client>: <text>` under today's heading.
+- **tick**: mark a task done by substring match, scoped to the active client.
+- **today**: list today's open tasks, filtered to the active client.
+- **wrapup**: end-of-session multi-select tick across all clients.
+- **sync-todo**: reconcile a repo's `.tmp/TODO.md` into the dashboard.
+- **focus**: load the most recently edited vault note as working context.

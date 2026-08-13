@@ -4,7 +4,7 @@ description: Execute an approved goal autonomously. Read the Test Plan (Definiti
 user-invocable: true
 ---
 
-# Goal Execute (the execute + report phases)
+# Goal Execute (the Execute + Report Phases)
 
 Drive an already-approved goal to a **validated** result, autonomously. The
 Definition of Done is the `## Test Plan` in the initiative's vault subpage,
@@ -13,14 +13,14 @@ written and approved via [`/planner:goal`](../goal/SKILL.md).
 The subpage is `<plansDir>/<repo-name>/<kind>/<key>-<slug>.md`; resolve
 `plansDir` with `bun "<skill-base-dir>/../../scripts/resolve-context.ts"`, the
 same script `/planner:plan` and `/planner:goal` use. The plan lives in the
-vault, never in the repo — this skill reads and updates it there while its code
+vault, never in the repo: this skill reads and updates it there while its code
 changes land in the repo.
 
 If there is no approved Test Plan for this work, **stop and tell the operator
 to run `/planner:goal` first.** This skill executes a plan; it does not invent
 one.
 
-## Operating principle: agentic independence
+## Operating Principle: Agentic Independence
 
 The division of labour is fixed:
 
@@ -44,7 +44,7 @@ The skill runs **autonomously and iteratively**, stopping only when:
 When blocked, stop, record the blocker in the Test Plan, and surface it. Do
 not loop forever; do not silently give up.
 
-## Quality is layered, and the last layer runs against the deployment
+## Quality Is Layered, and the Last Layer Runs Against the Deployment
 
 A result is _validated_ only when it has passed every guard, in order:
 
@@ -69,14 +69,14 @@ different packages at once); fan out fixes for unrelated failures. Keep the
 Test Plan and the commit history single-threaded (the main agent owns them) so
 the record stays coherent.
 
-## Execute phase
+## Execute Phase
 
 Loop until validated or blocked. Each iteration:
 
 1. Pick the lowest unmet row in the Test Plan. Work base-up: static before
    unit before integration before deployed.
 2. Run that evidence base.
-3. Passes: mark the row `green`, record the evidence artifact (the command +
+3. Passes: mark the row `green`, record the evidence artefact (the command +
    observed result, or the path to the evidence file), continue.
 4. Fails: fix the cause (smallest correct change), re-run. A fix may add or
    change rows. Keep the Test Plan current.
@@ -94,7 +94,7 @@ Rules:
   while the deploy is gated), say so in the Status (`blocked`) with the
   reason.
 
-## Report phase
+## Report Phase
 
 Only when every Test Plan row is `green`:
 
@@ -109,7 +109,7 @@ Only when every Test Plan row is `green`:
    Done, and anything left for the human (for example intended-use UI testing
    the operator owns).
 
-## Separation of duties
+## Separation of Duties
 
 This skill's goal is to complete the work. Verifying that the goal plan was
 met belongs to a different identity: a reviewer account (for example a
@@ -118,7 +118,7 @@ scoped to, and steers the executing agent back when a CI, security, or QA
 issue is found. The reviewer cannot change its own policies or rule systems.
 Two agents, two goals, and the plan document is the contract between them.
 
-## Failure modes
+## Failure Modes
 
 - **No approved Test Plan**: stop; tell the operator to run `/planner:goal`.
 - **No ticket resolvable**: ask for the ticket reference; do not invent one.

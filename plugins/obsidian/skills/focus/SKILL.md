@@ -11,7 +11,7 @@ allowed-tools: Read, Edit, Write, Glob, Bash
 
 Load the most recently modified note in the Obsidian vault and make it the working context.
 
-## Step 1 — Find the file
+## Step 1: Find the File
 
 Resolve the vault from config, then get the most recently modified `.md` file, excluding system folders:
 
@@ -29,11 +29,11 @@ find "$VAULT" \
   | head -1
 ```
 
-## Step 2 — Read the file
+## Step 2: Read the File
 
 Read the full content of the file found above.
 
-## Step 3 — Report context to the user
+## Step 3: Report Context to the User
 
 Tell the user in one line:
 
@@ -43,7 +43,7 @@ Tell the user in one line:
 
 Example: `Focused on: Clients/Acme/2026-03-02 Architecture Review.md (meeting · Acme · post-meeting)`
 
-## Step 4 — Wait for instruction
+## Step 4: Wait for Instruction
 
 Ask the user: "What would you like to do with this note?"
 
@@ -56,4 +56,4 @@ Then act on whatever they say, working directly on that file. Common tasks:
 - Convert to a proper meeting note (run `/meeting-notes` logic inline)
 - Add reference links or wikilinks to related notes in the vault
 
-If the user passes arguments (`$ARGUMENTS`), treat them as the immediate instruction — skip asking and act on it directly. Example: `/obsidian:focus add action items` should load the file and immediately extract action items.
+If the user passes arguments (`$ARGUMENTS`), treat them as the immediate instruction: skip asking and act on it directly. Example: `/obsidian:focus add action items` should load the file and immediately extract action items.

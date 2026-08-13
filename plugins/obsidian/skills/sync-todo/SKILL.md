@@ -9,17 +9,17 @@ allowed-tools: Read, Edit, Bash, AskUserQuestion
 
 Reconcile the active repo's `.tmp/TODO.md` into the Obsidian `Dashboard.md`'s `## Focus` section. Triggered by the `obsidian-todo-sync` rule after edits to `.tmp/TODO.md`, or invoked manually.
 
-## Step 1 — Resolve config and active client
+## Step 1: Resolve Config and Active Client
 
 Read `~/.claude/obsidian.json`. Resolve vault, dashboard path, and active client from cwd (longest path-prefix match against `clients`, fall back to `default_client`).
 
-## Step 2 — Pre-checks
+## Step 2: Pre-Checks
 
 Exit 0 silently if `$(pwd)/.tmp/TODO.md` does not exist (this skill is a no-op in repos that don't use the TODO tracker).
 
-Refuse if any `Dashboard <n>.md` conflict copy exists in the vault — surface the conflict to the user instead of writing.
+Refuse if any `Dashboard <n>.md` conflict copy exists in the vault: surface the conflict to the user instead of writing.
 
-## Step 3 — Hash short-circuit
+## Step 3: Hash Short-Circuit
 
 Compute a hash of the relevant TODO.md sections (`## In Progress`, `## Backlog`, `## Done`) and the dashboard's `## Focus` section. Compare against `~/.claude/obsidian-sync.cache` keyed by repo path. If unchanged, exit 0 silently.
 
@@ -32,15 +32,15 @@ PREV=$(jq -r --arg k "$KEY" '.[$k] // ""' "$CACHE" 2>/dev/null)
 [ "$HASH" = "$PREV" ] && exit 0
 ```
 
-## Step 4 — Parse TODO.md rows
+## Step 4: Parse TODO.md Rows
 
 Extract rows from `## In Progress`, `## Backlog`, and `## Done` sections. For each row capture:
 
 - Section (`in-progress` | `backlog` | `done`)
 - Jira-key matches: regex `[A-Z][A-Z0-9]+-\d+`
-- Title text (the first non-link, non-status cell — usually the row's leading description)
+- Title text (the first non-link, non-status cell, usually the row's leading description)
 
-## Step 5 — Match against dashboard
+## Step 5: Match Against Dashboard
 
 Read `Dashboard.md`. Inside `## Focus` only:
 
@@ -52,17 +52,17 @@ For each TODO row:
   - **In `## In Progress`** + matching closed checkbox → no action (already done; don't reopen).
 - **No Jira key**: substring match on the row title against open dashboard checkbox text.
   - Exactly one match in Done-section: tick.
-  - Zero or multiple matches: log "no/ambiguous match for `<title>` — skipped" and skip. Do not guess.
+  - Zero or multiple matches: log "no/ambiguous match for `<title>`, skipped" and skip. Do not guess.
 
-## Step 6 — Locate or create today's heading
+## Step 6: Locate or Create Today's Heading
 
 Today's heading: `date "+%A %-d %B"` (e.g. `Saturday 26 April`). Match `### <heading>` or `## <heading>` inside `## Focus`. If missing, insert `### <heading>` immediately after `## Focus` (and any intro paragraph).
 
-## Step 7 — Apply edits
+## Step 7: Apply Edits
 
 Use the `Edit` tool for ticks (one edit per `- [ ]` → `- [x]` line). Use a single multi-line `Edit` for inserts under today's heading.
 
-## Step 8 — Update cache
+## Step 8: Update Cache
 
 Write the new hash back to `~/.claude/obsidian-sync.cache`:
 
@@ -72,7 +72,7 @@ jq --arg k "$KEY" --arg h "$HASH" '. + {($k): $h}' "$CACHE" 2>/dev/null > "$TMP"
 mv "$TMP" "$CACHE"
 ```
 
-## Step 9 — Report
+## Step 9: Report
 
 One line per change:
 
@@ -86,5 +86,5 @@ Silent on no-op (after the hash short-circuit, no further output).
 
 - Touch only `## Focus` in `Dashboard.md`. Never touch `## Initiatives`, `#### Other active work`, or any other section.
 - Never reopen a closed checkbox (`- [x]` → `- [ ]`).
-- Never delete a checkbox even if the matching TODO row was removed — the user may have purged it deliberately; let them remove dashboard entries via Obsidian.
+- Never delete a checkbox even if the matching TODO row was removed: the user may have purged it deliberately; let them remove dashboard entries via Obsidian.
 - Do not auto-edit TODO.md.

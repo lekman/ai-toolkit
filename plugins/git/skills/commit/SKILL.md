@@ -8,7 +8,7 @@ user-invocable: true
 
 # Commit Command: $ARGUMENTS
 
-Intelligently groups related files and creates multiple focused commits with generated conventional commit messages, comprehensive validation, and strict hook compliance.
+Intelligently groups related files and creates multiple focused commits with generated conventional commit messages, validation, and strict hook compliance.
 
 **IMPORTANT - Report Location Pattern**: This command generates a commit report. Follow this pattern:
 
@@ -22,7 +22,7 @@ Intelligently groups related files and creates multiple focused commits with gen
 - **Multiple commits** - Creates separate commits for unrelated changes
 - **Strict validation** - Respects all commit hooks, validates file readiness
 - **TODO sync** - Moves matching tasks in `.tmp/TODO.md` to Done after commits
-- **Reporting** - Detailed report in `.commit.report.local.md`
+- **Reporting** - Report written to `.commit.report.local.md`
 
 ## Quick Examples
 
@@ -231,7 +231,7 @@ return allFiles.filter(hasUncommittedChanges);
 - Temporary files (`.tmp/*`, `*.log`)
 - Files outside repository root
 
-### Quick Mode vs Standard Mode
+### Quick Mode Versus Standard Mode
 
 | Aspect         | Quick Mode        | Standard Mode            |
 | -------------- | ----------------- | ------------------------ |
@@ -244,7 +244,7 @@ return allFiles.filter(hasUncommittedChanges);
 
 **Important**: Quick mode still respects all git hooks and conventional commit format. The only simplification is in file selection and grouping logic.
 
-## Phase 1: Analyze Git State
+## Phase 1: Analyse Git State
 
 ### 1.1 Verify Git Repository
 
@@ -471,7 +471,7 @@ fi
 
 **CRITICAL**: Never commit 40+ files in one commit. Group changes by function and create multiple focused commits.
 
-### 3.1 Analyze Files and Match to Groups
+### 3.1 Analyse Files and Match to Groups
 
 ```bash
 # For each ready file, determine which group it belongs to
@@ -938,7 +938,7 @@ Read `.tmp/TODO.md` and parse the "In Progress" and "Backlog" tables. For each c
 
 - Compare commit scope/description against task text (case-insensitive substring match)
 - Compare committed file paths against task notes (e.g., a task mentioning `planner-hook` matches files in `planner-hook-installer.ts`)
-- A match requires overlap in both topic and file area — do not match on generic words like "update" or "fix"
+- A match requires overlap in both topic and file area: do not match on generic words like "update" or "fix"
 
 ```bash
 TODO_FILE=".tmp/TODO.md"
@@ -976,7 +976,7 @@ For each matched task:
 
 **No false positives:**
 
-- Only move tasks with a clear match — when in doubt, leave the task unchanged
+- Only move tasks with a clear match; when in doubt, leave the task unchanged
 - Never delete or modify tasks that don't clearly match committed work
 
 ### 7.3 Write Changes
@@ -992,7 +992,7 @@ if [ ${#TODO_CHANGES[@]} -gt 0 ]; then
 fi
 ```
 
-**Do NOT commit the TODO.md changes** — they are gitignored personal tracking.
+**Do NOT commit the TODO.md changes**: they are gitignored personal tracking.
 
 ### 7.4 Update Plan Status
 
@@ -1015,14 +1015,14 @@ Plan: `~/.claude/plans/shiny-humming-floyd.md`
 
 **Status values:**
 
-- `"active"` — plan has work in progress (default if no status field)
-- `"partial"` — some tasks from this plan are done, others remain
-- `"done"` — all tasks referencing this plan are in the Done section
+- `"active"`: plan has work in progress (default if no status field)
+- `"partial"`: some tasks from this plan are done, others remain
+- `"done"`: all tasks referencing this plan are in the Done section
 
 **Logic:**
 
 1. For each TODO task moved to Done, extract the plan filename from its Notes
-2. Find the matching entry in `.tmp/claude.plans.json` by filename — the `id` field is the filename without `.md` extension (e.g., `floofy-forging-rabin` matches `~/.claude/plans/floofy-forging-rabin.md`)
+2. Find the matching entry in `.tmp/claude.plans.json` by filename: the `id` field is the filename without `.md` extension (e.g., `floofy-forging-rabin` matches `~/.claude/plans/floofy-forging-rabin.md`)
 3. Check if any remaining In Progress or Backlog tasks still reference the same plan
 4. If no remaining tasks reference the plan → set `status: "done"`
 5. If some tasks remain → set `status: "partial"`
@@ -1113,7 +1113,7 @@ fi
 
 ### 8.3 Handle Pre-Push Failures
 
-If hooks fail, **you must attempt to fix the issues** before presenting the summary. The user will be blocked from pushing until these pass — waiting for them to ask for help wastes time.
+If hooks fail, **you must attempt to fix the issues** before presenting the summary. The user will be blocked from pushing until these pass; waiting for them to ask for help wastes time.
 
 ```bash
 if [ "$PRE_PUSH_FAILED" = "true" ]; then
@@ -1122,7 +1122,7 @@ if [ "$PRE_PUSH_FAILED" = "true" ]; then
 fi
 ```
 
-**Behavior on failure — you MUST follow this sequence:**
+**Behaviour on failure. You MUST follow this sequence:**
 
 1. **Diagnose**: Parse the hook output to identify specific failures (type errors, test failures, coverage gaps)
 2. **Fix**: Attempt to fix each failure directly:
@@ -1132,10 +1132,10 @@ fi
    - **Lint errors**: Run the fixer (`bun run fix` or equivalent)
    - **Toolchain crashes** (e.g., turbo panic): Fall back to running the underlying commands directly (`bun run typecheck`, `bun test --coverage`)
 3. **Re-run**: After fixes, re-run the pre-push hook to confirm it passes
-4. **Commit fixes**: If source files changed, create a new fix commit (do NOT amend — follow the commit skill's own rules). If only tests changed, create a `test:` commit
+4. **Commit fixes**: If source files changed, create a new fix commit (do NOT amend; follow the commit skill's own rules). If only tests changed, create a `test:` commit
 5. **Report**: Include what was broken and what was fixed in the Phase 10 summary
 
-**Do NOT treat failures as "pre-existing" or "unrelated"** — if the hook fails, the user cannot push. Fix it regardless of when the issue was introduced.
+**Do NOT treat failures as "pre-existing" or "unrelated"**: if the hook fails, the user cannot push. Fix it regardless of when the issue was introduced.
 
 **If you cannot fix a failure after a reasonable attempt:**
 
@@ -1235,7 +1235,7 @@ fi
 
 ## Phase 10: Present Results
 
-Output the structured summary below. No opening narration, no closing suggestions — facts only.
+Output the structured summary below. No opening narration, no closing suggestions: facts only.
 
 ```text
 Commits:

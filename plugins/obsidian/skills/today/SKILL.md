@@ -9,19 +9,19 @@ allowed-tools: Read, Bash
 
 List open `- [ ]` items under today's heading in `## Focus`. Default filter: active client (resolved from cwd). Pass `--all` to show every client's items.
 
-## Step 1 — Resolve config and active client
+## Step 1: Resolve Config and Active Client
 
-Same as the `dashboard` skill — read `~/.claude/obsidian.json`, resolve vault path, resolve active client by walking cwd against the `clients` map.
+Same as the `dashboard` skill: read `~/.claude/obsidian.json`, resolve vault path, resolve active client by walking cwd against the `clients` map.
 
 `--client X` overrides the cwd-resolved client.
 
-## Step 2 — Find today's heading
+## Step 2: Find Today's Heading
 
-Today's heading uses `date "+%A %-d %B"` (e.g. `Saturday 26 April`). Match either `### <heading>` or `## <heading>` — both formats appear in the dashboard.
+Today's heading uses `date "+%A %-d %B"` (e.g. `Saturday 26 April`). Match either `### <heading>` or `## <heading>`: both formats appear in the dashboard.
 
 If today's heading does not exist, report "no items for today" and exit 0.
 
-## Step 3 — List items
+## Step 3: List Items
 
 Extract lines between today's heading and the next `##`-or-`###` heading. Filter for `- [ ]` items.
 

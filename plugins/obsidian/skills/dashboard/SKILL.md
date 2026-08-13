@@ -9,7 +9,7 @@ allowed-tools: Read, Bash
 
 Pin `Dashboard.md` as the working context, similar to `/obsidian:focus` but always the dashboard.
 
-## Step 1 — Resolve config
+## Step 1: Resolve Config
 
 ```bash
 CONFIG=~/.claude/obsidian.json
@@ -17,7 +17,7 @@ VAULT=$(jq -r .vault "$CONFIG")
 DASHBOARD="$VAULT/$(jq -r .dashboard "$CONFIG")"
 ```
 
-## Step 2 — Resolve active client from cwd
+## Step 2: Resolve Active Client from `cwd`
 
 Walk up from `$(pwd)` and pick the longest path prefix in `clients`. Fall back to `default_client`.
 
@@ -32,7 +32,7 @@ ACTIVE=$(jq -r --arg cwd "$CWD" '
 
 The two-step pattern is intentional: jq's `// .default_client` fallback would evaluate the default against the array (after the pipe), not the root object, so the default lookup happens in a separate jq call.
 
-## Step 3 — Refuse on iCloud conflict
+## Step 3: Refuse on iCloud Conflict
 
 ```bash
 ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
@@ -41,11 +41,11 @@ ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
 }
 ```
 
-## Step 4 — Read the dashboard and report
+## Step 4: Read the Dashboard and Report
 
 Read `$DASHBOARD` with the Read tool, then report a one-line summary to the user:
 
 - Path and active client (e.g. `Dashboard.md — Active client: Acme`)
-- Today's open vs done counts under `## Focus` (count `- [ ]` and `- [x]` under the heading matching today's date — formats `### <Weekday> <day> <Month>` and `## <Weekday> <day> <Month>` both appear).
+- Today's open vs done counts under `## Focus` (count `- [ ]` and `- [x]` under the heading matching today's date: formats `### <Weekday> <day> <Month>` and `## <Weekday> <day> <Month>` both appear).
 
 Today's date format: use `date "+%A %-d %B"` (e.g. `Saturday 26 April`).

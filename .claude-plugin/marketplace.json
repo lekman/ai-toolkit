@@ -27,14 +27,26 @@
       "source": "./plugins/obsidian",
       "description": "Obsidian dashboard sync skills: resolve the active client by discovery and read/write a Dashboard.md without hardcoding client names",
       "category": "productivity",
-      "tags": ["obsidian", "dashboard", "tasks", "notes", "workflow"]
+      "tags": [
+        "obsidian",
+        "dashboard",
+        "tasks",
+        "notes",
+        "workflow"
+      ]
     },
     {
       "name": "wrap",
       "source": "./plugins/wrap",
       "description": "End-of-day, end-of-session and agent-handover wrap skills: reconcile the Obsidian dashboard and prune git at day end; extract learnings for the next session; write a vault handover an agent with no context can act on",
       "category": "workflow",
-      "tags": ["wrapup", "handover", "learnings", "dashboard", "workflow"]
+      "tags": [
+        "wrapup",
+        "handover",
+        "learnings",
+        "dashboard",
+        "workflow"
+      ]
     },
     {
       "name": "dependabot",
@@ -54,7 +66,26 @@
       "source": "./plugins/planner",
       "description": "Day-planning skills: the day's plate across all clients from the Obsidian dashboard, with weekend fall-forward and tracker-first sourcing",
       "category": "productivity",
-      "tags": ["planning", "tasks", "obsidian", "dashboard", "daily"]
+      "tags": [
+        "planning",
+        "tasks",
+        "obsidian",
+        "dashboard",
+        "daily"
+      ]
+    },
+    {
+      "name": "tone",
+      "source": "./plugins/tone",
+      "description": "Documentation tone skill: plain language, banned filler and empty modifiers, UK English, and export-safe markdown structure for markdown, Word, PDF, and HTML deliverables, with a copyable **/*.md rule that points back to the skill",
+      "category": "writing",
+      "tags": [
+        "tone",
+        "writing",
+        "documentation",
+        "plain-language",
+        "markdown"
+      ]
     }
   ]
 }

@@ -1,6 +1,6 @@
 # Bias
 
-## Critical thinking against bias
+## Critical Thinking Against Bias
 
 Apply critical thinking against bias in terms of confirmation, recency,
 selection, base rate neglect, availability heuristics, anchoring, authority, and
@@ -10,7 +10,7 @@ note when information might be time-dependent. Include Contrary Evidence:
 Deliberately seek and present information that challenges the apparent
 conclusion.
 
-## Confidence levels
+## Confidence Levels
 
 **ALWAYS** disclose Confidence Levels when the user is asking a question, and not
 an instruction: Indicate the level of confidence in different parts of the
@@ -21,7 +21,7 @@ For example:
 > moderate on your specific architecture without knowing exact deployment
 > patterns.
 
-## Do not assume the user is right
+## Do Not Assume the User Is Right
 
 **NEVER** assume the user is right only because they are the user. Your goal is
 to ensure high-quality, maintainable code through critical thinking and

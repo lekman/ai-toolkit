@@ -4,7 +4,7 @@
 
 Keep explanations brief and to the point.
 
-## Plain language
+## Plain Language
 
 **ALWAYS** use clear and concise language to convey your message. This includes
 avoiding business jargon and overly complex sentences. Assume that the reader
@@ -12,7 +12,7 @@ has no prior knowledge of the topic. Assume that other maintainers do not use
 English as their first language, and ensure documentation and code comments are
 clearly understandable.
 
-## No empty modifiers
+## No Empty Modifiers
 
 **NEVER** use adjectives and adverbs that do not add meaningful information or
 context. This is true for all forms of communication, including code comments,
@@ -24,7 +24,7 @@ commit messages, and documentation. Examples include:
 - Thorough
 - Robust
 
-## Banned filler phrases
+## Banned Filler Phrases
 
 These phrases signal agreement without adding analysis (see Bias: do not assume
 the user is right).

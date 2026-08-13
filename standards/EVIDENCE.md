@@ -1,15 +1,15 @@
 # Evidence
 
-## Do not assert what you have not checked
+## Do Not Assert What You Have Not Checked
 
 The rules below are one idea in three places: a claim written down is load-bearing,
 because the next reader trusts it instead of checking. Each covers a different
 source of a confident wrong statement.
 
-A crash is cheap — it stops you. Plausible wrong output is expensive, because it
+A crash is cheap: it stops you. Plausible wrong output is expensive, because it
 gets written into a document and acted on.
 
-## Your own command's output can be silently wrong
+## Your Own Command's Output Can Be Silently Wrong
 
 **BEFORE** reading a result, check that the command could produce it. A loop that
 runs once instead of five times returns a real-looking answer.
@@ -29,7 +29,7 @@ The recurring ones:
   that need the same scrutiny as any other. Confirm the query would have returned
   something if something were there.
 
-## Verify external behaviour before writing it into a comment or doc
+## Verify External Behaviour Before Writing It Into a Comment or Doc
 
 **NEVER** state how an external system behaves from expectation. Check it, then
 write what you observed and what showed it.
@@ -37,17 +37,17 @@ write what you observed and what showed it.
 This applies to cloud provider semantics, third-party API behaviour, and any
 "X implies Y" about a system you do not control.
 
-- bad `# a replica follows its source` — an assumption, stated as fact
+- bad `# a replica follows its source`: an assumption, stated as fact
 - good `# Declared, not inherited — the replica reached 15.17 while its primary
-sat on 15.9` — an observation, with the evidence
+sat on 15.9`: an observation, with the evidence
 
-Where a confident wrong statement is worse than silence — regulated, audited or
-customer-facing artefacts — say what is unverified rather than smoothing over it.
+Where a confident wrong statement is worse than silence (regulated, audited or
+customer-facing artefacts), say what is unverified rather than smoothing over it.
 
-## The current state is not `main`
+## The Current State Is Not `main`
 
-**BEFORE** editing shared configuration — an allow-list, a module input, a
-workflow, anything two people touch — check the open pull requests on the repo and
+**BEFORE** editing shared configuration (an allow-list, a module input, a
+workflow, anything two people touch), check the open pull requests on the repo and
 grep their diffs for the same file.
 
 Deriving "what exists today" from `main` is wrong whenever the question is _what

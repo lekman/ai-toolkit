@@ -4,7 +4,7 @@ How to work in this repo. Consumer documentation lives in each folder's
 `README.md`; anything that assumes you have the repo checked out belongs here or
 in a package's own `CONTRIBUTING.md`.
 
-## Where things go
+## Where Things Go
 
 The top level is flat and grouped by how each thing is consumed. [CLAUDE.md](../CLAUDE.md)
 is the navigation map; the short version:
@@ -31,10 +31,10 @@ Every folder carries its own `README.md`. Add one when you add a folder.
 The repo's own standards apply to its documentation, not only to the
 instructions it ships:
 
-- [standards/TONE.md](../standards/TONE.md) — plain language, no empty modifiers
+- [standards/TONE.md](../standards/TONE.md): plain language, no empty modifiers
   ("comprehensive", "robust", "seamless"), no filler agreement. Assume the reader
   does not have English as a first language.
-- [.claude/rules/markdown.md](../.claude/rules/markdown.md) — every link points
+- [.claude/rules/markdown.md](../.claude/rules/markdown.md): every link points
   at a **file**, never a bare directory. `[security](security/)` breaks silently
   when files move; `[security/README.md](security/README.md)` does not.
 
@@ -54,10 +54,10 @@ refactor(claude-local)!: collapse to a single claude-local command
 Scope is the folder or package the change lives in. Use `!` and a
 `BREAKING CHANGE:` footer when a published interface changes.
 
-Group related work into one commit and unrelated work into separate ones — a
+Group related work into one commit and unrelated work into separate ones: a
 commit that touches a package and rewrites an unrelated practice is two commits.
 
-## Branches and pull requests
+## Branches and Pull Requests
 
 Work on a branch, never on `main`. Open a pull request even when working alone:
 the PR body is where the reasoning lives once the diff stops explaining itself.
@@ -81,7 +81,7 @@ mise trust && mise install
 
 That gets you Bun and Node for the packages, Trunk for linting, and the AWS and
 Azure CLIs the cloud launchers use for their session checks. Everything is a
-binary download except `azure-cli`, which mise installs through pipx — that one
+binary download except `azure-cli`, which mise installs through pipx. That one
 compiles a large Python package and takes a few minutes, and it is why `python`
 and `uv` are in the tool list too.
 
@@ -106,7 +106,7 @@ what the repo is checked against.
 
 Everything under `packages/` is TypeScript, built with [Bun](https://bun.sh), and
 published for Node. Dependencies are bundled into the build so a published CLI
-has no runtime dependencies and a cold `npx` installs nothing — Bun is a
+has no runtime dependencies and a cold `npx` installs nothing: Bun is a
 build-time tool, never a requirement for users.
 
 That has one consequence worth stating plainly, because it compiles cleanly and
@@ -116,14 +116,14 @@ builds fine, ships fine, and then crashes for every user who does not have Bun.
 Each package carries its own `CONTRIBUTING.md` with its layout, its release
 process, and whatever is specific to it:
 
-- [packages/claude-local/CONTRIBUTING.md](../packages/claude-local/CONTRIBUTING.md)
-  — the `claude-local` CLI: building, adding a model to the catalog, and
+- [packages/claude-local/CONTRIBUTING.md](../packages/claude-local/CONTRIBUTING.md):
+  the `claude-local` CLI, covering building, adding a model to the catalog, and
   publishing to npm.
-- [packages/claude-bedrock/CONTRIBUTING.md](../packages/claude-bedrock/CONTRIBUTING.md)
-  — the `claude-bedrock` CLI, and why it validates nothing that
+- [packages/claude-bedrock/CONTRIBUTING.md](../packages/claude-bedrock/CONTRIBUTING.md):
+  the `claude-bedrock` CLI, and why it validates nothing that
   `/setup-bedrock` already does.
-- [packages/claude-foundry/CONTRIBUTING.md](../packages/claude-foundry/CONTRIBUTING.md)
-  — the `claude-foundry` CLI, why it validates more than the Bedrock one, and
+- [packages/claude-foundry/CONTRIBUTING.md](../packages/claude-foundry/CONTRIBUTING.md):
+  the `claude-foundry` CLI, why it validates more than the Bedrock one, and
   the environment variables it must not claim from other backends.
 
 ### Releasing
@@ -137,7 +137,7 @@ provenance attestations, which cannot be produced from a laptop.
 
 ## Scope
 
-Anthropic (Claude) only. No other model ecosystems — not as a comparison, not as
+Anthropic (Claude) only. No other model ecosystems: not as a comparison, not as
 a fallback. The one exception is describing something Claude tooling must
 interoperate with, such as an OpenAI-shaped local endpoint, where the difference
 is the point being made.

@@ -1,0 +1,115 @@
+{
+  "name": "planner",
+  "displayName": "Planner",
+  "description": "Read-only sidebar view of today's and tomorrow's tasks from the Obsidian dashboard, filtered to this repository's client.",
+  "version": "0.1.0",
+  "publisher": "lekman",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lekman/ai-toolkit.git",
+    "directory": "packages/vscode-planner"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "planner",
+          "title": "Planner",
+          "icon": "media/planner.svg"
+        }
+      ]
+    },
+    "views": {
+      "planner": [
+        {
+          "type": "webview",
+          "id": "planner.today",
+          "name": "Today"
+        },
+        {
+          "type": "webview",
+          "id": "planner.tomorrow",
+          "name": "Tomorrow"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "planner.refresh",
+        "title": "Planner: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "planner.openDashboard",
+        "title": "Planner: Open Dashboard",
+        "icon": "$(go-to-file)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "planner.refresh",
+          "when": "view == planner.today || view == planner.tomorrow",
+          "group": "navigation@1"
+        },
+        {
+          "command": "planner.openDashboard",
+          "when": "view == planner.today || view == planner.tomorrow",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Planner",
+      "properties": {
+        "planner.dashboardPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Absolute path to `Dashboard.md`. Leave empty to read `vault` + `dashboard` from `~/.claude/obsidian.json`."
+        },
+        "planner.clients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Only show tasks under these client headings, e.g. `[\"Lekman Consulting\"]`. Set this per repository in `.vscode/settings.json`. Leave empty to derive the client from the `clients` path map in `~/.claude/obsidian.json`; if that also finds nothing, every client is shown."
+        },
+        "planner.showClientHeadings": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "always",
+            "never"
+          ],
+          "default": "auto",
+          "markdownDescription": "Show the client name above its tasks. `auto` shows it only when more than one client is visible."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "package": "bun run build && bunx --bun @vscode/vsce package --no-dependencies --allow-missing-repository --out planner.vsix",
+    "typecheck": "bun --bun tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run typecheck && bun test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "^5.7.0"
+  }
+}

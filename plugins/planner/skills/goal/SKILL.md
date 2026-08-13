@@ -31,7 +31,7 @@ In the vault, never in the repo. Resolve the location with the same script
 
 ```bash
 CTX=$(bun "<skill-base-dir>/../../scripts/resolve-context.ts")
-# {"client":…,"vault":…,"plansDir":…,"tracker":"jira|github|none",…}
+# {"client":…,"vault":…,"plansDir":…,"tracker":"jira|github|monday|none",…}
 ```
 
 - **Master note** — `<plansDir>/<repo-name> — Master Plan.md`. One per repo,
@@ -70,9 +70,12 @@ like "the container ran".
 ## Steps
 
 1. **Identify the goal and the ticket.** From the argument, the branch name, or
-   ask the operator. The ticket lives in whatever project management system the
-   repo uses (Jira, Monday, GitHub Issues); the subpage references it via the
-   `key` and `jira`/`github` frontmatter fields.
+   ask the operator. The ticket lives in whatever system the `tracker` field
+   names — Jira, GitHub Issues, or Monday; the subpage references it via the
+   `key` and `jira`/`github`/`monday` frontmatter fields. For `monday`, resolve
+   the item by name on the configured board with the Monday MCP connector and
+   record its numeric item id as `key`. If the connector is not authorised,
+   ask the operator for the item id rather than inventing one.
 2. **Derive the candidate Definition of Done.** List the surfaces the work
    touches (libraries, services, infrastructure, the deployed system, the user
    journey) and the evidence base each needs. A deployed-service change needs
@@ -123,7 +126,8 @@ prose, the `[Details]` link.
 
 - **Ticket link first**, immediately after the checkbox, before any bold text or
   status emoji. One link, to the tracker: Jira `https://<jira_host>/browse/<KEY>`,
-  GitHub `https://github.com/<org>/<repo>/issues/<n>`, Monday the item URL. No
+  GitHub `https://github.com/<org>/<repo>/issues/<n>`, Monday
+  `https://<monday.account>.monday.com/boards/<monday.board>/pulses/<KEY>`. No
   ticket resolvable: skip the link and start with the title — never invent a key.
 - **`[Details](<path>)` last**, at the very end of the entry. The path is
   vault-relative from `Dashboard.md` (which sits at the vault root), pointing at

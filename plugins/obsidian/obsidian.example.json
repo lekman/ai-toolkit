@@ -7,6 +7,18 @@
     "/Users/you/Repo/globex": "Globex"
   },
   "default_client": "Acme",
+  "planner": {
+    "Acme": {
+      "plans": "Clients/Acme/Initiatives",
+      "tracker": "jira",
+      "jira": { "host": "your-org.atlassian.net", "project": "ACME" }
+    },
+    "Globex": {
+      "plans": "Clients/Globex/Initiatives",
+      "tracker": "monday",
+      "monday": { "account": "your-org", "board": "1234567890" }
+    }
+  },
   "regulatory": {
     "Acme": ["GxP"],
     "Globex": ["GxP"]

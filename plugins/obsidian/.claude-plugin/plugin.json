@@ -1,5 +1,5 @@
 {
   "name": "obsidian",
   "description": "Obsidian dashboard sync skills: resolve the active client by discovery and read/write a Dashboard.md without hardcoding client names",
-  "version": "0.2.0"
+  "version": "0.2.1"
 }

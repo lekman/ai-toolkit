@@ -1,5 +1,5 @@
 {
   "name": "planner",
   "description": "Planning skills over an Obsidian vault: the day's plate (/today), master-plan state per repo (/planner:plan, /planner:sync), the goal workflow (/planner:goal, /planner:execute), and archiving completed work (/planner:archive)",
-  "version": "0.5.0"
+  "version": "0.6.0"
 }

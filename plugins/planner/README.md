@@ -25,9 +25,11 @@ first, retrieval and calendars as supplements only.
 
 - `/planner:plan` — create or update the current repo's master-plan note in
   the Obsidian vault. State (backlog tables, status balls) lives only in the
-  vault; repos keep detail pages. Client and tracker (Jira / GitHub / none)
-  resolve silently from cwd via `scripts/resolve-context.ts` and the
-  `planner` block in `~/.claude/obsidian.json`.
+  vault; repos keep detail pages. Client and tracker (Jira / GitHub / Monday /
+  none) resolve silently from cwd via `scripts/resolve-context.ts` and the
+  `planner` block in `~/.claude/obsidian.json`. Monday needs
+  `monday: {account, board}` — `account` is the subdomain, and without it no
+  item URL can be built.
 - `/planner:sync` — reconcile that note against merged PRs and closed
   tickets: move finished rows to Done, report drift, change nothing else.
 - `/planner:goal` + `/planner:execute` — the goal workflow (moved here from

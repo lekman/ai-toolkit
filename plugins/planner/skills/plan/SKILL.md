@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Create or update the master-plan note for the current repo in the Obsidian vault. Reads open/merged PRs, the tracker (Jira or GitHub, per client config), and repo plan detail pages; writes state to the vault, never to the repo. Use when the user says "/planner:plan", "update the master plan", or "refresh the plan".
+description: Create or update the master-plan note for the current repo in the Obsidian vault. Reads open/merged PRs, the tracker (Jira, GitHub or Monday, per client config), and repo plan detail pages; writes state to the vault, never to the repo. Use when the user says "/planner:plan", "update the master plan", or "refresh the plan".
 user-invocable: true
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
@@ -36,7 +36,7 @@ skills.
 
 ```bash
 CTX=$(bun "<skill-base-dir>/../../scripts/resolve-context.ts")
-# {"client":…,"vault":…,"plans":…,"plansDir":…,"tracker":"jira|github|none",…}
+# {"client":…,"vault":…,"plans":…,"plansDir":…,"tracker":"jira|github|monday|none",…}
 ```
 
 `--client X` from the arguments overrides cwd resolution. Abort on non-zero
@@ -54,6 +54,11 @@ directory and note from the template below if absent.
      Jira CLI skill (e.g. `jira-acli`) if present; if the CLI is unavailable,
      proceed with PRs only and note the gap in the run summary.
    - `github` — `gh issue list --state open --json number,title,labels,url`
+   - `monday` — read the configured board with the Monday MCP connector
+     (`mcp__…_monday_com__get_board_items_page` on `monday.board`, or
+     `…__all_api_read` for a GraphQL query). Take the item id, name, and its
+     status column. If the connector is not authorised in this session, say so
+     in the run summary and proceed with PRs only — do not guess item ids.
    - `none` — skip; the vault subpages and PRs are the only source.
 3. **Subpages**: existing subpages under `<plansDir>/<repo-name>/`, frontmatter
    only (`key`, `kind`, `status`, `summary`).
@@ -68,8 +73,8 @@ Managed sections (each fenced by `<!-- planner:managed -->` …
 
 - **Active backlog** — one row per open initiative:
   `| Status | Key | Initiative | Type | Owner | Detail |`. Key is the Jira
-  key, `#issue`, or a slug depending on tracker. Detail links to the repo
-  page or PR by URL.
+  key, `#issue`, the Monday item id, or a slug depending on tracker. Detail
+  links to the repo page or PR by URL.
 - **Legend** — the four-ball vocabulary, exactly:
   🟢 done/merged · 🟡 in progress · ⚪ planned/parked · 🔴 blocked/bug.
 
@@ -171,7 +176,7 @@ created: 2026-08-07
 updated: 2026-08-10
 completed: 2026-08-12 # required once status: done; omit the key otherwise
 summary: One-line abstract of the initiative.
-jira: https://… # or github: … ; optional
+jira: https://… # or github: … / monday: … ; optional, one tracker URL
 ---
 ```
 

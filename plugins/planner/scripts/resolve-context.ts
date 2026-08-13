@@ -7,6 +7,11 @@
  *    "plansDir":"/abs/path","tracker":"jira","jira":{"host":"…","project":"…"},
  *    "regulatory":["GxP"]}
  *
+ * `tracker` names the system that owns the tickets: "jira", "github", "monday"
+ * or "none". Each named tracker carries its own block — `jira`, `monday` —
+ * emitted only when configured. "none" means the client has no ticket system
+ * the skills can reach, so plans stand alone.
+ *
  * Resolution: longest path-prefix match of --cwd (default: process.cwd())
  * against the `clients` map in ~/.claude/obsidian.json; `--client X`
  * overrides. Falls back to `default_client` when nothing matches (exit 0).
@@ -22,10 +27,19 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+const TRACKERS = ["jira", "github", "monday", "none"] as const;
+type Tracker = (typeof TRACKERS)[number];
+
 interface PlannerEntry {
   plans: string;
-  tracker: "jira" | "github" | "none";
+  tracker: Tracker;
   jira?: { host: string; project: string };
+  /**
+   * `account` is the Monday subdomain — the `<account>` in
+   * `https://<account>.monday.com`. It is required to build an item URL, which
+   * is the only way the dashboard can link to a Monday ticket.
+   */
+  monday?: { account: string; board: string };
 }
 
 interface ObsidianConfig {
@@ -74,6 +88,14 @@ if (!planner)
     `no planner block for client "${client}" in ${configPath} — add planner.${JSON.stringify(client)} with {plans, tracker}`,
   );
 
+// Reject an unknown tracker rather than passing it through. A typo would
+// otherwise reach the skills, which fall back to "no tracker" and quietly plan
+// without tickets — the failure looks like a missing config, not a bad value.
+if (!TRACKERS.includes(planner.tracker))
+  fail(
+    `planner.${JSON.stringify(client)}.tracker is ${JSON.stringify(planner.tracker)} — expected one of ${TRACKERS.join(", ")}`,
+  );
+
 process.stdout.write(
   JSON.stringify({
     client,
@@ -82,6 +104,7 @@ process.stdout.write(
     plansDir: join(config.vault, planner.plans),
     tracker: planner.tracker,
     ...(planner.jira ? { jira: planner.jira } : {}),
+    ...(planner.monday ? { monday: planner.monday } : {}),
     regulatory: config.regulatory?.[client] ?? [],
   }) + "\n",
 );

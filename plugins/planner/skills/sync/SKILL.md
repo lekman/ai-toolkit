@@ -31,6 +31,10 @@ exist, stop: report "no master-plan note — run /planner:plan first".
    — only `mergedAt != null` counts; a closed-unmerged PR proves nothing.
 2. Tracker `jira`: ticket status Done/Closed via the repo's Jira CLI skill
    when available. Tracker `github`: `gh issue list --state closed`.
+   Tracker `monday`: read the configured board with the Monday MCP connector
+   and treat an item as finished only when its status column reads Done (or
+   the board's equivalent end state). An unreachable connector proves nothing —
+   leave the row alone and report the gap.
 3. Match Active-backlog rows by Key against merged PR branches/titles and
    closed tickets.
 

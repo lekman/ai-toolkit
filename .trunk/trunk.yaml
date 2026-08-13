@@ -35,6 +35,18 @@ actions:
       run: bash scripts/pre-commit-eslint.sh
       triggers:
         - git_hooks: [pre-commit]
+
+    # The leak guard also lives in .githooks/pre-commit. It is repeated here
+    # because trunk takes over core.hooksPath the first time it runs in a
+    # clone, which stops .githooks from being called at all — the guard was
+    # silently bypassed that way on 13 Aug. Whichever hook path is in force,
+    # one of the two copies runs.
+    - id: no-client-content
+      display_name: block client-identifying content
+      run: bash scripts/check-no-client-content.sh --staged
+      triggers:
+        - git_hooks: [pre-commit]
   enabled:
     - commitlint
     - eslint-fix
+    - no-client-content

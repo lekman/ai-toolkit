@@ -38,3 +38,10 @@ packages/rag/local/qualification/
 
 # Names real clients — the leak it exists to prevent
 scripts/client-terms.txt
+
+# VSIX build output.
+packages/*/*.vsix
+
+# Editor workspace settings. planner.clients names a real client, which is
+# exactly the content the pre-commit guard exists to keep out of this repo.
+.vscode/

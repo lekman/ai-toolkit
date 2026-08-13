@@ -1,8 +1,7 @@
 ---
 name: session
-description: End a long session instead of compacting — analyse the conversation for learnings worth codifying, then write .tmp/session-handover.md so the next session starts with full context and judges what to codify. Use when the user says "/wrap:session", "wrap this session", or "prepare the handover before I start a new session".
+description: End a long session instead of compacting — analyse the conversation for learnings worth codifying, then write .tmp/session-handover.md so the next session starts with full context and judges what to codify. Use only when the user asks for it — "/wrap:session", "wrap this session", "prepare the handover before I start a new session". Never start it on your own initiative, including when context is running low.
 user-invocable: true
-disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Write, Bash, AskUserQuestion
 ---
 

@@ -157,4 +157,26 @@ describe("filterGroups", () => {
   test("an undefined day yields nothing", () => {
     expect(Dashboard.filterGroups(undefined, [])).toHaveLength(0);
   });
+
+  test("drops completed tasks when they are hidden", () => {
+    const groups = Dashboard.filterGroups(day, ["Acme"], false);
+    expect(groups[0]?.tasks.map((t) => t.done)).toEqual([false]);
+  });
+
+  test("drops a group left empty once completed tasks are hidden", () => {
+    const finished = Dashboard.parse(
+      "## Focus\n### Thursday 13 August\n#### **Acme**\n\n- [x] all done\n",
+      TODAY,
+    );
+    const onlyDone = Dashboard.dayOn(finished, TODAY);
+    expect(Dashboard.filterGroups(onlyDone, [], true)).toHaveLength(1);
+    expect(Dashboard.filterGroups(onlyDone, [], false)).toHaveLength(0);
+  });
+
+  test("does not mutate the parsed day, so the toggle is reversible", () => {
+    Dashboard.filterGroups(day, [], false);
+    expect(Dashboard.filterGroups(day, ["Acme"], true)[0]?.tasks).toHaveLength(
+      2,
+    );
+  });
 });

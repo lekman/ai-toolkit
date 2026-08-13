@@ -34,11 +34,17 @@ export function activate(context: vscode.ExtensionContext): void {
   const tomorrow = new PlannerViewProvider(1, () => state);
 
   let watcher: undefined | vscode.FileSystemWatcher;
+  let timer: NodeJS.Timeout | undefined;
+  let lastModified: null | number = null;
 
   const reload = () => {
     const config = Config.load(source);
     const markdown = config.dashboardPath
       ? reader.read(config.dashboardPath)
+      : null;
+
+    lastModified = config.dashboardPath
+      ? reader.modifiedAt(config.dashboardPath)
       : null;
 
     state = {
@@ -48,9 +54,16 @@ export function activate(context: vscode.ExtensionContext): void {
       today: new Date(),
     };
 
+    void vscode.commands.executeCommand(
+      "setContext",
+      "planner.completedVisible",
+      config.showCompleted,
+    );
+
     today.render();
     tomorrow.render();
     watch(config.dashboardPath);
+    poll(config.dashboardPath, config.pollSeconds);
   };
 
   // The dashboard lives in the vault, outside the workspace, so the watcher is
@@ -72,10 +85,35 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(watcher);
   };
 
+  // Polling backs the watcher up rather than replacing it. A vault synced by
+  // iCloud is written by another process, and those writes do not reliably
+  // raise a watcher event; a stat every few seconds costs nothing and is the
+  // difference between the panes being right and being quietly stale.
+  const poll = (path: null | string, seconds: number) => {
+    if (timer) clearInterval(timer);
+    timer = undefined;
+    if (!path || seconds <= 0) return;
+    timer = setInterval(() => {
+      const modified = reader.modifiedAt(path);
+      if (modified !== lastModified) reload();
+    }, seconds * 1000);
+  };
+
+  const setShowCompleted = async (value: boolean) => {
+    await source.setShowCompleted(value);
+    // The configuration listener calls reload(), which re-reads the setting.
+  };
+
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("planner.today", today),
     vscode.window.registerWebviewViewProvider("planner.tomorrow", tomorrow),
     vscode.commands.registerCommand("planner.refresh", reload),
+    vscode.commands.registerCommand("planner.hideCompleted", () =>
+      setShowCompleted(false),
+    ),
+    vscode.commands.registerCommand("planner.showCompleted", () =>
+      setShowCompleted(true),
+    ),
     vscode.commands.registerCommand("planner.openDashboard", async () => {
       const path = Config.load(source).dashboardPath;
       if (!path) {
@@ -89,12 +127,12 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration("planner")) reload();
     }),
-    // iCloud writes the vault from another process, and those writes do not
-    // always surface as watcher events. Refocusing the window re-reads, which
-    // also picks up a date rollover across an overnight session.
+    // Refocusing the window re-reads, which also picks up a date rollover
+    // across an overnight session.
     vscode.window.onDidChangeWindowState((window) => {
       if (window.focused) reload();
     }),
+    { dispose: () => timer && clearInterval(timer) },
   );
 
   reload();

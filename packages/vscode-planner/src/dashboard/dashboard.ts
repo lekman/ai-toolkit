@@ -59,21 +59,31 @@ export class Dashboard {
   /**
    * Keep only the client groups a repository cares about.
    *
+   * Groups are copied rather than mutated when completed tasks are dropped, so
+   * toggling the view never edits the parse result — the next toggle back has
+   * the full set to work from.
+   *
    * @param day - A parsed day, or undefined.
    * @param clients - Client names to keep. An empty list keeps every group.
+   * @param showCompleted - Whether to keep `- [x]` tasks.
    * @returns Matching groups that still have at least one task.
    */
   static filterGroups(
     day: Day | undefined,
     clients: readonly string[],
+    showCompleted = true,
   ): ClientGroup[] {
     if (!day) return [];
     const wanted = clients.map((c) => c.trim().toLowerCase()).filter(Boolean);
-    return day.groups.filter((g) => {
-      if (g.tasks.length === 0) return false;
-      if (wanted.length === 0) return true;
-      return wanted.includes(g.client.toLowerCase());
-    });
+    return day.groups
+      .filter(
+        (g) => wanted.length === 0 || wanted.includes(g.client.toLowerCase()),
+      )
+      .map((g) => ({
+        ...g,
+        tasks: showCompleted ? g.tasks : g.tasks.filter((t) => !t.done),
+      }))
+      .filter((g) => g.tasks.length > 0);
   }
 
   /**

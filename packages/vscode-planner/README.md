@@ -48,11 +48,13 @@ repository's `.vscode/settings.json` to pin a repository to specific clients:
 }
 ```
 
-| Setting                      | Default  | Effect                   |
-| ---------------------------- | -------- | ------------------------ |
-| `planner.dashboardPath`      | `""`     | Path to `Dashboard.md`.  |
-| `planner.clients`            | `[]`     | Client headings to show. |
-| `planner.showClientHeadings` | `"auto"` | Print the client name.   |
+| Setting                      | Default  | Effect                     |
+| ---------------------------- | -------- | -------------------------- |
+| `planner.dashboardPath`      | `""`     | Path to `Dashboard.md`.    |
+| `planner.clients`            | `[]`     | Client headings to show.   |
+| `planner.showClientHeadings` | `"auto"` | Print the client name.     |
+| `planner.showCompleted`      | `true`   | Show `- [x]` tasks.        |
+| `planner.pollSeconds`        | `30`     | Fallback re-read interval. |
 
 An empty `planner.clients` derives the client from the path map; if that finds
 nothing either, every client is shown. `showClientHeadings` takes `auto`,
@@ -61,24 +63,43 @@ or `never` to force it.
 
 ## Commands
 
-- **Planner: Refresh** — re-read the dashboard.
+All four sit on the view title bar.
+
+- **Hide / Show Completed Tasks** — the eye button. Drops `- [x]` tasks from
+  both panes, and drops a client group left with nothing. Writes
+  `planner.showCompleted` in your user settings, so it is remembered and
+  applies to every repository.
+- **Planner: Refresh** — re-read the dashboard now.
 - **Planner: Open Dashboard** — open `Dashboard.md` in the editor.
 
-Both are on the view title bar. The panes also refresh when the file changes,
-when a `planner.*` setting changes, and when the window regains focus — iCloud
-writes the vault from another process and those writes do not always surface as
-file-watcher events.
+## Staying current
+
+Four triggers, because no single one is reliable on a synced vault:
+
+1. **A file watcher** on the dashboard, scoped to its own directory since the
+   vault sits outside the workspace.
+2. **Polling** every `planner.pollSeconds`, which compares the file's
+   modification time and only re-parses when it moves. iCloud and other sync
+   clients write the vault from another process, and those writes do not
+   reliably raise a watcher event — this is what covers that gap. Set it to
+   `0` to switch polling off.
+3. **Window focus**, which also picks up a date rollover across an overnight
+   session, so "today" does not stay on yesterday.
+4. **Any `planner.*` setting change.**
 
 ## Empty states
 
-The three are deliberately distinct, because one blank pane for all of them
-would hide a misconfiguration:
+They are deliberately distinct, because one blank pane for all of them would
+hide a misconfiguration:
 
 - **A message naming `obsidian.json` or `planner.dashboardPath`** — no
   dashboard could be located, or it could not be read. A setup problem.
 - **"Nothing planned."** — the dashboard has no heading for that date.
 - **"No tasks for `<client>`."** — the day exists, but the filter excluded
   everything under it.
+- **"No open tasks for `<client>`."** — the same, with completed tasks
+  hidden. Worth distinguishing: a day full of finished work would otherwise
+  read as a day nothing was planned for.
 
 ## Install
 

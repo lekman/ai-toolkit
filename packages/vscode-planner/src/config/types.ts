@@ -9,16 +9,22 @@ export interface PlannerConfig {
   clients: string[];
   /** Absolute path to `Dashboard.md`, or null when it could not be resolved. */
   dashboardPath: string | null;
+  /** Seconds between fallback re-reads; 0 disables polling. */
+  pollSeconds: number;
   /** Reason shown in the view when `dashboardPath` is null. */
   problem: string | null;
   showClientHeadings: ClientHeadingMode;
+  /** Whether `- [x]` tasks appear. */
+  showCompleted: boolean;
 }
 
 /** The extension's own settings, as read from VS Code. */
 export interface PlannerSettings {
   clients: string[];
   dashboardPath: string;
+  pollSeconds: number;
   showClientHeadings: ClientHeadingMode;
+  showCompleted: boolean;
 }
 
 /**

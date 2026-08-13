@@ -19,7 +19,9 @@ const SHARED: SharedObsidianConfig = {
 const DEFAULTS: PlannerSettings = {
   clients: [],
   dashboardPath: "",
+  pollSeconds: 30,
   showClientHeadings: "auto",
+  showCompleted: true,
 };
 
 const SHARED_PATH = "/Users/me/.claude/obsidian.json";
@@ -107,5 +109,27 @@ describe("resolve", () => {
       SHARED_PATH,
     );
     expect(config.clients).toEqual(["Acme"]);
+  });
+});
+
+describe("resolve - view options", () => {
+  test("carries the completed-task toggle through", () => {
+    const config = Config.resolve(
+      { ...DEFAULTS, showCompleted: false },
+      SHARED,
+      "/Users/me/Repo/lekman",
+      SHARED_PATH,
+    );
+    expect(config.showCompleted).toBe(false);
+  });
+
+  test("clamps a negative poll interval to zero rather than looping fast", () => {
+    const config = Config.resolve(
+      { ...DEFAULTS, pollSeconds: -5 },
+      SHARED,
+      "/Users/me/Repo/lekman",
+      SHARED_PATH,
+    );
+    expect(config.pollSeconds).toBe(0);
   });
 });

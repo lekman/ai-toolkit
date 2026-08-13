@@ -86,8 +86,10 @@ export class Config {
     return {
       clients,
       dashboardPath,
+      pollSeconds: Math.max(0, settings.pollSeconds),
       problem,
       showClientHeadings: settings.showClientHeadings,
+      showCompleted: settings.showCompleted,
     };
   }
 

@@ -39,11 +39,27 @@ export class VscodeConfigSource implements IConfigSource {
     return {
       clients: settings.get<string[]>("clients", []),
       dashboardPath: settings.get<string>("dashboardPath", ""),
+      pollSeconds: settings.get<number>("pollSeconds", 30),
       showClientHeadings: settings.get<ClientHeadingMode>(
         "showClientHeadings",
         "auto",
       ),
+      showCompleted: settings.get<boolean>("showCompleted", true),
     };
+  }
+
+  /**
+   * Persist the completed-task toggle.
+   *
+   * Written globally: whether finished work is worth looking at is a personal
+   * preference, not a property of one repository the way the client filter is.
+   *
+   * @param value - The new value.
+   */
+  async setShowCompleted(value: boolean): Promise<void> {
+    await vscode.workspace
+      .getConfiguration("planner")
+      .update("showCompleted", value, vscode.ConfigurationTarget.Global);
   }
 
   /**

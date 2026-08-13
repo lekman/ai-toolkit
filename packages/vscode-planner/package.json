@@ -50,22 +50,52 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "planner.hideCompleted",
+        "title": "Planner: Hide Completed Tasks",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "planner.showCompleted",
+        "title": "Planner: Show Completed Tasks",
+        "icon": "$(eye-closed)"
+      },
+      {
         "command": "planner.openDashboard",
         "title": "Planner: Open Dashboard",
         "icon": "$(go-to-file)"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "planner.hideCompleted",
+          "when": "planner.completedVisible"
+        },
+        {
+          "command": "planner.showCompleted",
+          "when": "!planner.completedVisible"
+        }
+      ],
       "view/title": [
+        {
+          "command": "planner.hideCompleted",
+          "when": "(view == planner.today || view == planner.tomorrow) && planner.completedVisible",
+          "group": "navigation@1"
+        },
+        {
+          "command": "planner.showCompleted",
+          "when": "(view == planner.today || view == planner.tomorrow) && !planner.completedVisible",
+          "group": "navigation@1"
+        },
         {
           "command": "planner.refresh",
           "when": "view == planner.today || view == planner.tomorrow",
-          "group": "navigation@1"
+          "group": "navigation@2"
         },
         {
           "command": "planner.openDashboard",
           "when": "view == planner.today || view == planner.tomorrow",
-          "group": "navigation@2"
+          "group": "navigation@3"
         }
       ]
     },
@@ -94,6 +124,17 @@
           ],
           "default": "auto",
           "markdownDescription": "Show the client name above its tasks. `auto` shows it only when more than one client is visible."
+        },
+        "planner.showCompleted": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show `- [x]` tasks. Toggled by the eye button on the view title bar."
+        },
+        "planner.pollSeconds": {
+          "type": "number",
+          "default": 30,
+          "minimum": 0,
+          "markdownDescription": "How often to re-read the dashboard as a fallback, in seconds. The file watcher is the primary trigger; polling covers vaults on iCloud or another sync client, whose writes do not always raise a watcher event. `0` disables polling."
         }
       }
     }

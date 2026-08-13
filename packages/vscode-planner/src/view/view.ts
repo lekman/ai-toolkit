@@ -61,19 +61,26 @@ export class View {
       };
     }
 
-    const groups = Dashboard.filterGroups(day, config.clients);
+    const groups = Dashboard.filterGroups(
+      day,
+      config.clients,
+      config.showCompleted,
+    );
     const showClientHeadings =
       config.showClientHeadings === "always" ||
       (config.showClientHeadings === "auto" && groups.length > 1);
 
     if (groups.length === 0) {
-      const filtered = config.clients.length > 0;
+      // Naming the reason matters most when completed tasks are hidden: the
+      // day may be full of finished work, and "no tasks" would read as though
+      // nothing was planned.
+      const noun = config.showCompleted ? "tasks" : "open tasks";
+      const who =
+        config.clients.length > 0 ? ` for ${config.clients.join(", ")}` : "";
       return {
         groups: [],
         heading: day.heading,
-        message: filtered
-          ? `No tasks for ${config.clients.join(", ")}.`
-          : "No tasks.",
+        message: `No ${noun}${who}.`,
         showClientHeadings: false,
       };
     }

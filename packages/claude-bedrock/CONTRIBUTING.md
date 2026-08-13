@@ -30,11 +30,11 @@ this but never runs it for a user), and **dependencies stay in
 `devDependencies`** (the build bundles them, so the published package installs
 nothing).
 
-## Keep the scope thin
+## Keep the Scope Thin
 
 This package deliberately does **not** discover profiles, pick a region, or
 enumerate available models. Claude Code's `/setup-bedrock` does all of that, and
-it knows Claude Code's own model-fallback rules — a reimplementation here would
+it knows Claude Code's own model-fallback rules. A reimplementation here would
 drift as Bedrock support changes upstream.
 
 If a change would duplicate the wizard, the answer is almost always to point at
@@ -42,11 +42,11 @@ the wizard instead. The one job this package owns is handing a Bedrock
 environment to a single child process so `claude` and `claude-bedrock` can run
 side by side.
 
-## Env file parsing
+## Env File Parsing
 
 `parseEnvFile` reads a shell-style file; it does **not** execute one. Command
 substitution, variable expansion, and multi-line values are unsupported by
-design — an env file that needs them is doing too much, and executing a file
+design: an env file that needs them is doing too much, and executing a file
 found by walking the working directory is a code-execution path we do not want.
 
 If you extend it, keep that boundary.
@@ -67,17 +67,17 @@ browser-based `npm login`, and tags `claude-bedrock-v<version>`.
 Bump the version in `package.json` **and** the `VERSION` constant in
 [src/cli.ts](src/cli.ts).
 
-## Testing by hand
+## Testing by Hand
 
 There is no test suite. Before a release:
 
-1. `node dist/cli.js --help` under plain Node — the release script does this.
-2. `claude-bedrock --status` in a directory with no config — must explain how to
+1. `node dist/cli.js --help` under plain Node: the release script does this.
+2. `claude-bedrock --status` in a directory with no config: must explain how to
    set up, not crash.
-3. `claude-bedrock --status` with a `.claude/bedrock.env` present — must report
+3. `claude-bedrock --status` with a `.claude/bedrock.env` present: must report
    the repo-local file as the source, and report session validity.
-4. `claude-bedrock --no-login` with an expired session — must fail with the
+4. `claude-bedrock --no-login` with an expired session: must fail with the
    `aws sso login` command rather than opening a browser.
 
 Never commit a real account ID, inference profile ARN, or AWS profile name in
-test fixtures or docs — see the repo-wide rule on client identifiers.
+test fixtures or docs: see the repo-wide rule on client identifiers.

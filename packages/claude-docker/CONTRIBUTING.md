@@ -31,7 +31,7 @@ this but never runs it for a user), and **dependencies stay in
 `devDependencies`** (the build bundles them, so the published package installs
 nothing).
 
-## Why the Dockerfile is a string
+## Why the Dockerfile Is a String
 
 `src/lib/image.ts` holds the Dockerfile and the entrypoint as string constants,
 and feeds them to `docker build -` as a hand-written tar on stdin. This is
@@ -40,14 +40,14 @@ Dockerfile shipped beside it would have to be located at runtime, and a
 published CLI has no reliable idea where npm put it.
 
 The image tag is a hash of both strings, so **editing either produces a new tag
-and the next run rebuilds**. Do not add a version constant to bump by hand — it
+and the next run rebuilds**. Do not add a version constant to bump by hand: it
 will be forgotten, and a stale image is silent.
 
 The tar writer is about forty lines and exists so the published bundle carries
 no archive dependency for two small text files. If it ever needs to handle more
 than that, replace it rather than extending it.
 
-## Two constraints that are not preferences
+## Two Constraints That Are Not Preferences
 
 **The container user must not be root.** Claude Code refuses
 `--dangerously-skip-permissions` outright under root, and bypassing permissions
@@ -61,7 +61,7 @@ exactly like a hang. `ssh-keyscan` at build time is what avoids that.
 **The sandbox needs `seccomp=unconfined` on the container.** Claude Code's
 sandbox uses bubblewrap, which creates a user namespace; Docker's default
 seccomp profile blocks those syscalls, and bubblewrap fails with "No permissions
-to create new namespace". `--cap-add SYS_ADMIN` does not fix it — it fails later
+to create new namespace". `--cap-add SYS_ADMIN` does not fix it: it fails later
 on `pivot_root` instead. So `runArgs` adds `--security-opt seccomp=unconfined`,
 but only when `sandbox.enabled` is true in the settings file, because it trades
 part of the outer boundary for the inner one. Reading the setting rather than
@@ -69,7 +69,7 @@ taking a flag is deliberate: Claude Code's own fallback when the sandbox cannot
 start is a warning and unsandboxed execution, so a user who set `enabled: true`
 and got no sandbox would not notice.
 
-## The isolation model is the product
+## The Isolation Model Is the Product
 
 Changes that widen what the container can reach need a strong reason, because
 the boundary is the entire value of this package. In particular:

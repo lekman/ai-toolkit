@@ -6,7 +6,7 @@ dashboard, filtered to the client that owns the repository you have open.
 Read-only. The checkboxes show state; they do not change it. The dashboard is
 edited in Obsidian or through the `obsidian` and `planner` Claude Code plugins.
 
-## What it shows
+## What It Shows
 
 Two panes in the Planner sidebar:
 
@@ -19,7 +19,7 @@ TOMORROW
 ```
 
 Only today and tomorrow. Other days, the `Unscheduled` group, and the
-`## Initiatives` index are all in the dashboard but never shown here — this
+`## Initiatives` index are all in the dashboard but never shown here: this
 view answers "what is on now", not "what exists".
 
 Each pane reads the `### <day>` heading that matches its date, then the
@@ -29,8 +29,8 @@ closest to today whose weekday matches the heading.
 
 ## Configuration
 
-Normally none. The extension reads `~/.claude/obsidian.json` — the same file
-the `obsidian` and `planner` Claude Code plugins use — for both the dashboard
+Normally none. The extension reads `~/.claude/obsidian.json`, the same file
+the `obsidian` and `planner` Claude Code plugins use, for both the dashboard
 location and the client filter:
 
 - `vault` + `dashboard` give the path to `Dashboard.md`.
@@ -65,14 +65,14 @@ or `never` to force it.
 
 All four sit on the view title bar.
 
-- **Hide / Show Completed Tasks** — the eye button. Drops `- [x]` tasks from
+- **Hide / Show Completed Tasks**: the eye button. Drops `- [x]` tasks from
   both panes, and drops a client group left with nothing. Writes
   `planner.showCompleted` in your user settings, so it is remembered and
   applies to every repository.
-- **Planner: Refresh** — re-read the dashboard now.
-- **Planner: Open Dashboard** — open `Dashboard.md` in the editor.
+- **Planner: Refresh** re-reads the dashboard now.
+- **Planner: Open Dashboard** opens `Dashboard.md` in the editor.
 
-## Staying current
+## Staying Current
 
 Four triggers, because no single one is reliable on a synced vault:
 
@@ -81,23 +81,23 @@ Four triggers, because no single one is reliable on a synced vault:
 2. **Polling** every `planner.pollSeconds`, which compares the file's
    modification time and only re-parses when it moves. iCloud and other sync
    clients write the vault from another process, and those writes do not
-   reliably raise a watcher event — this is what covers that gap. Set it to
+   reliably raise a watcher event; this is what covers that gap. Set it to
    `0` to switch polling off.
 3. **Window focus**, which also picks up a date rollover across an overnight
    session, so "today" does not stay on yesterday.
 4. **Any `planner.*` setting change.**
 
-## Empty states
+## Empty States
 
 They are deliberately distinct, because one blank pane for all of them would
 hide a misconfiguration:
 
-- **A message naming `obsidian.json` or `planner.dashboardPath`** — no
+- **A message naming `obsidian.json` or `planner.dashboardPath`**: no
   dashboard could be located, or it could not be read. A setup problem.
-- **"Nothing planned."** — the dashboard has no heading for that date.
-- **"No tasks for `<client>`."** — the day exists, but the filter excluded
+- **"Nothing planned."**: the dashboard has no heading for that date.
+- **"No tasks for `<client>`."**: the day exists, but the filter excluded
   everything under it.
-- **"No open tasks for `<client>`."** — the same, with completed tasks
+- **"No open tasks for `<client>`."**: the same, with completed tasks
   hidden. Worth distinguishing: a day full of finished work would otherwise
   read as a day nothing was planned for.
 
@@ -123,7 +123,7 @@ For VS Code forks, swap the CLI: `cursor`, `windsurf`, or
 `codium --install-extension planner.vsix`. If no CLI is on your `PATH`, use
 **Extensions: Install from VSIX…** in the command palette and pick the file.
 
-To upgrade, rebuild and install again — the same command overwrites the
+To upgrade, rebuild and install again; the same command overwrites the
 installed copy. Bump `version` in `package.json` first if you want VS Code to
 show the change. To remove it: `code --uninstall-extension lekman.planner`.
 

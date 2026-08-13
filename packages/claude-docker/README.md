@@ -31,7 +31,7 @@ its key. After that a bare `claude-docker` is the quickest way into a container
 for whatever repo you are standing in.
 
 Two optional links are worth making once, because both fail _silently_ when they
-are missing — the agent simply behaves as though it never had your instructions
+are missing: the agent simply behaves as though it never had your instructions
 or your notes:
 
 ```bash
@@ -45,7 +45,7 @@ vault so the container can read a handover written for it
 ([details](#the-obsidian-vault-and-handovers)). `claude-docker --status` reports
 both.
 
-## Why this exists
+## Why This Exists
 
 Bypassing permissions is what makes an agent useful for a long unattended task.
 It is also what makes it dangerous on a laptop: the same agent can reach every
@@ -74,7 +74,7 @@ What the container can reach:
 What it cannot reach: your working copy, your other repos, your SSH agent, your
 `~/.claude`, your shell history, your cloud credentials.
 
-## What a run does
+## What a Run Does
 
 ```bash
 cd ~/Repo/acme/api
@@ -87,7 +87,7 @@ claude-docker PROJ-123
    cached against the key's modification time, so this costs a round trip once
    rather than on every launch.
 2. **Finds a container engine.** If OrbStack or Docker Desktop is installed but
-   not running, it starts it and waits — a stopped engine is the most common
+   not running, it starts it and waits: a stopped engine is the most common
    reason a container command fails, and it fails with a socket error that says
    nothing about the app being closed.
 3. **Builds the image** on first run. The tag is a hash of the image definition,
@@ -107,7 +107,7 @@ claude-docker PROJ-123
 
 Re-running the same task reuses the existing checkout rather than cloning again.
 
-## Set up the dedicated account
+## Set Up the Dedicated Account
 
 This is the part that makes the isolation real, and the first run walks you
 through it. You can also run it on its own:
@@ -153,7 +153,7 @@ several seconds into the clone with an error that never mentions permissions.
 That is the one file outside `~/.claude/docker` this tool will change, and only
 when you point `--ssh-key` at it.
 
-## Log in once
+## Log in Once
 
 Claude Code's config lives in a Docker volume (`claude-docker-config`), separate
 from your host `~/.claude`. The first run asks you to log in:
@@ -166,7 +166,7 @@ Do that once. The volume keeps it across tasks and across image rebuilds. Your
 own Claude config, history, hooks, and memory are never mounted, so the agent
 cannot rewrite them.
 
-## Configure the container
+## Configure the Container
 
 ```bash
 claude-docker --config
@@ -182,12 +182,12 @@ first use:
 
 Both live on your host and are mounted into the container read-only, so they are
 ordinary files you can edit, diff, and commit, and the agent has no path to
-either. Everything else Claude Code writes — the login, session history — stays
-in the volume.
+either. Everything else Claude Code writes, such as the login and session
+history, stays in the volume.
 
 **`settings.json` goes in as Claude Code's managed policy**, at
 `/etc/claude-code/managed-settings.json`, not as user settings. That matters
-because the checkout at `/work` is writable by design — that is the work — so a
+because the checkout at `/work` is writable by design (that is the work), so a
 project-level `.claude/settings.local.json` is always within the agent's reach.
 User settings lose to it. Managed settings sit at the top of the precedence order
 and cannot be overridden by anything, and two managed-only keys close the rest:
@@ -201,7 +201,7 @@ The second one closes a path that is easy to miss: without it, any repo you clon
 can ship a `.claude/settings.json` that registers a `PreToolUse` hook, and that
 hook runs shell on every tool call in a container you are not watching.
 
-### Keeping your standing instructions
+### Keeping Your Standing Instructions
 
 Your own `~/.claude/CLAUDE.md` probably imports standards from a repo by
 absolute path:
@@ -228,7 +228,7 @@ Use `--standards <dir>` or `CLAUDE_DOCKER_STANDARDS` to point somewhere else.
 `--status` shows whether anything is mounted, and a launch with nothing mounted
 says so rather than leaving you to work it out.
 
-### Skills from the marketplace
+### Skills from the Marketplace
 
 The [`ai-toolkit` marketplace](../../.claude-plugin/marketplace.json) is cloned
 into the image at build time, at `/opt/ai-toolkit`, root-owned and read-only.
@@ -237,11 +237,11 @@ for this run. No network, nothing of yours embedded, and the agent cannot
 rewrite the skills it is running under.
 
 Enabled by default: `git` and `wrap`, plus `obsidian` and `planner` when a vault
-is mounted — those two read the vault and are pointless without one. Override
+is mounted: those two read the vault and are pointless without one. Override
 with `CLAUDE_DOCKER_PLUGINS=git,wrap,planner`, or set it empty to install none.
 
 The marketplace is a snapshot taken when the image was built. It moves forward
-with `claude-docker --rebuild`, not on its own — the image tag hashes the image
+with `claude-docker --rebuild`, not on its own: the image tag hashes the image
 _definition_, and a marketplace commit is not part of that, so a new skill on
 `main` does not trigger a rebuild by itself.
 
@@ -258,29 +258,29 @@ $ docker run --rm --entrypoint bash <image> -c 'cat /opt/ai-toolkit/.baked-ref'
 ```
 
 If the remote cannot be reached the build falls back to `main`, says so, and the
-cache may hold — the one case where a rebuild can still be a no-op.
+cache may hold: the one case where a rebuild can still be a no-op.
 
 **Plugin hooks do not run here.** `allowManagedHooksOnly` is on in the managed
 settings, and Claude Code skips a plugin's hooks unless the plugin itself is
-_managed_ — observed in the 2.1.226 binary as the log line "Skipping plugin
+_managed_, observed in the 2.1.226 binary as the log line "Skipping plugin
 hooks - allowManagedHooksOnly is enabled and no managed plugins". These are
 installed at user scope, so their hooks are skipped. That setting is what stops
 a cloned repo registering a hook that runs on every tool call, and this is the
 price. Skills, commands, and agents are unaffected. In practice the one thing
-lost is `wrap`'s `SessionStart` pickup of `.tmp/session-handover.md` — which is
+lost is `wrap`'s `SessionStart` pickup of `.tmp/session-handover.md`, which is
 machine-local state a fresh container would not have anyway, and the reason
 handovers go in the vault instead.
 
-### The Obsidian vault, and handovers
+### The Obsidian Vault, and Handovers
 
 A containerised agent was not in the conversation that set its task up. That is
 the point, and it is also the problem: it starts with no idea what has already
 been tried, which environment is frozen, or which green check proves nothing.
 
-The answer is a written handover — see
+The answer is a written handover: see
 [the handover contract](../../plugins/wrap/HANDOVER.md). Those notes live in the
 vault, so mount it. Take the path from the config the obsidian skills already
-read, rather than typing it again — an iCloud vault path has spaces and a
+read, rather than typing it again. An iCloud vault path has spaces and a
 `~`-mangled folder name, and a copy of it drifts:
 
 ```bash
@@ -308,9 +308,9 @@ path. A launch with no vault says so, and falls back to `git, wrap`.
 Read-only is the default deliberately. The vault holds every client's material
 and the container holds one task; a writable mount hands a task agent the run of
 the notes. Pass `--vault-write` when you want the container to write its **own**
-handover back at the end — the launch prints a warning when you do.
+handover back at the end. The launch prints a warning when you do.
 
-#### The generated `obsidian.json`
+#### The Generated `obsidian.json`
 
 The obsidian and planner skills read `~/.claude/obsidian.json` for the vault path
 and the repo-to-client mapping. The host copy is useless inside the container:
@@ -332,10 +332,10 @@ client this task belongs to**, resolved from the directory you launched from:
 ```
 
 Every other client's name, repo path, and tracker config stays on the host. The
-file is written outside the session directory on purpose — the session directory
+file is written outside the session directory on purpose: the session directory
 _is_ the checkout, so a config written there could be committed.
 
-### The guard hook
+### The Guard Hook
 
 Because repo hooks no longer load, hooks you want must live in this file. The
 seeded default registers one, `/usr/local/bin/claude-docker-guard`, baked into
@@ -353,7 +353,7 @@ not protect against says why. `jq` is baked into the image on purpose: a guard
 that shells out to a runtime fails open when the runtime is missing, so the
 runtime is guaranteed at the boundary rather than assumed.
 
-### Narrowing egress with the sandbox
+### Narrowing Egress with the Sandbox
 
 The container has open egress by default, because the container is the boundary.
 For a second, inner boundary, Claude Code's sandbox is a simpler lever than
@@ -361,7 +361,7 @@ firewall rules: it enforces a domain allowlist at the OS level, so it holds
 regardless of what the model decided to run.
 
 The seeded `settings.json` has it pre-filled and switched off. Turn it on with
-one line — `"enabled": true`:
+one line, `"enabled": true`:
 
 ```json
 {
@@ -404,7 +404,7 @@ reason. Comments at the top level are fine.
 `claude-docker` reads that file and, when the sandbox is on, runs the container
 with `--security-opt seccomp=unconfined`. That is not optional: the sandbox uses
 bubblewrap, bubblewrap creates a user namespace, and Docker's default seccomp
-profile blocks the syscalls it needs — so without it the sandbox cannot start,
+profile blocks the syscalls it needs, so without it the sandbox cannot start,
 and Claude Code's fallback is to warn once and run **unsandboxed**, which is the
 worst outcome. Note the trade: this relaxes the outer boundary to enable the
 inner one. It is only worth it because the inner one then exists.
@@ -415,7 +415,7 @@ Five things are worth knowing before you rely on it:
   servers follow [permission rules](https://code.claude.com/docs/en/permissions)
   instead, so an allowlist here does not constrain them.
 - **`network.strictAllowlist` is what makes it deny.** Without it the sandbox
-  _prompts_ for an unlisted host — no use in an unattended run, which is the
+  _prompts_ for an unlisted host: no use in an unattended run, which is the
   whole point here. It requires Claude Code 2.1.219 or later.
 - **`enableWeakerNestedSandbox` is required inside a container.** Bubblewrap
   cannot mount a fresh `/proc` unprivileged, so a sandbox nested in a container
@@ -429,7 +429,7 @@ Five things are worth knowing before you rely on it:
 The image ships `bubblewrap`, `socat`, and `@anthropic-ai/sandbox-runtime`, so
 the dependencies are already in place. `deniedDomains` always beats
 `allowedDomains`, and a broad entry such as `github.com` is a plausible
-exfiltration path — the proxy does not inspect TLS by default.
+exfiltration path: the proxy does not inspect TLS by default.
 
 ## Commands
 
@@ -479,7 +479,7 @@ branch, and the pull request all read as the same string.
 Task names keep their case for the same reason, so `feat/JIRA-12345` stays
 uppercase rather than becoming `feat/jira-12345`.
 
-## What this does not protect against
+## What This Does Not Protect Against
 
 Be clear about the boundary, because a container is not a sandbox in the
 strongest sense.
@@ -489,7 +489,7 @@ strongest sense.
   container out, and neither auto mode nor the managed rules change that. The
   container boundary protects the rest of your machine, not the contents of the
   task. Narrow it with the sandbox above, and note that the sandbox covers Bash
-  only — `WebFetch` and MCP need a proxy.
+  only: `WebFetch` and MCP need a proxy.
 - **The dedicated account is a real account.** Anything it can reach, the agent
   can reach. Scope it to the repos you actually want touched.
 - **A container is not a VM.** It is a strong boundary for accident and a good
@@ -504,7 +504,7 @@ strongest sense.
   read at all, so getting past the hook gains nothing.
 - **A mounted vault is inside the boundary.** The container is otherwise limited
   to one repository; mounting a vault adds every note in it. Read-only stops the
-  agent changing them, not reading them, and the network is open — so a
+  agent changing them, not reading them, and the network is open, so a
   prompt-injected agent could send a note out. Mount a vault when the handover is
   worth it, and keep `--vault-write` for the runs that genuinely need to write
   back.

@@ -1,4 +1,4 @@
-# RAG Toolkit — Design (draft)
+# RAG Toolkit Design (Draft)
 
 Status: draft, pre-implementation. This document describes the intended shape
 of the `packages/rag/*` workspace: how storage moves from local to cloud, how
@@ -8,7 +8,7 @@ The first source is an Obsidian vault synced through iCloud Drive. The design
 keeps the source-specific parts (vault layout, frontmatter) in one adapter so
 later sources (wiki exports, file shares, SaaS APIs) reuse the same pipeline.
 
-## Package layout
+## Package Layout
 
 Three packages: all business logic in one, plus one runtime-definition
 package per target (local machine, Azure).
@@ -31,22 +31,22 @@ packages/rag/
           published to npm.
 ```
 
-**Local runtime is native, not containerized (decided).** The local store is
-an embedded library plus a data directory — there is no database process to
+**Local runtime is native, not containerised (decided).** The local store is
+an embedded library plus a data directory: there is no database process to
 put in a container. The ingestion side must stay native regardless: the
 watcher depends on macOS FSEvents and iCloud file materialization, and both
 are unreliable through Docker bind mounts. Containers appear in this design
-only where they earn their place — the cloud-hosted `rag-server` (phase 2).
+only where they earn their place: the cloud-hosted `rag-server` (phase 2).
 
 The names `indexer`, `sync`, `mcp-local`, and `mcp-remote` used below refer to
 these modules/bins inside `core`, not separate packages. The indexer writes to
-a store; the MCP servers read from one; sync copies between two — nothing else
+a store; the MCP servers read from one; sync copies between two: nothing else
 couples them, so any module can be split into its own package later without
 touching the others. Known trade-off of the single package: the cloud
 container inherits local-only native dependencies (the embedded vector DB);
 accepted at this scale, revisit if the image size bites.
 
-## Document model
+## Document Model
 
 One schema, used by every store implementation:
 
@@ -54,21 +54,21 @@ One schema, used by every store implementation:
 | -------------- | --------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `id`           | string    | Stable: hash of `source + relative path + heading path + chunk ordinal`. Same input → same ID, so re-indexing is an upsert |
 | `source`       | string    | e.g. `obsidian`, `files`, `confluence`                                                                                     |
-| `tier`         | enum      | `shared-business` \| `private-business` \| `private` — derived at ingestion, enforced at the MCP server                    |
+| `tier`         | enum      | `shared-business` \| `private-business` \| `private`, derived at ingestion, enforced at the MCP server                     |
 | `path`         | string    | Source-relative path or URL                                                                                                |
-| `heading_path` | string    | `Note title › H2 › H3` — keeps a chunk's context visible in results                                                        |
+| `heading_path` | string    | `Note title › H2 › H3`: keeps a chunk's context visible in results                                                         |
 | `chunk_text`   | string    | The retrievable content                                                                                                    |
 | `embedding`    | vector    | One embedding model across local and cloud (see below)                                                                     |
 | `metadata`     | object    | Source-specific: frontmatter fields, tags, status                                                                          |
-| `modified_at`  | timestamp | Source file mtime — drives incremental indexing and sync                                                                   |
+| `modified_at`  | timestamp | Source file mtime: drives incremental indexing and sync                                                                   |
 
-**One embedding model from day one: Voyage AI (decided — see Decisions).**
+**One embedding model from day one: Voyage AI (decided: see Decisions).**
 The local index uses the same embedding API that the cloud index will use.
 Vectors from different models are not comparable, so a local-only model would
 force a full re-embed at migration. Consequence worth stating plainly: even in
 the "local" phase, chunk text transits the Voyage API.
 
-## Storage: local now, cloud later
+## Storage: Local Now, Cloud Later
 
 `core` defines a small store interface; each phase provides an implementation:
 
@@ -81,9 +81,9 @@ interface ChunkStore
   listPaths(source)          // for reconciliation
 ```
 
-|                  | Phase 1 — local                                                    | Phase 2 — cloud                                                              |
+|                  | Phase 1: local                                                     | Phase 2: cloud                                                               |
 | ---------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Store            | LanceDB — embedded, single data directory (decided; see Decisions) | Azure AI Search, one index per tier                                          |
+| Store            | LanceDB: embedded, single data directory (decided; see Decisions)  | Azure AI Search, one index per tier                                          |
 | Lives            | On the machine that owns the source files                          | Azure, private endpoints, encryption at rest                                 |
 | Access           | Local stdio MCP server (Claude Code, Claude Desktop)               | Remote MCP server behind Entra ID OAuth (claude.ai everywhere + Claude Code) |
 | Tier enforcement | Filter in the store query (single user, low stakes)                | Index-level separation; the server maps identity → allowed indexes           |
@@ -93,7 +93,7 @@ interface ChunkStore
 `get_document`, `list_recent`). Migrating means pointing the tools at a
 different store, not changing how anything is queried.
 
-### Local → cloud sync (phase 2)
+### Local → Cloud Sync (Phase 2)
 
 `sync` treats the local store as the source of truth and the cloud index as a
 replica:
@@ -106,8 +106,8 @@ replica:
 3. Advance the watermark only after both steps succeed.
 
 Because IDs are deterministic, sync is idempotent: re-running after a partial
-failure repairs rather than duplicates. Sync runs scheduled (see Triggers) —
-the cloud replica tolerates minutes of lag; it serves knowledge, not task
+failure repairs rather than duplicates. Sync runs scheduled (see Triggers).
+The cloud replica tolerates minutes of lag; it serves knowledge, not task
 state.
 
 ## Ingestion from iCloud
@@ -117,7 +117,7 @@ shape the indexer:
 
 - **Dataless files.** iCloud may evict a file's content, leaving a stub until
   something reads it. The indexer must detect evicted files and either trigger
-  a download or skip-and-log — never index an empty body over a previously
+  a download or skip-and-log: never index an empty body over a previously
   good chunk.
 - **Conflict and backup copies.** Sync conflicts create sibling files
   (`Note 2.md`, `Note (conflict).md`); tooling leaves `.bak` files. These are
@@ -143,10 +143,10 @@ flowchart LR
     G -- file gone/renamed --> J[deleteByPath]
 ```
 
-The embed step runs only for chunks whose content hash changed — unchanged
+The embed step runs only for chunks whose content hash changed: unchanged
 chunks cost nothing on re-runs.
 
-## Triggers: scheduled vs real-time
+## Triggers: Scheduled Versus Real-Time
 
 Two distinct trigger points exist: **source → local index** (ingestion) and
 **local index → cloud** (sync). They have different freshness needs.
@@ -154,17 +154,17 @@ Two distinct trigger points exist: **source → local index** (ingestion) and
 |                | Scheduled (launchd/cron)                             | Real-time (filesystem watch)                                            |
 | -------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
 | Freshness      | Minutes to hours stale                               | Seconds                                                                 |
-| Complexity     | Low — a CLI run on a timer                           | Higher — long-lived process, FSEvents/watcher, debounce, crash recovery |
+| Complexity     | Low: a CLI run on a timer                            | Higher: long-lived process, FSEvents/watcher, debounce, crash recovery  |
 | Failure mode   | Missed window → next run catches up                  | Watcher dies silently → index quietly drifts until noticed              |
 | Missed changes | Impossible (every run is a full reconcile)           | Possible (events during downtime are lost)                              |
 | Resource cost  | Burst at run time                                    | Small constant background cost                                          |
-| iCloud fit     | Good — reconcile handles anything sync did meanwhile | Needs the debounce + eviction handling above                            |
+| iCloud fit     | Good: reconcile handles anything sync did meanwhile  | Needs the debounce + eviction handling above                            |
 
 **Chosen model: real-time watch with a scheduled reconcile as backstop, for
 ingestion; scheduled only, for cloud sync.**
 
 - **Ingestion** runs as a watcher (`indexer watch`) so a note saved mid-session
-  is searchable moments later — that immediacy is the point of a personal
+  is searchable moments later: that immediacy is the point of a personal
   index. A scheduled `indexer scan` (e.g. daily, and on machine wake) does a
   full reconcile, catching anything the watcher missed while dead and pruning
   chunks for deleted files. Either mode alone is weaker: watch-only drifts,
@@ -173,7 +173,7 @@ ingestion; scheduled only, for cloud sync.**
   the cloud replica needs second-level freshness, sync batches efficiently,
   and a timer is one less long-lived process to babysit. If a use case later
   needs faster propagation, the watcher can chain a sync run after quiet
-  periods — an additive change, not a redesign.
+  periods: an additive change, not a redesign.
 
 ```mermaid
 flowchart TB
@@ -193,16 +193,16 @@ flowchart TB
     R --> CC
 ```
 
-## Installation and qualification (IQ/OQ)
+## Installation and Qualification (IQ/OQ)
 
 `packages/rag/local` automates setup and carries the qualification suite. The
 vocabulary is deliberate: **IQ** proves the installation matches its
 specification; **OQ** proves the installed system operates as intended. Both
-produce timestamped report artifacts (pass/fail per check) written to the
-storage directory under `qualification/` — the evidence is a file, not a
+produce timestamped report artefacts (pass/fail per check) written to the
+storage directory under `qualification/`: the evidence is a file, not a
 terminal scroll.
 
-### Install flow
+### Install Flow
 
 ```text
 rag install
@@ -215,7 +215,7 @@ rag install
   7. run OQ in read-write mode     ← proof the pipeline works end to end
 ```
 
-### IQ — installation qualification (runs at install, re-runnable)
+### IQ: Installation Qualification (Runs at Install, Re-Runnable)
 
 Static and connectivity checks against the installed state:
 
@@ -231,11 +231,11 @@ Static and connectivity checks against the installed state:
 
 IQ makes no writes beyond its own report. A failed check names the remediation.
 
-### OQ — operational qualification (runnable at any time)
+### OQ: Operational Qualification (Runnable at Any Time)
 
 Two modes, one command:
 
-**Read-only** (`rag oq`) — safe against a live system, any time:
+**Read-only** (`rag oq`): safe against a live system, any time:
 
 - Store opens; chunk count > 0; newest `modified_at` within a freshness bound
 - A fixed reference query returns results with all required fields inside a
@@ -246,28 +246,28 @@ Two modes, one command:
 - MCP round trip: spawn the stdio server, `tools/list`, one `search` call,
   well-formed response
 
-**Read-write with cleanup** (`rag oq --rw`) — the end-to-end proof, used
+**Read-write with cleanup** (`rag oq --rw`): the end-to-end proof, used
 during first setup and after ingestion changes:
 
 1. Write a fixture note containing a unique sentinel (UUID) into a dedicated
    fixture folder inside the watched source.
-2. Wait for the watcher (or trigger a scan) — proves the real trigger path.
-3. Search for the sentinel — proves chunk → embed → store → retrieve.
-4. Delete the fixture; re-scan; verify its chunks are gone — proves
+2. Wait for the watcher (or trigger a scan): proves the real trigger path.
+3. Search for the sentinel: proves chunk → embed → store → retrieve.
+4. Delete the fixture; re-scan; verify its chunks are gone: proves
    `deleteByPath` and that cleanup happened.
 5. Cleanup runs in a finally-block: the fixture cannot outlive the run even
    on failure, and the sentinel makes any leftover uniquely findable.
 
-The OQ report is the standing answer to "does it still work?" — re-run
+The OQ report is the standing answer to "does it still work?" Re-run
 read-only after any upgrade, re-run read-write after touching ingestion.
 
-## Security boundaries
+## Security Boundaries
 
 - Tier is decided at ingestion (folder → tier rule per source) and enforced at
-  the serving layer — never by prompt instructions.
+  the serving layer, never by prompt instructions.
 - Phase 2 access: Entra ID OAuth on the remote MCP server; token identity maps
   to allowed tier indexes. Private-tier data is deferred to phase 2 for
-  exactly this reason — it does not enter any index until the gate exists.
+  exactly this reason: it does not enter any index until the gate exists.
 - Secrets (embedding API keys, search keys) come from the environment locally
   and Key Vault in Azure; nothing is stored in the index or the repo.
 
@@ -278,7 +278,7 @@ Settled 2026-08-09:
 | Decision           | Choice        | Rationale and consequences                                                                                                                                                                                                                                                                                                                                     |
 | ------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Local store        | **LanceDB**   | Embedded TS API, hybrid vector + full-text search built in, no server process. Native binary dependency accepted. The `ChunkStore` interface keeps a later swap cheap if it disappoints on the real corpus                                                                                                                                                     |
-| Embedding provider | **Voyage AI** | Retrieval quality and setup simplicity weighed over single-vendor alignment with Azure. Recorded consequence: Voyage is a data processor for every chunk it embeds, in all phases — phase-2 cloud ingestion calls Voyage from Azure, and private-tier content (including health data, when it joins) transits Voyage. Revisit per-tier if that posture changes |
+| Embedding provider | **Voyage AI** | Retrieval quality and setup simplicity weighed over single-vendor alignment with Azure. Recorded consequence: Voyage is a data processor for every chunk it embeds, in all phases: phase-2 cloud ingestion calls Voyage from Azure, and private-tier content (including health data, when it joins) transits Voyage. Revisit per-tier if that posture changes |
 
 Still open:
 

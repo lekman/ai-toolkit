@@ -19,22 +19,22 @@ claude-bedrock
 The published package bundles its dependencies, so `npx` installs nothing.
 Node 20 or later is the only requirement.
 
-## What this is not
+## What This Is Not
 
 **It does not set Bedrock up.** Claude Code ships `/setup-bedrock`, a wizard
 that detects your AWS profiles, resolves your region, checks which Claude models
 your account can actually invoke, and pins them. That last part is the fiddly
-bit — inference profile IDs are account- and region-scoped, and a wrong one
+bit: inference profile IDs are account- and region-scoped, and a wrong one
 fails at request time with an unhelpful error. Use the wizard; this tool does
 not duplicate it.
 
-## What it adds
+## What It Adds
 
 One thing: **per-invocation choice.**
 
 `/setup-bedrock` writes to `~/.claude/settings.json`, which is global. Turning
 Bedrock on turns it on for every session. `claude-bedrock` reads the
-configuration, hands it to a single child process, and launches — so these
+configuration, hands it to a single child process, and launches, so these
 coexist in the same terminal:
 
 ```bash
@@ -63,17 +63,17 @@ claude-bedrock -p "review the diff"
 claude-bedrock -- --help          # claude's help, not this one
 ```
 
-## Where configuration comes from
+## Where Configuration Comes From
 
 Checked in order:
 
 | Source                       | Use it when                                                                                  |
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| `.claude/bedrock.env` in cwd | A repo must run on a specific account — commit it, and everyone in the directory picks it up |
+| `.claude/bedrock.env` in cwd | A repo must run on a specific account: commit it, and everyone in the directory picks it up |
 | `~/.claude/bedrock.env`      | Your own default across repos                                                                |
-| `~/.claude/settings.json`    | Written by `/setup-bedrock`. Read, then moved into the env file above — see below           |
+| `~/.claude/settings.json`    | Written by `/setup-bedrock`. Read, then moved into the env file above. See below            |
 
-An env file is shell-style and read, not executed — `export KEY=value`, plain
+An env file is shell-style and read, not executed: `export KEY=value`, plain
 `KEY=value`, quoted values, and `#` comments:
 
 ```bash
@@ -85,7 +85,7 @@ export ANTHROPIC_DEFAULT_OPUS_MODEL='arn:aws:bedrock:<region>:<account-id>:appli
 
 Pin models by inference profile ID (`us.anthropic.claude-opus-4-8`) or by
 application inference profile ARN. Bedrock needs the cross-region form with a
-region prefix — bare model IDs do not work on the Invoke API. Region prefixes
+region prefix: bare model IDs do not work on the Invoke API. Region prefixes
 differ by partition (`us.`, `eu.`, `us-gov.` in GovCloud).
 
 Nothing is exported into your shell and no wrapper script is written.
@@ -119,7 +119,7 @@ rm ~/.claude/bedrock.env        # if you wrote one, or the repair did
 ```
 
 The `claude` binary is never modified. `~/.claude/settings.json` is, but only to
-move Bedrock variables out of it — to put them back, copy them from the env file
+move Bedrock variables out of it. To put them back, copy them from the env file
 into the `env` block before deleting it, or just re-run `/setup-bedrock`.
 
 ## Contributing

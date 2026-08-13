@@ -5,7 +5,7 @@ Microsoft Graph with delegated OAuth (device-code flow), and renders a day
 view the [planner plugin](../../plugins/planner/README.md) consumes. Not
 published to npm.
 
-## Why OAuth instead of published ICS feeds
+## Why OAuth Instead of Published ICS Feeds
 
 Published ICS links are secret URLs that must be managed as credentials, they
 strip or mangle event bodies, and recurrence expansion becomes the client's
@@ -57,7 +57,7 @@ expires from disuse.
 
 ## Configuration
 
-`~/.claude/calendar.json` — private, mode 0600, never committed:
+`~/.claude/calendar.json` is private, mode 0600, and never committed:
 
 ```json
 {
@@ -72,11 +72,11 @@ expires from disuse.
 }
 ```
 
-- `kind: "meetings"` — events split into Meetings (has attendees) and Todos
+- `kind: "meetings"`: events split into Meetings (has attendees) and Todos
   (no attendees, subject is the task).
-- `kind: "admin"` — every event renders as a checklist item tagged with the
+- `kind: "admin"`: every event renders as a checklist item tagged with the
   calendar name.
-- `cli` — where the planner skill finds the day-view entrypoint, so the
+- `cli`: where the planner skill finds the day-view entrypoint, so the
   public plugin never hardcodes a machine-specific path.
 
 ## Usage

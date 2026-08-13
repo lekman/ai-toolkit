@@ -2,8 +2,8 @@
 
 Run Claude Code against a model on your own machine. One command.
 
-Apple Silicon only. The practice behind it — why local, what it costs, and when
-it is the wrong choice — is in
+Apple Silicon only. The practice behind it (why local, what it costs, and when
+it is the wrong choice) is in
 [practices/local-models/README.md](../../practices/local-models/README.md).
 
 ## Use
@@ -23,7 +23,7 @@ claude-local
 ```
 
 The published package bundles its dependencies, so `npx` installs nothing and
-starts cold in about a second. Node 20 or later is the only requirement — Bun
+starts cold in about a second. Node 20 or later is the only requirement: Bun
 builds it, users never need Bun.
 
 ## Commands
@@ -45,7 +45,7 @@ claude-local --stop             # unload the model and free the memory
 | `--no-launch`   | Do the work, do not start Claude Code |
 | `--help`, `-h`  | Usage                                 |
 
-### Passing flags to Claude Code
+### Passing Flags to Claude Code
 
 The reserved flags above are handled here. The first token that is not one of
 them ends the parsing, and everything from there goes to `claude` untouched:
@@ -60,7 +60,7 @@ claude-local -- --help              # claude's help, not this one
 because choosing that is the reason this wrapper exists. To reach Claude Code's
 own `--model`, put it after `--`.
 
-## First run
+## First Run
 
 ```text
 ◆  What should be installed?
@@ -79,11 +79,11 @@ rather than offered and then failing. Setup then downloads what is missing,
 starts the server, and loads the main model with a context window sized to your
 RAM.
 
-## Switching models
+## Switching Models
 
 Only one model fits in unified memory at a time, so `--switch` swaps rather than
 adds: start the server, unload what is resident, load the new one at a size the
-machine can hold, and record it as current. Models in the catalog that are not
+machine can hold, and record it as current. Models in the catalogue that are not
 downloaded yet are offered too, and fetched on demand.
 
 ## What It Writes

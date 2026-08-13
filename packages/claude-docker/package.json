@@ -1,0 +1,49 @@
+{
+  "name": "@lekman/claude-docker",
+  "version": "0.3.1",
+  "description": "Run one Claude Code task in an isolated container that clones only that task's repo and branch.",
+  "license": "MIT",
+  "author": "Tobias Lekman",
+  "homepage": "https://github.com/lekman/ai-toolkit/tree/main/packages/claude-docker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lekman/ai-toolkit.git",
+    "directory": "packages/claude-docker"
+  },
+  "keywords": [
+    "claude-code",
+    "docker",
+    "orbstack",
+    "sandbox",
+    "isolation"
+  ],
+  "type": "module",
+  "bin": {
+    "claude-docker": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "bun run ../../scripts/build.ts",
+    "typecheck": "bun --bun tsc --noEmit",
+    "check": "bun run typecheck && bun run build",
+    "release": "bun run ../../scripts/release.ts",
+    "prepublishOnly": "bun run check"
+  },
+  "devDependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^22.10.0",
+    "picocolors": "^1.1.1",
+    "typescript": "^5.7.0"
+  }
+}

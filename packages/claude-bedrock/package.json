@@ -1,0 +1,47 @@
+{
+  "name": "@lekman/claude-bedrock",
+  "version": "0.2.1",
+  "description": "Run one Claude Code session against AWS Bedrock, without switching your global settings.",
+  "license": "MIT",
+  "author": "Tobias Lekman",
+  "homepage": "https://github.com/lekman/ai-toolkit/tree/main/packages/claude-bedrock",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lekman/ai-toolkit.git",
+    "directory": "packages/claude-bedrock"
+  },
+  "keywords": [
+    "claude-code",
+    "aws-bedrock",
+    "bedrock",
+    "aws-sso"
+  ],
+  "type": "module",
+  "bin": {
+    "claude-bedrock": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "bun run ../../scripts/build.ts",
+    "typecheck": "bun --bun tsc --noEmit",
+    "check": "bun run typecheck && bun run build",
+    "release": "bun run ../../scripts/release.ts",
+    "prepublishOnly": "bun run check"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/node": "^22.10.0",
+    "picocolors": "^1.1.1",
+    "typescript": "^5.7.0"
+  }
+}

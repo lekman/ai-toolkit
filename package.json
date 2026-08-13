@@ -1,0 +1,23 @@
+{
+  "name": "@lekman/ai-toolkit",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "packages/rag/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "eslint .",
+    "check": "bun run lint && bun run --filter '*' check",
+    "release": "bun run scripts/release.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-plugin-jsdoc": "^63.3.2",
+    "eslint-plugin-perfectionist": "^5.10.0",
+    "typescript-eslint": "^8.65.0"
+  }
+}

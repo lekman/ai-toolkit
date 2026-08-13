@@ -1,0 +1,5 @@
+{
+  "name": "git",
+  "description": "Git workflow: grouped conventional commits with QA and hook compliance, template-driven pull requests, and a hook that redirects a second PR against the default branch to a stack",
+  "version": "0.2.0"
+}

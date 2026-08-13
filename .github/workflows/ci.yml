@@ -1,0 +1,77 @@
+# Thin native CI: lint, typecheck, test, build across the Bun workspace,
+# plus trunk hold-the-line on pull requests.
+#
+# Deliberately self-contained — no reusable-workflow dependency. Once
+# lekman/devops-toolkit is generalised (org-neutral, hosted-runner
+# compatible, public), this file collapses to a single `uses:` call.
+
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+
+      - name: Install (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: ESLint
+        run: bun run lint
+
+      - name: Typecheck all packages
+        run: bun run typecheck
+
+      - name: Test all packages
+        run: |
+          for pkg in packages/*/package.json packages/rag/*/package.json; do
+            dir=$(dirname "$pkg")
+            if [ -d "$dir/tests" ] || ls "$dir"/*.test.ts >/dev/null 2>&1; then
+              echo "--- bun test: $dir"
+              (cd "$dir" && bun test)
+            fi
+          done
+
+      - name: Build all packages
+        run: bun run build
+
+  trunk:
+    name: Trunk hold-the-line
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+    permissions:
+      checks: write # composite posts inline annotations via the Checks API
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # composite prerequisite: trunk diffs against the PR base
+
+      # Direct action for now. The devops-toolkit trunk composite cannot be
+      # referenced from a public repo (private-action sharing is
+      # private-caller-only — verified empirically 2026-08-09). Swap to the
+      # composite via GitHub App token + checkout once TOOLKIT_APP_ID /
+      # TOOLKIT_APP_PRIVATE_KEY secrets exist.
+      - uses: trunk-io/trunk-action@04ba50e7658c81db7356da96657e6e77f220bfa3 # v1.3.1
+        with:
+          check-mode: pull_request

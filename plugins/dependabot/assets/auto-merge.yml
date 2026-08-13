@@ -1,0 +1,40 @@
+# Auto-merge Dependabot pull requests once required checks pass.
+# Installed by the `dependabot` plugin from lekman/ai-toolkit.
+#
+# Policy:
+#   - github-actions updates       -> auto-merge (any semver step)
+#   - npm/other patch + minor      -> auto-merge
+#   - major version bumps          -> left open for manual review
+#
+# "Auto-merge" here means the workflow enables GitHub's native auto-merge,
+# which only completes after every required status check is green. If branch
+# protection requires checks, nothing merges red. If the repo has no required
+# checks, enable auto-merge still waits for any checks defined on the PR.
+name: Dependabot auto-merge
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch update metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for safe updates
+        # Hold majors (except github-actions, which are low blast-radius here).
+        if: >-
+          steps.meta.outputs.update-type != 'version-update:semver-major' ||
+          steps.meta.outputs.package-ecosystem == 'github_actions'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

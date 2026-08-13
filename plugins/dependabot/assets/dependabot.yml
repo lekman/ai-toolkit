@@ -1,0 +1,35 @@
+# Dependabot configuration.
+# Installed by the `dependabot` plugin from lekman/ai-toolkit.
+#
+# Grouping keeps the PR count low: one PR per ecosystem per week instead of
+# one PR per package. Majors are split out into their own group so the
+# auto-merge workflow can hold them for manual review.
+#
+# Remove ecosystems that do not apply to this repository.
+version: 2
+updates:
+  # GitHub Actions used in workflows under .github/workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      all-actions:
+        patterns:
+          - "*"
+
+  # Node.js dependencies. Delete this block if there is no package.json.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Patch and minor bumps travel together and are safe to auto-merge.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+      # Majors get their own group; auto-merge holds these for a human.
+      majors:
+        update-types:
+          - major

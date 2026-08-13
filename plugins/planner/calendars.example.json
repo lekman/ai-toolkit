@@ -1,0 +1,12 @@
+{
+  "timezone": "Europe/London",
+  "calendars": [
+    { "name": "Work", "url": "webcal://example.com/work.ics" },
+    { "name": "Personal", "url": "https://example.com/personal.ics" },
+    {
+      "name": "Trips",
+      "url": "https://example.com/travel.ics",
+      "kind": "travel"
+    }
+  ]
+}

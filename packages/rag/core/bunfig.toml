@@ -1,0 +1,8 @@
+[test]
+coveragePathIgnorePatterns = [
+  "**/*.system.ts",  # System wrappers — no business logic
+  "**/index.ts",     # Barrel re-exports — no business logic
+  "src/bin/**",      # CLI entrypoints — wiring only
+  "tests/**",
+  "**/*.test.ts",
+]

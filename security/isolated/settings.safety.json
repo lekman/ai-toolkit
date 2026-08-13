@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git commit --no-verify:*)",
+      "Bash(git commit -n:*)",
+      "Bash(git push --no-verify:*)",
+      "Bash(git -c core.hooksPath=*)",
+      "Bash(git config core.hooksPath:*)"
+    ],
+    "ask": [
+      "Edit(commitlint.config.mjs)",
+      "Edit(.trunk/trunk.yaml)",
+      "Edit(.trunk/configs/**)",
+      "Edit(.claude/settings.json)",
+      "Edit(.claude/settings.local.json)",
+      "Edit(.claude/hooks/**)"
+    ]
+  }
+}

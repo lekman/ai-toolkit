@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Block a commit that would put client-identifying content in this public repo.
+#
+# Enabled by scripts/install-hooks.sh, which points core.hooksPath here so the
+# hook is version-controlled rather than living unshared in .git/hooks.
+#
+# Runs against the staged content, which is what the commit will record — not
+# the working tree, which can differ when a file is partially staged.
+#
+# No scripts/client-terms.txt means the check skips, so a contributor who works
+# with no clients is never blocked.
+set -euo pipefail
+
+exec "$(git rev-parse --show-toplevel)/scripts/check-no-client-content.sh" --staged

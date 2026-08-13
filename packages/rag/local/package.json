@@ -1,0 +1,51 @@
+{
+  "name": "@lekman/rag-local",
+  "version": "0.1.0",
+  "description": "Local runtime for the RAG toolkit: install automation, launchd agents, and IQ/OQ qualification.",
+  "license": "MIT",
+  "author": "Tobias Lekman",
+  "homepage": "https://github.com/lekman/ai-toolkit/tree/main/packages/rag/local",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lekman/ai-toolkit.git",
+    "directory": "packages/rag/local"
+  },
+  "keywords": [
+    "rag",
+    "mcp",
+    "launchd",
+    "qualification"
+  ],
+  "type": "module",
+  "bin": {
+    "rag": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "os": [
+    "darwin"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "typecheck": "bun --bun tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run typecheck && bun test && bun run build"
+  },
+  "dependencies": {
+    "@lekman/rag-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

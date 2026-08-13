@@ -1,0 +1,60 @@
+{
+  "name": "ai-toolkit",
+  "metadata": {
+    "description": "Shared practices, tools, and workflows for working with Claude"
+  },
+  "owner": {
+    "name": "Tobias Lekman",
+    "url": "https://github.com/lekman"
+  },
+  "plugins": [
+    {
+      "name": "git",
+      "source": "./plugins/git",
+      "description": "Git workflow: grouped conventional commits with QA and hook compliance, template-driven pull requests, and a hook that redirects a second PR against the default branch to a stack",
+      "category": "development",
+      "tags": [
+        "git",
+        "commit",
+        "conventional-commits",
+        "pull-request",
+        "stacked-prs",
+        "workflow"
+      ]
+    },
+    {
+      "name": "obsidian",
+      "source": "./plugins/obsidian",
+      "description": "Obsidian dashboard sync skills: resolve the active client by discovery and read/write a Dashboard.md without hardcoding client names",
+      "category": "productivity",
+      "tags": ["obsidian", "dashboard", "tasks", "notes", "workflow"]
+    },
+    {
+      "name": "wrap",
+      "source": "./plugins/wrap",
+      "description": "End-of-day, end-of-session and agent-handover wrap skills: reconcile the Obsidian dashboard and prune git at day end; extract learnings for the next session; write a vault handover an agent with no context can act on",
+      "category": "workflow",
+      "tags": ["wrapup", "handover", "learnings", "dashboard", "workflow"]
+    },
+    {
+      "name": "dependabot",
+      "source": "./plugins/dependabot",
+      "description": "Dependabot lifecycle skills: scan repositories for alert coverage and open PRs, then onboard a repo with alerts, grouped update config, and auto-merge on green",
+      "category": "development",
+      "tags": [
+        "dependabot",
+        "dependencies",
+        "security",
+        "auto-merge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "planner",
+      "source": "./plugins/planner",
+      "description": "Day-planning skills: the day's plate across all clients from the Obsidian dashboard, with weekend fall-forward and tracker-first sourcing",
+      "category": "productivity",
+      "tags": ["planning", "tasks", "obsidian", "dashboard", "daily"]
+    }
+  ]
+}

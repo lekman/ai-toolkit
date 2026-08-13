@@ -1,10 +1,10 @@
 # Planning-to-Implementation Handoff
 
 Plan in Claude Desktop, implement in Claude Code, and connect the two with a
-committed dispatch document — because the two sessions share no context, and
+committed dispatch document, because the two sessions share no context and
 because they should not share a machine.
 
-> Retired 2026-08-10: the handoff plugin is removed — day plans live in the
+> Retired 2026-08-10: the handoff plugin is removed; day plans live in the
 > Obsidian dashboard and plan notes now (see the planner plugin). This
 > practice stays as the record of the operating model.
 
@@ -42,15 +42,15 @@ tracker and the PR are the audit record.
 A planning session that skips context produces briefs that are confidently
 wrong. Read in this order before writing anything:
 
-1. **The repo's own instructions** — `CLAUDE.md`, `.claude/rules/`, and any
+1. **The repo's own instructions**: `CLAUDE.md`, `.claude/rules/`, and any
    existing `docs/handoff/` contract. These override everything below.
-2. **The master plan or roadmap** — so the day's work is placed against the
+2. **The master plan or roadmap**: so the day's work is placed against the
    critical path, and pulling work forward is a stated decision, not an
    accident.
-3. **The tracker** — ticket state, dependencies, what closed since the plan was
+3. **The tracker**: ticket state, dependencies, what closed since the plan was
    last touched. Treat tracker status as a claim, not a fact: PR state is the
    truth for "is it done".
-4. **What could not be verified** — write it down with a confidence level. A
+4. **What could not be verified**: write it down with a confidence level. A
    planning session usually has connector gaps (an unauthenticated integration,
    an ungranted tenant). Naming the gap in the day plan turns it into the
    implementation session's first verification step instead of a silent
@@ -62,14 +62,14 @@ The split is not ceremony; each side's posture is wrong for the other's job.
 
 - **Security.** The planning instance holds broad, human-scoped access: mail,
   calendar, wiki, tracker, several repos. The implementation instances hold
-  narrow, per-client credentials on dedicated machines — one client, one
+  narrow, per-client credentials on dedicated machines: one client, one
   instance, no cross-contamination. A prompt-injection or exfiltration incident
   on a code agent is contained to that instance's scope. See
   [isolated-agent security](../security/isolated/README.md).
 - **Autonomy.** Implementation instances run 24/7 and are disposable; a
   committed brief survives any crash, restart, or reprovision. The planning
   session is interactive and ends when the operator walks away. Anything that
-  must outlive the conversation goes in the brief — that constraint is the
+  must outlive the conversation goes in the brief: that constraint is the
   whole design.
 - **Auditability.** Every dispatch is a commit; every outcome is a PR plus a
   tracker comment. Reconstructing "what was asked and what happened" needs git
@@ -89,7 +89,7 @@ Two rules do most of the work:
   states, deployments, credentials) is a snapshot from its header date. The
   consuming session re-verifies before acting.
 
-## Relation to planner:goal / planner:execute
+## Relation to `planner:goal` / `planner:execute`
 
 The [planner plugin](../plugins/planner/README.md) solves the adjacent problem:
 `/planner:goal` agrees a Definition of Done and `/planner:execute` executes to

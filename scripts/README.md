@@ -1,9 +1,9 @@
 # scripts
 
-Repository-level checks. Not published, not part of any plugin — these guard
+Repository-level checks. Not published, not part of any plugin: these guard
 this repo itself.
 
-## Keeping client content out of a public repo
+## Keeping Client Content Out of a Public Repo
 
 This repo is public and is written while doing client work. A client name, one
 of their repository names, a ticket key or a meeting title reaching it is a
@@ -27,7 +27,7 @@ It points `core.hooksPath` at [.githooks](../.githooks/pre-commit), so the hook
 is version-controlled rather than sitting unshared in `.git/hooks` waiting to
 be lost on the next clone.
 
-### The term list is local, on purpose
+### The Term List Is Local, on Purpose
 
 Terms live in `scripts/client-terms.txt`, one extended-regex per line, and that
 file is **gitignored**. A committed list of client names would be exactly the
@@ -35,9 +35,9 @@ leak the check exists to prevent. Start from
 [client-terms.example.txt](client-terms.example.txt), which ships with none.
 
 No list means the check skips and prints why. A contributor who works with no
-clients is never blocked, and CI — which has no list — never fails on it.
+clients is never blocked, and CI, which has no list, never fails on it.
 
-### Why all three modes exist
+### Why All Three Modes Exist
 
 Each of the first two was added after the mode before it let something through:
 
@@ -50,7 +50,7 @@ Each of the first two was added after the mode before it let something through:
   records the staged version.
 - **History mode** exists because a working tree going clean does not clean the
   history behind it. A fix commit corrects the tip and leaves the earlier blob
-  exactly where it was — still published, still fetchable. Only a history
+  exactly where it was: still published, still fetchable. Only a history
   rewrite removes it.
 
 Run `--history` before assuming the published repo is clean. It is the check

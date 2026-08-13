@@ -4,12 +4,12 @@ Running Claude Code against the model over AWS Bedrock, and keeping the session
 authenticated. Bedrock gives you IAM-scoped access and per-team cost allocation;
 AWS SSO gives credentials that refresh instead of being pasted.
 
-## Set It Up With the Built-In Wizard
+## Set It Up with the Built-In Wizard
 
 Run `claude`, then `/setup-bedrock`. It reads your AWS profiles, resolves the
 region, checks which Claude models your account can actually invoke, and pins
 them into your settings. Use it rather than writing the environment variables by
-hand — inference profile IDs are account- and region-scoped, and a wrong one
+hand: inference profile IDs are account- and region-scoped, and a wrong one
 fails at request time with an unhelpful error.
 
 Two consequences worth knowing:
@@ -44,7 +44,7 @@ Why a hook rather than a manual step or a build-tool task:
   access (set it in the account, your shell, or `.claude/settings.json` env).
 - AWS CLI v2. The `sso-session` config block does not exist in v1.
 
-### Wire It (Opt-In, per User)
+### Wire It (Opt-In, Per User)
 
 Copy the script into your `.claude/hooks/`, then wire it in
 `.claude/settings.local.json`, not the committed `settings.json`, because the
@@ -68,7 +68,7 @@ login opens a browser tab and not everyone wants that on every session:
 }
 ```
 
-### Interactive vs Headless
+### Interactive Versus Headless
 
 `aws sso login` completes device auth in a browser, so it only works where a
 human can click. Wire it on the interactive session (the IDE, or the orchestrator

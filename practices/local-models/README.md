@@ -15,7 +15,7 @@ a native `/v1/messages` endpoint, so tool calls round-trip unchanged.
 
 That last part is the whole reason to pick LM Studio over Ollama. Ollama serves
 an OpenAI-shaped API, so a proxy has to translate tool-call blocks in both
-directions, and Claude Code — which is almost entirely tool calls — trips over
+directions, and Claude Code, which is almost entirely tool calls, trips over
 the lossy conversion. With a native endpoint there is no translation layer to
 get wrong.
 
@@ -25,8 +25,8 @@ get wrong.
 npx @lekman/claude-local
 ```
 
-On first run it offers a checkbox list — the core pack (LM Studio and its `lms`
-CLI) is always included, models are yours to pick — then downloads what is
+On first run it offers a checkbox list: the core pack (LM Studio and its `lms`
+CLI) is always included, models are yours to pick. It then downloads what is
 missing, starts the server, loads the main model with a context window sized to
 your RAM, and hands you Claude Code. On every run after, it just starts.
 
@@ -60,7 +60,7 @@ memory at roughly 75% of RAM by default, so on 48 GB the working budget is about
 
 Setup pre-checks the first and the last: Qwen3-Coder as the model you work with,
 Gemma 4 E4B as the background one, ~23 GB together. The other two are unchecked,
-because only one model fits in memory at a time — adding them means swapping,
+because only one model fits in memory at a time: adding them means swapping,
 not running both.
 
 To swap, at setup time or any time after:
@@ -83,15 +83,15 @@ lms load google/gemma-4-26b-a4b --context-length 65536 --gpu max
 
 **Not on this machine:** Qwen3-Coder-Next (80B MoE) is the best local option for
 Claude Code, but even at 4-bit it needs more than 48 GB once context is added.
-The 8-bit build of Qwen3-Coder 30B is ~32 GB, which leaves nothing for context —
-worth trying at 96 GB and up, not here.
+The 8-bit build of Qwen3-Coder 30B is ~32 GB, which leaves nothing for context.
+Worth trying at 96 GB and up, not here.
 
 ## What to Expect
 
 Be clear-eyed about this before you rewire your workflow.
 
 - **Quality.** A local 30B handles single-file edits, tests, refactors, and
-  explanations. It degrades on long multi-step tasks — the kind where Claude
+  explanations. It degrades on long multi-step tasks: the kind where Claude
   Code plans, reads six files, and threads a change through them.
 - **Speed.** About 30 tokens/sec. Every tool call is a round trip, so an
   agentic loop that the hosted model finishes in a minute can take ten.
@@ -133,4 +133,4 @@ rm -rf ~/.lmstudio        # downloaded models, tens of GB
 - [Claude Code with LM Studio](https://lmstudio.ai/docs/integrations/claude-code)
 - [LM Studio Anthropic compatibility endpoints](https://lmstudio.ai/docs/developer/anthropic-compat)
 - [lms CLI reference](https://lmstudio.ai/docs/cli)
-- [Gemma 4 in the LM Studio catalog](https://lmstudio.ai/models/gemma-4)
+- [Gemma 4 in the LM Studio catalogue](https://lmstudio.ai/models/gemma-4)

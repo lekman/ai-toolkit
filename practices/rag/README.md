@@ -5,13 +5,13 @@ model that predicts when it works, and the boundary where it stops fitting.
 The implementation this practice drives lives in
 [packages/rag/DESIGN.md](../../packages/rag/DESIGN.md).
 
-## What RAG is
+## What RAG Is
 
 An ingestion pipeline pulls documents from source systems, splits them into
 chunks, converts each chunk to an embedding vector, and stores vectors plus
 metadata in a search index. At question time the query is embedded, the index
 returns the most semantically similar chunks, and those chunks are injected
-into the model's context as retrieved text — just-in-time, per conversation.
+into the model's context as retrieved text, just-in-time, per conversation.
 The model never "contains" the data; it reads the snippets it was served.
 
 ```mermaid
@@ -31,7 +31,7 @@ Two properties follow. Content with no API becomes searchable (notes, file
 shares, exported documents). And the context footprint stays small no matter
 how large the corpus grows, because only the relevant chunks travel.
 
-## The mental model: a BI layer for AI
+## The Mental Model: a BI Layer for AI
 
 Treat a RAG index the way you treat a data warehouse, not the way you treat a
 database. It is a **derived read model over systems of record**:
@@ -67,15 +67,15 @@ flowchart LR
 One refinement keeps the analogy honest: a warehouse answers **aggregate**
 questions over structured facts ("total by quarter"); a RAG index answers
 **relevance** questions over text ("what do we know about X", "what did we
-decide about Y"), returning the top-k most similar chunks — never a complete
+decide about Y"), returning the top-k most similar chunks, never a complete
 or exact result set. So: fed like a warehouse, queried like a search index.
 
-## Where it stops: transactional data
+## Where It Stops: Transactional Data
 
 State does not fit RAG, for three independent reasons:
 
 1. **Staleness.** "What is the current balance", "is this task open", "what
-   is on the calendar" need current state. An index is always behind — wrong
+   is on the calendar" need current state. An index is always behind: wrong
    answers, delivered confidently.
 2. **Precision and completeness.** "Sum of all unpaid invoices" needs every
    matching record, exactly. Top-k similarity gives the ten most
@@ -111,17 +111,17 @@ Two refinements:
   question.
 - **Transactional data can enter as documents, not records.** A written
   monthly summary or an incident post-mortem is knowledge derived from
-  transactions — index the narrative, never the ledger. Chunking rows is the
+  transactions: index the narrative, never the ledger. Chunking rows is the
   signal you wanted a tool instead.
 
-If CQRS is familiar: the index is a materialized read model specialized for
+If CQRS is familiar: the index is a materialised read model specialised for
 semantic queries. Rebuildability, lag tolerance, and one-way data flow all
 follow from that.
 
-## When not to build RAG at all
+## When Not to Build RAG at All
 
-Sources with a good live API — issue trackers, calendars, mail, project
-boards — are often better served by their existing connectors or MCP tools:
+Sources with a good live API (issue trackers, calendars, mail, project
+boards) are often better served by their existing connectors or MCP tools:
 live, permission-aware, zero pipeline to own. RAG earns its place for content
 with no API, and for semantic search across sources that no single connector
 can answer. Build the pipeline where those hold; reuse connectors where they

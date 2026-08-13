@@ -5,10 +5,10 @@ not config: the _how_ and _why_ of a way of working. Enforcement lives in the
 other areas (security, observability, plugins); this folder explains the shape
 they add up to.
 
-## Agent isolation
+## Agent Isolation
 
 An agent is useful in proportion to what it can reach, and dangerous in the same
-proportion. No single setting resolves that, so the answer is layers — each one
+proportion. No single setting resolves that, so the answer is layers, each one
 holding when the one above it fails. Further reading:
 [defence in depth for agents](https://www.lekman.com/blog/ai-security-defence-in-depth-for-agents).
 
@@ -19,7 +19,7 @@ Two questions are independent, and confusing them is the usual mistake:
   prompt, can actually do.
 
 Running Claude in your own AWS account answers the first and nothing about the
-second — the agent still has your laptop. Putting it in a container answers the
+second: the agent still has your laptop. Putting it in a container answers the
 second and nothing about the first. Most setups need both.
 
 ```mermaid
@@ -48,12 +48,12 @@ flowchart TB
   part way through on an expired token.
 - [foundry/](foundry/README.md): run Claude Code on Claude in Microsoft Foundry
   (Azure), where there is no setup wizard and nothing checks the configuration
-  before the first request — so pinning models and checking the Azure session
+  before the first request, so pinning models and checking the Azure session
   are yours to do. Driven by
   [@lekman/claude-foundry](../packages/claude-foundry/README.md).
 - [isolated-container/](isolated-container/README.md): give the agent a
   container holding one repository, one branch, and one dedicated credential,
-  then stop asking it for permission — the boundary covers what the prompt was
+  then stop asking it for permission: the boundary covers what the prompt was
   protecting. Driven by
   [@lekman/claude-docker](../packages/claude-docker/README.md).
 - [security/isolated/](../security/isolated/README.md): the guard rails an agent
@@ -62,12 +62,12 @@ flowchart TB
 ## Retrieval
 
 What an agent can look up shapes what it can answer. Retrieval-augmented
-generation adds a derived, searchable layer over knowledge sources — a
-BI/warehouse layer for AI, queried just-in-time — while live state stays
+generation adds a derived, searchable layer over knowledge sources (a
+BI/warehouse layer for AI, queried just-in-time) while live state stays
 behind APIs and connectors.
 
-- [rag/README.md](rag/README.md): the mental model — fed like a warehouse,
-  queried like a search index; why transactional data does not fit; when a
+- [rag/README.md](rag/README.md): the mental model (fed like a warehouse,
+  queried like a search index); why transactional data does not fit; when a
   live connector beats a pipeline. Design for the implementation in
   [packages/rag/DESIGN.md](../packages/rag/DESIGN.md).
 

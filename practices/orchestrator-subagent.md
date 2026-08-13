@@ -52,7 +52,7 @@ for the Bedrock path, not shipped, and the newest models reach Bedrock on a lag.
 So this reason is **time-dependent**: if Bedrock reaches parity it weakens. The
 next reason does not.
 
-### Security and cost
+### Security and Cost
 
 Orchestration and code execution have different risk, cost, and scope profiles,
 so they get different credentials:
@@ -69,7 +69,7 @@ privilege and cheap revocation, applied to the agent's own identity rather than
 to a human's. Unlike the capability reason, this one is **structural**: it holds
 even if Bedrock ships every feature above.
 
-## One OS Account per Client
+## One OS Account Per Client
 
 The orchestrator runs under a dedicated operating-system account, one per client,
 on a persistent machine you can reach remotely (see

@@ -5,7 +5,7 @@ authenticated. Foundry gives you Entra ID identity, RBAC, Azure networking, and
 one bill; it is the natural choice when the rest of your estate is already
 there.
 
-Claude Code supports it natively — set `CLAUDE_CODE_USE_FOUNDRY=1` and it works.
+Claude Code supports it natively: set `CLAUDE_CODE_USE_FOUNDRY=1` and it works.
 What it does not have is the scaffolding Bedrock and Google Cloud got, and that
 absence shapes everything below.
 
@@ -18,7 +18,7 @@ knowing before you commit a team to it.
 **Nothing verifies your configuration.** Foundry performs no startup model check,
 and the endpoint URL is built directly from the resource name. A resource name
 left as a placeholder, or a deployment name that does not exist, is not reported
-as a configuration problem — it surfaces as a failed request on the first
+as a configuration problem: it surfaces as a failed request on the first
 prompt, which reads like an outage.
 
 **Model pins are mandatory in practice.** An unpinned alias falls back to Claude
@@ -54,13 +54,13 @@ the resource. Check first with
 `az cognitiveservices model list --location <region>`.
 
 **Quota starts at zero, and zero is not the same as exhausted.** Every Claude
-model shows in the catalog whether or not you can deploy it, because the catalog
+model shows in the catalogue whether or not you can deploy it, because the catalogue
 lists what the region offers while quota is granted per model, per subscription.
 So the portal lets you fill in a deployment form and then fails on submit. Read
 it with `az cognitiveservices usage list -l <region>`: `used 0, limit 0` means
 nothing was ever granted, and no amount of deleting deployments frees any.
 
-Two traps follow. An initial allocation comes from an Azure support ticket — the
+Two traps follow. An initial allocation comes from an Azure support ticket: the
 quota-increase form raises an allocation that already exists, so it cannot create
 one. And Claude on Foundry is an Azure Marketplace offer, which a Visual
 Studio/MSDN, MPN, free-trial, student, or sponsored subscription cannot buy;
@@ -69,8 +69,8 @@ those sit at zero in every region permanently. Check
 quota requests.
 
 **Anthropic deployments need three extra fields.** A Claude deployment carries a
-`modelProviderData` block — organization name, industry, two-letter country code
-— which signs the marketplace agreement behind it. The portal does not collect
+`modelProviderData` block (organisation name, industry, two-letter country code)
+which signs the marketplace agreement behind it. The portal does not collect
 all three, so portal deployments can fail with `InvalidModelProviderData`, and
 `az cognitiveservices account deployment create` has no flag for it either
 because the management SDK has no field for it. Creating one from a script means
@@ -88,14 +88,14 @@ export ANTHROPIC_DEFAULT_HAIKU_MODEL='<your-haiku-deployment>'
 ```
 
 `ANTHROPIC_FOUNDRY_BASE_URL` is the alternative to the resource name, for a
-gateway or a non-standard endpoint. They are alternatives, not a pair — set one.
+gateway or a non-standard endpoint. They are alternatives, not a pair: set one.
 
 Confirm it with `/status` inside Claude Code: the API provider line reads
 `Microsoft Foundry`.
 
 Background work such as generating session titles uses the small, fast model. On
 Foundry that defaults to your primary model, because not every account has a
-Haiku deployment — which means title generation runs on Opus unless you pin
+Haiku deployment, which means title generation runs on Opus unless you pin
 Haiku. Pin it.
 
 ## Authenticate
@@ -106,7 +106,7 @@ Three options, in the order Claude Code decides between them:
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `ANTHROPIC_FOUNDRY_AUTH_TOKEN` | A token some other process already obtained. Needs Claude Code 2.1.203+.                                        |
 | `ANTHROPIC_FOUNDRY_API_KEY`    | Getting started, and anywhere Entra ID is not practical.                                                        |
-| Neither                        | The Azure SDK default credential chain — `az login` on a laptop, a service principal or managed identity in CI. |
+| Neither                        | The Azure SDK default credential chain: `az login` on a laptop, a service principal or managed identity in CI. |
 
 Prefer the credential chain over a key. A key is a long-lived secret that has to
 live somewhere, and Azure's whole advantage here is that you do not need one:
@@ -118,10 +118,10 @@ grant `Microsoft.CognitiveServices/accounts/providers/*` as a custom role.
 `/logout` inside Claude Code does nothing on Foundry. Authentication belongs to
 Azure, so signing out means `az logout` or removing the key.
 
-## Keep The Session Alive
+## Keep the Session Alive
 
 The failure to design for is an expired Azure CLI login. It does not announce
-itself — the token is simply gone, and the next request fails in a way that
+itself: the token is simply gone, and the next request fails in a way that
 looks like a Foundry problem rather than an auth problem.
 
 Two things to know about checking for it:
@@ -140,7 +140,7 @@ Two things to know about checking for it:
 the configuration checks the missing wizard would have done, and hands the
 environment to a single session so bare `claude` keeps whatever your global
 settings say. Its `--setup` is the missing wizard: it reads the resource, the
-catalog, and the quota, creates the deployments the portal cannot, and writes the
+catalogue, and the quota, creates the deployments the portal cannot, and writes the
 env file so no deployment name is retyped. This is the same split as
 [Bedrock](../bedrock/README.md#set-it-up-with-the-built-in-wizard): global
 settings apply to every session, so mixing backends needs something that scopes
@@ -148,13 +148,13 @@ one of them to a single process.
 
 For interactive versus headless, the reasoning is identical to Bedrock's:
 `az login` completes in a browser, so it belongs on the session a human drives.
-A headless subagent should inherit a credential rather than try to obtain one —
+A headless subagent should inherit a credential rather than try to obtain one;
 see [orchestrator and subagent](../orchestrator-subagent.md).
 
 ## Know What You Give Up
 
 Foundry carries less of the Claude API than the first-party endpoint. Most of
-what Claude Code itself uses is there but marked beta — extended and adaptive
+what Claude Code itself uses is there but marked beta: extended and adaptive
 thinking, effort, prompt caching, PDF input, structured outputs. Message
 Batches, the Models API, and Managed Agents are absent, as are mid-conversation
 system messages.

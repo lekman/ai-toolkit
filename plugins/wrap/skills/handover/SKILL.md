@@ -1,8 +1,7 @@
 ---
 name: handover
-description: Write an agent-ready handover note in the Obsidian vault so another agent — a session on another machine, a fresh run, a containerised or hosted agent — can pick the work up cold, and link it from today's dashboard. Use when the user says "/wrap:handover", "hand this over", "write a handover", or "another agent takes this from here".
+description: Write an agent-ready handover note in the Obsidian vault so another agent — a session on another machine, a fresh run, a containerised or hosted agent — can pick the work up cold, and link it from today's dashboard. Use only when the user asks for it — "/wrap:handover", "hand this over", "write a handover", "another agent takes this from here". Never start it on your own initiative, including at the end of a session.
 user-invocable: true
-disable-model-invocation: true
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion
 ---
 

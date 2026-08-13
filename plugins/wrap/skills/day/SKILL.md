@@ -1,8 +1,7 @@
 ---
 name: day
-description: End-of-work-day wrap for the active client — reconcile the Obsidian dashboard against real state (TODO.md, GitHub PRs), roll open items to the next working day, archive the finished day, prune merged git branches and stale worktrees, then report the day. Use when the user says "/wrap:day", "wrap up the day", or "end of day".
+description: End-of-work-day wrap for the active client — reconcile the Obsidian dashboard against real state (TODO.md, GitHub PRs), roll open items to the next working day, archive the finished day, prune merged git branches and stale worktrees, then report the day. Use only when the user asks for it — "/wrap:day", "wrap up the day", "end of day". Never start it on your own initiative, including when a session looks finished.
 user-invocable: true
-disable-model-invocation: true
 allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion
 ---
 

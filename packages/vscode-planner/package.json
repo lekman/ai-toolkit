@@ -83,7 +83,7 @@
             "type": "string"
           },
           "default": [],
-          "markdownDescription": "Only show tasks under these client headings, e.g. `[\"Lekman Consulting\"]`. Set this per repository in `.vscode/settings.json`. Leave empty to derive the client from the `clients` path map in `~/.claude/obsidian.json`; if that also finds nothing, every client is shown."
+          "markdownDescription": "Only show tasks under these client headings, e.g. `[\"Acme\"]`. Set this per repository in `.vscode/settings.json`. Leave empty to derive the client from the `clients` path map in `~/.claude/obsidian.json`; if that also finds nothing, every client is shown."
         },
         "planner.showClientHeadings": {
           "type": "string",

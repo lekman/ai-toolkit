@@ -44,7 +44,7 @@ repository's `.vscode/settings.json` to pin a repository to specific clients:
 
 ```json
 {
-  "planner.clients": ["Lekman Consulting"]
+  "planner.clients": ["Acme"]
 }
 ```
 
@@ -80,16 +80,44 @@ would hide a misconfiguration:
 - **"No tasks for `<client>`."** — the day exists, but the filter excluded
   everything under it.
 
-## Build
+## Install
+
+Not published to the Visual Studio Marketplace, and not intended to be. It
+reads a personal Obsidian vault and is built to be installed from the file you
+produce yourself.
+
+Build the `.vsix`, then install it:
 
 ```sh
+cd packages/vscode-planner
 bun install
-bun run check     # typecheck, test, build
-bun run package   # writes planner.vsix
+bun run package                              # writes planner.vsix
+code --install-extension planner.vsix
 ```
 
-Install the built file with
-`code --install-extension packages/vscode-planner/planner.vsix`.
+Reload the window afterwards (**Developer: Reload Window**), then open the
+Planner icon in the activity bar.
+
+For VS Code forks, swap the CLI: `cursor`, `windsurf`, or
+`codium --install-extension planner.vsix`. If no CLI is on your `PATH`, use
+**Extensions: Install from VSIX…** in the command palette and pick the file.
+
+To upgrade, rebuild and install again — the same command overwrites the
+installed copy. Bump `version` in `package.json` first if you want VS Code to
+show the change. To remove it: `code --uninstall-extension lekman.planner`.
+
+Because it is installed from a file rather than the marketplace, VS Code will
+never update it for you. It also does not sync through Settings Sync, so each
+machine needs its own install.
+
+## Develop
+
+```sh
+bun run check     # typecheck, test, build
+```
+
+Press `F5` in this folder to launch an Extension Development Host with the
+extension loaded, which is faster than rebuilding the `.vsix` on each change.
 
 ## Layout
 

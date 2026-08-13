@@ -39,7 +39,7 @@ export class Markdown {
    * Convert one line of inline markdown to HTML.
    *
    * Only `http:` and `https:` links become anchors. A vault-relative target
-   * (`Clients/AlgoDx/Notes.md`) has nothing to resolve against inside a
+   * (`Clients/Initech/Notes.md`) has nothing to resolve against inside a
    * webview, so its label is rendered as plain text rather than as a link
    * that would do nothing.
    *

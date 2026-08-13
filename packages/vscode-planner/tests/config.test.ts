@@ -9,7 +9,7 @@ import { Config } from "../src/config/config.ts";
 
 const SHARED: SharedObsidianConfig = {
   clients: {
-    "/Users/me/Repo/lekman": "Lekman Consulting",
+    "/Users/me/Repo/lekman": "Acme",
     "/Users/me/Repo/lekman/client-work": "Globex",
   },
   dashboard: "Dashboard.md",
@@ -36,7 +36,7 @@ describe("clientForPath", () => {
 
   test("matches the prefix itself", () => {
     expect(Config.clientForPath(SHARED.clients, "/Users/me/Repo/lekman")).toBe(
-      "Lekman Consulting",
+      "Acme",
     );
   });
 
@@ -61,19 +61,19 @@ describe("resolve", () => {
       SHARED_PATH,
     );
     expect(config.dashboardPath).toBe("/Users/me/Vault/Dashboard.md");
-    expect(config.clients).toEqual(["Lekman Consulting"]);
+    expect(config.clients).toEqual(["Acme"]);
     expect(config.problem).toBeNull();
   });
 
   test("settings override the shared config", () => {
     const config = Config.resolve(
-      { ...DEFAULTS, clients: ["Evinova"], dashboardPath: "/tmp/D.md" },
+      { ...DEFAULTS, clients: ["Globex"], dashboardPath: "/tmp/D.md" },
       SHARED,
       "/Users/me/Repo/lekman/ai-toolkit",
       SHARED_PATH,
     );
     expect(config.dashboardPath).toBe("/tmp/D.md");
-    expect(config.clients).toEqual(["Evinova"]);
+    expect(config.clients).toEqual(["Globex"]);
   });
 
   test("shows every client when nothing resolves the workspace", () => {
@@ -106,6 +106,6 @@ describe("resolve", () => {
       "/Users/me/Repo/lekman",
       SHARED_PATH,
     );
-    expect(config.clients).toEqual(["Lekman Consulting"]);
+    expect(config.clients).toEqual(["Acme"]);
   });
 });

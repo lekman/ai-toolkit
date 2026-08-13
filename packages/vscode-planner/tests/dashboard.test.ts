@@ -10,12 +10,12 @@ const SAMPLE = `# Dashboard
 
 ### Thursday 13 August
 
-#### **Evinova**
+#### **Globex**
 > [!note] Intention: something.
 
-- [ ] An Evinova task
+- [ ] An Globex task
 
-#### **Lekman Consulting**
+#### **Acme**
 > [!note] Intention: something else.
 
 - [x] A finished task
@@ -24,19 +24,19 @@ const SAMPLE = `# Dashboard
 
 ### Friday 14 August
 
-#### **Lekman Consulting**
+#### **Acme**
 
 - [ ] Tomorrow's task
 
 ### Unscheduled — no day assigned
 
-#### **AlgoDx**
+#### **Initech**
 
 - [ ] Someday
 
 ## Initiatives
 
-### AlgoDx
+### Initech
 - [ ] This must never be parsed
 `;
 
@@ -90,10 +90,7 @@ describe("parse", () => {
 
   test("groups tasks under their client", () => {
     const day = Dashboard.dayOn(days, TODAY);
-    expect(day?.groups.map((g) => g.client)).toEqual([
-      "Evinova",
-      "Lekman Consulting",
-    ]);
+    expect(day?.groups.map((g) => g.client)).toEqual(["Globex", "Acme"]);
   });
 
   test("reads the checkbox state", () => {
@@ -112,7 +109,7 @@ describe("parse", () => {
 
   test("does not absorb the next client's callout into a task", () => {
     const day = Dashboard.dayOn(days, TODAY);
-    expect(day?.groups[0]?.tasks[0]?.text).toBe("An Evinova task");
+    expect(day?.groups[0]?.tasks[0]?.text).toBe("An Globex task");
   });
 });
 
@@ -141,12 +138,12 @@ describe("filterGroups", () => {
   const day = Dashboard.dayOn(days, TODAY);
 
   test("keeps only the named clients", () => {
-    const groups = Dashboard.filterGroups(day, ["Lekman Consulting"]);
-    expect(groups.map((g) => g.client)).toEqual(["Lekman Consulting"]);
+    const groups = Dashboard.filterGroups(day, ["Acme"]);
+    expect(groups.map((g) => g.client)).toEqual(["Acme"]);
   });
 
   test("matches the client name case-insensitively", () => {
-    expect(Dashboard.filterGroups(day, ["lekman consulting"])).toHaveLength(1);
+    expect(Dashboard.filterGroups(day, ["acme"])).toHaveLength(1);
   });
 
   test("an empty filter keeps every group", () => {
@@ -154,7 +151,7 @@ describe("filterGroups", () => {
   });
 
   test("an unknown client keeps nothing", () => {
-    expect(Dashboard.filterGroups(day, ["Globex"])).toHaveLength(0);
+    expect(Dashboard.filterGroups(day, ["Umbrella"])).toHaveLength(0);
   });
 
   test("an undefined day yields nothing", () => {

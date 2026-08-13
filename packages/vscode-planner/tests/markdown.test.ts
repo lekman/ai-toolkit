@@ -40,7 +40,7 @@ describe("renderInline", () => {
   });
 
   test("renders a vault-relative link as plain text", () => {
-    expect(Markdown.renderInline("[Details](Clients/AlgoDx/Note.md)")).toBe(
+    expect(Markdown.renderInline("[Details](Clients/Initech/Note.md)")).toBe(
       "Details",
     );
   });

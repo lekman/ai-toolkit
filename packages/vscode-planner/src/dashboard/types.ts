@@ -2,7 +2,7 @@
 
 /** The tasks under one `#### **Client**` heading. */
 export interface ClientGroup {
-  /** Heading text with its bold markers stripped, e.g. `Lekman Consulting`. */
+  /** Heading text with its bold markers stripped, e.g. `Acme`. */
   client: string;
   tasks: Task[];
 }

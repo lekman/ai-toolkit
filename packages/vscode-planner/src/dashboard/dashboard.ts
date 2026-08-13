@@ -5,7 +5,7 @@
  *
  *   ## Focus
  *   ### Thursday 13 August        <- day heading, no year
- *   #### **Evinova**              <- client group
+ *   #### **Globex**              <- client group
  *   > [!note] Intention: ...      <- callout, ignored
  *   - [ ] a task                  <- task, may continue on indented lines
  *   ## Initiatives                <- ends the Focus section

@@ -66,7 +66,7 @@ Then:
 
 - **Every section the template asks for, or delete it.** A heading left with its
   italic guidance underneath is worse than no heading: it reads as unfinished.
-- **Testing evidence is what you ran and what it said**, with the command. Not
+- **Testing Evidence is what you ran and what it said**, with the command. Not
   "tests pass". If something was not verified, say so rather than leaving the row
   blank.
 - **Never tick a checkbox you did not verify.** Validation lists are completed

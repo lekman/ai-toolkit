@@ -27,8 +27,8 @@ system (Jira, Monday.com, or anything else), `Closes [PROJ-123]` is a human
 convention that closes nothing on its own. Repositories with no tracker delete
 the line and link the plan document instead.
 
-Its sections are In short, Summary, Change type, Delivered, Decisions, Testing
-evidence, and Validations passed. The evidence table asks for one row per
+Its sections are In short, Summary, Change Type, Delivered, Decisions, Testing
+Evidence, and Validations Passed. The evidence table asks for one row per
 evidence base with the command and what it said, because "tests pass" is not
 evidence. `Stacked on #N` belongs under Summary when the branch is a stack
 layer.

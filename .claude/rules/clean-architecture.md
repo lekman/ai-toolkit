@@ -24,9 +24,9 @@ src/
 
 | File                 | Contains                                                    | Example                                                           |
 | -------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------- |
-| `types.ts`           | Type aliases, interfaces, value objects, enums — no classes | `FormatterOptions`, `ScanMode`                                    |
+| `types.ts`           | Type aliases, interfaces, value objects, enums, no classes  | `FormatterOptions`, `ScanMode`                                    |
 | `{name}.ts`          | Business logic as a static class                            | `formatter.ts` → `Formatter`, `security-scan.ts` → `SecurityScan` |
-| `interfaces.ts`      | Port interfaces — contracts that adapters implement         | `IChunkStore`, `IEmbeddingsProvider`                              |
+| `interfaces.ts`      | Port interfaces: contracts that adapters implement          | `IChunkStore`, `IEmbeddingsProvider`                              |
 | `{domain}.system.ts` | Adapter implementations (I/O, network, filesystem)          | `LanceDbChunkStore`                                               |
 | `index.ts`           | Barrel re-exports. No logic.                                | `export { Formatter } from "./formatter"`                         |
 
@@ -48,7 +48,7 @@ import { Bootstrap } from "@src/bootstrap/types";
 
 Any file that makes a system call (reads files, writes files, executes shell commands, makes network requests) **must** use the `.system.ts` suffix.
 
-A single glob (`**/*.system.ts`) in `bunfig.toml` excludes all of them from coverage. These files contain no business logic — only thin wrappers.
+A single glob (`**/*.system.ts`) in `bunfig.toml` excludes all of them from coverage. These files contain no business logic, only thin wrappers.
 
 ```typescript
 // bootstrap.system.ts — thin wrapper, no business logic
@@ -61,7 +61,7 @@ export class FileSystemSystem implements IFileSystem {
 
 Never put business logic in a `*.system.ts` file.
 
-## Interface-Based Dependency Injection
+## Dependency Injection Through Interfaces
 
 Define a contract (`interfaces.ts`), implement it in the system layer, and accept the interface in business logic with the concrete implementation as default:
 
@@ -83,7 +83,7 @@ export async function run(
 
 ## Namespaced Static Class Exports
 
-Group related functions under a class with static methods. Factory classes use static factory methods — not loose exported functions.
+Group related functions under a class with static methods. Factory classes use static factory methods, not loose exported functions.
 
 ```typescript
 // Good — static class with factory methods
@@ -135,7 +135,7 @@ class JSZipDocxProcessor { ... }
 
 ## Unit Tests Without Mocks
 
-Business logic functions should be pure — they only transform inputs. Unit tests pass values directly with no mocks.
+Business logic functions should be pure: they only transform inputs. Unit tests pass values directly with no mocks.
 
 Only the system layer makes system calls, and it is excluded from coverage.
 

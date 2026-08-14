@@ -4,7 +4,7 @@ PR conventions for ai-toolkit:
 - Title is a Conventional Commit subject: type(scope): description. No ticket prefix.
 - Keep it short. Reviewers skim. Long prose gets skipped.
 - This repo is public. Never paste client names, vault contents, calendar URLs,
-  or anything else that identifies a client engagement — generalise it first.
+  or anything else that identifies a client engagement. Generalise it first.
 - Replace the italic guidance below; delete any section that does not apply.
 -->
 
@@ -24,7 +24,7 @@ Closes #
 
 <!-- If this PR is stacked, add a line: Stacked on #N -->
 
-## Change type
+## Change Type
 
 <!-- Tick all that apply. -->
 
@@ -46,13 +46,13 @@ Closes #
 
 1.
 
-## Testing evidence
+## Testing Evidence
 
 <!--
 One row per evidence base in scope.
 Status legend: 🟢 passed · 🟡 deferred · ⚪ out of scope / manual testing required.
-A skill or prompt change is tested by running it and showing what it did —
-"the wording is clearer" is not evidence.
+A skill or prompt change is tested by running it and showing what it did.
+"The wording is clearer" is not evidence.
 -->
 
 | What to test         | How (evidence base) | Surface   | Status | Evidence                     |
@@ -67,7 +67,7 @@ template's "Regulatory impact" section is deliberately absent. See
 plugins/git/skills/pr/SKILL.md step 1b for when it applies.
 -->
 
-## Intended use verification
+## Intended Use Verification
 
 <!--
 Delete for trivial changes. Add when step-by-step manual verification helps a
@@ -75,7 +75,7 @@ reviewer confirm the change does what it intends: prerequisites, the exact
 steps, and the expected observation at each step.
 -->
 
-## Validations passed
+## Validations Passed
 
 <!-- Completed checks, not tasks for the reviewer. -->
 

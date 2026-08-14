@@ -60,7 +60,7 @@ One schema, used by every store implementation:
 | `chunk_text`   | string    | The retrievable content                                                                                                    |
 | `embedding`    | vector    | One embedding model across local and cloud (see below)                                                                     |
 | `metadata`     | object    | Source-specific: frontmatter fields, tags, status                                                                          |
-| `modified_at`  | timestamp | Source file mtime: drives incremental indexing and sync                                                                   |
+| `modified_at`  | timestamp | Source file mtime: drives incremental indexing and sync                                                                    |
 
 **One embedding model from day one: Voyage AI (decided: see Decisions).**
 The local index uses the same embedding API that the cloud index will use.
@@ -81,13 +81,13 @@ interface ChunkStore
   listPaths(source)          // for reconciliation
 ```
 
-|                  | Phase 1: local                                                     | Phase 2: cloud                                                               |
-| ---------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Store            | LanceDB: embedded, single data directory (decided; see Decisions)  | Azure AI Search, one index per tier                                          |
-| Lives            | On the machine that owns the source files                          | Azure, private endpoints, encryption at rest                                 |
-| Access           | Local stdio MCP server (Claude Code, Claude Desktop)               | Remote MCP server behind Entra ID OAuth (claude.ai everywhere + Claude Code) |
-| Tier enforcement | Filter in the store query (single user, low stakes)                | Index-level separation; the server maps identity → allowed indexes           |
-| Cost             | None beyond embedding calls                                        | Search + hosting + egress                                                    |
+|                  | Phase 1: local                                                    | Phase 2: cloud                                                               |
+| ---------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Store            | LanceDB: embedded, single data directory (decided; see Decisions) | Azure AI Search, one index per tier                                          |
+| Lives            | On the machine that owns the source files                         | Azure, private endpoints, encryption at rest                                 |
+| Access           | Local stdio MCP server (Claude Code, Claude Desktop)              | Remote MCP server behind Entra ID OAuth (claude.ai everywhere + Claude Code) |
+| Tier enforcement | Filter in the store query (single user, low stakes)               | Index-level separation; the server maps identity → allowed indexes           |
+| Cost             | None beyond embedding calls                                       | Search + hosting + egress                                                    |
 
 **The MCP tool contract is identical in both phases** (`search`,
 `get_document`, `list_recent`). Migrating means pointing the tools at a
@@ -151,14 +151,14 @@ chunks cost nothing on re-runs.
 Two distinct trigger points exist: **source → local index** (ingestion) and
 **local index → cloud** (sync). They have different freshness needs.
 
-|                | Scheduled (launchd/cron)                             | Real-time (filesystem watch)                                            |
-| -------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
-| Freshness      | Minutes to hours stale                               | Seconds                                                                 |
-| Complexity     | Low: a CLI run on a timer                            | Higher: long-lived process, FSEvents/watcher, debounce, crash recovery  |
-| Failure mode   | Missed window → next run catches up                  | Watcher dies silently → index quietly drifts until noticed              |
-| Missed changes | Impossible (every run is a full reconcile)           | Possible (events during downtime are lost)                              |
-| Resource cost  | Burst at run time                                    | Small constant background cost                                          |
-| iCloud fit     | Good: reconcile handles anything sync did meanwhile  | Needs the debounce + eviction handling above                            |
+|                | Scheduled (launchd/cron)                            | Real-time (filesystem watch)                                           |
+| -------------- | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| Freshness      | Minutes to hours stale                              | Seconds                                                                |
+| Complexity     | Low: a CLI run on a timer                           | Higher: long-lived process, FSEvents/watcher, debounce, crash recovery |
+| Failure mode   | Missed window → next run catches up                 | Watcher dies silently → index quietly drifts until noticed             |
+| Missed changes | Impossible (every run is a full reconcile)          | Possible (events during downtime are lost)                             |
+| Resource cost  | Burst at run time                                   | Small constant background cost                                         |
+| iCloud fit     | Good: reconcile handles anything sync did meanwhile | Needs the debounce + eviction handling above                           |
 
 **Chosen model: real-time watch with a scheduled reconcile as backstop, for
 ingestion; scheduled only, for cloud sync.**
@@ -275,9 +275,9 @@ read-only after any upgrade, re-run read-write after touching ingestion.
 
 Settled 2026-08-09:
 
-| Decision           | Choice        | Rationale and consequences                                                                                                                                                                                                                                                                                                                                     |
-| ------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local store        | **LanceDB**   | Embedded TS API, hybrid vector + full-text search built in, no server process. Native binary dependency accepted. The `ChunkStore` interface keeps a later swap cheap if it disappoints on the real corpus                                                                                                                                                     |
+| Decision           | Choice        | Rationale and consequences                                                                                                                                                                                                                                                                                                                                    |
+| ------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local store        | **LanceDB**   | Embedded TS API, hybrid vector + full-text search built in, no server process. Native binary dependency accepted. The `ChunkStore` interface keeps a later swap cheap if it disappoints on the real corpus                                                                                                                                                    |
 | Embedding provider | **Voyage AI** | Retrieval quality and setup simplicity weighed over single-vendor alignment with Azure. Recorded consequence: Voyage is a data processor for every chunk it embeds, in all phases: phase-2 cloud ingestion calls Voyage from Azure, and private-tier content (including health data, when it joins) transits Voyage. Revisit per-tier if that posture changes |
 
 Still open:

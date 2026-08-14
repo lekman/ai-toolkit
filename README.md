@@ -16,7 +16,7 @@ prompt, can actually do. It is the question the post covers.
 
 | Layer in the post  | What answers it here                                                                                                                    |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| A separate context | [@lekman/claude-docker](packages/claude-docker/README.md): a container holding one repo, one branch, and nothing else of yours         |
+| A separate context | [@lekman/claude-docker](packages/claude-docker/README.md): a container holding one repo, one branch, and nothing else of yours          |
 | Dedicated accounts | The same package: it clones with a second account's key, mounts it read-only, and never forwards your SSH agent                         |
 | Scoped credentials | [Machine security](security/machine/README.md) for the workstation, [isolated-agent security](security/isolated/README.md) for the repo |
 

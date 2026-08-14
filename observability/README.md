@@ -58,14 +58,14 @@ My customisation makes it signal, not noise: it pings only on **done** and
 ```
 
 `task.complete` is "done", `input.required` is "waiting on you". With the rest
-off, a sound means *look now*, not just *something happened*.
+off, a sound means _look now_, not just _something happened_.
 
 The default installs more event hooks than you need (session start and end among
 them): fun for a day, distracting after. But the categories above already do the
 job: with `session.start` off, launch and exit are silent without touching the
 hooks. Trimming the extra `SessionStart`/`SessionEnd` taps in `settings.json` is
 optional tidying, not what quiets them, and a reinstall can put them back, so
-let the config own it. Only remove a hook to stop it *running* (a perf concern),
+let the config own it. Only remove a hook to stop it _running_ (a perf concern),
 not to silence it.
 
 ## More to Come

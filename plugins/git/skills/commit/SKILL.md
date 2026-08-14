@@ -164,7 +164,9 @@ const description = generateDescriptionFromContext(topic);
 // Example: 'add quick flag for conversation-based commits'
 
 // Compose message
-const message = scope ? `${commitType}(${scope}): ${description}` : `${commitType}: ${description}`;
+const message = scope
+  ? `${commitType}(${scope}): ${description}`
+  : `${commitType}: ${description}`;
 
 // Example: "docs(commands): add quick flag for conversation-based commits"
 ```
@@ -218,7 +220,14 @@ const writtenFiles = conversation.toolCalls
 const mentionedFiles = extractFilePathsFromMessages(conversation.messages);
 
 // Combine and deduplicate
-const allFiles = [...new Set([...readFiles, ...editedFiles, ...writtenFiles, ...mentionedFiles])];
+const allFiles = [
+  ...new Set([
+    ...readFiles,
+    ...editedFiles,
+    ...writtenFiles,
+    ...mentionedFiles,
+  ]),
+];
 
 // Filter to only include files with modifications
 return allFiles.filter(hasUncommittedChanges);
@@ -1009,7 +1018,12 @@ Plan: `~/.claude/plans/shiny-humming-floyd.md`
 
 ```json
 [
-  { "name": "Plan Title", "id": "plan-id", "path": "/Users/.../plan.md", "status": "active" }
+  {
+    "name": "Plan Title",
+    "id": "plan-id",
+    "path": "/Users/.../plan.md",
+    "status": "active"
+  }
 ]
 ```
 

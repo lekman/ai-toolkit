@@ -46,8 +46,8 @@ caused by missing context, style preferences not consistently enforced.
 
 For each surviving learning, recommend one disposition and say why:
 
-| Signal                                                  | Disposition                                                 |
-| ------------------------------------------------------- | ----------------------------------------------------------- |
+| Signal                                                  | Disposition                                                |
+| ------------------------------------------------------- | ---------------------------------------------------------- |
 | Pattern useful to the whole team (e.g. an auth pattern) | **Global rule**: standards repo / `~/.claude`, not project |
 | Pattern personal to how this user works                 | **Global rule (personal)**: user-level, not project        |
 | AI consistently gets this repo wrong, affects everyone  | **Project rule**: `.claude/rules/`                         |

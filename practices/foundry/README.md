@@ -102,10 +102,10 @@ Haiku. Pin it.
 
 Three options, in the order Claude Code decides between them:
 
-| Set                            | Use it for                                                                                                      |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `ANTHROPIC_FOUNDRY_AUTH_TOKEN` | A token some other process already obtained. Needs Claude Code 2.1.203+.                                        |
-| `ANTHROPIC_FOUNDRY_API_KEY`    | Getting started, and anywhere Entra ID is not practical.                                                        |
+| Set                            | Use it for                                                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_FOUNDRY_AUTH_TOKEN` | A token some other process already obtained. Needs Claude Code 2.1.203+.                                       |
+| `ANTHROPIC_FOUNDRY_API_KEY`    | Getting started, and anywhere Entra ID is not practical.                                                       |
 | Neither                        | The Azure SDK default credential chain: `az login` on a laptop, a service principal or managed identity in CI. |
 
 Prefer the credential chain over a key. A key is a long-lived secret that has to

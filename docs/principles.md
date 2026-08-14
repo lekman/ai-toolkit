@@ -1,10 +1,10 @@
 # Principles
 
-The *why* behind the practices. The [README](../README.md) tells you what to do
+The _why_ behind the practices. The [README](../README.md) tells you what to do
 and in what order; this page is the reasoning you can read when you want it.
 
-A capable assistant defaults to *fast* and *agreeable*. Neither is the same as
-*helpful*. Everything here re-aims it at one job: helping me make better
+A capable assistant defaults to _fast_ and _agreeable_. Neither is the same as
+_helpful_. Everything here re-aims it at one job: helping me make better
 decisions. Each concern is a default failure mode and its corrective.
 
 ## Truth Over Agreement
@@ -15,7 +15,7 @@ evidence, state confidence, never assume I'm right.
 
 ## Judgment Over Speed
 
-It answers fast because fast *feels* helpful. Instead: slow down when the stakes
+It answers fast because fast _feels_ helpful. Instead: slow down when the stakes
 justify it. Fast does not mean good.
 → [standards/JUDGMENT.md](../standards/JUDGMENT.md)
 

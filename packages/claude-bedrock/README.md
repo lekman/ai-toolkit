@@ -67,10 +67,10 @@ claude-bedrock -- --help          # claude's help, not this one
 
 Checked in order:
 
-| Source                       | Use it when                                                                                  |
-| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| Source                       | Use it when                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
 | `.claude/bedrock.env` in cwd | A repo must run on a specific account: commit it, and everyone in the directory picks it up |
-| `~/.claude/bedrock.env`      | Your own default across repos                                                                |
+| `~/.claude/bedrock.env`      | Your own default across repos                                                               |
 | `~/.claude/settings.json`    | Written by `/setup-bedrock`. Read, then moved into the env file above. See below            |
 
 An env file is shell-style and read, not executed: `export KEY=value`, plain

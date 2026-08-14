@@ -91,14 +91,14 @@ any Claude deployment already on the resource, creates only what is missing, and
 writes `~/.claude/foundry.env`. It shows the whole plan and waits for a yes
 before creating anything.
 
-| Flag | Effect |
-| ---- | ------ |
-| `--dry-run` | Print the plan, change nothing |
-| `--yes` | Skip the confirmation. Required when stdin is not a terminal |
-| `--upgrade` | Deploy the newest model even when an older one in the family is already deployed |
-| `--capacity <n>` | SKU capacity in thousands of tokens per minute. The catalogue default is 10, which throttles a real session. Raise it if you have the quota |
-| `--hosting azure\|anthropic` | Force a hosting variant instead of taking the catalogue default |
-| `--org`, `--industry`, `--country` | Provide the Anthropic details below instead of being asked |
+| Flag                               | Effect                                                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`                        | Print the plan, change nothing                                                                                                              |
+| `--yes`                            | Skip the confirmation. Required when stdin is not a terminal                                                                                |
+| `--upgrade`                        | Deploy the newest model even when an older one in the family is already deployed                                                            |
+| `--capacity <n>`                   | SKU capacity in thousands of tokens per minute. The catalogue default is 10, which throttles a real session. Raise it if you have the quota |
+| `--hosting azure\|anthropic`       | Force a hosting variant instead of taking the catalogue default                                                                             |
+| `--org`, `--industry`, `--country` | Provide the Anthropic details below instead of being asked                                                                                  |
 
 **Quota is the usual blocker.** Anthropic model quota starts at zero and is
 granted per model. The models appear in the catalogue either way, which is why the
@@ -157,10 +157,10 @@ deployment. Pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to use Haiku instead.
 
 Three options, in the order Claude Code decides between them:
 
-| Set                            | Meaning                                                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `ANTHROPIC_FOUNDRY_AUTH_TOKEN` | A bearer token Entra ID already issued. Needs Claude Code 2.1.203 or later.                                     |
-| `ANTHROPIC_FOUNDRY_API_KEY`    | The key from **Endpoints and keys** in the portal.                                                              |
+| Set                            | Meaning                                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_FOUNDRY_AUTH_TOKEN` | A bearer token Entra ID already issued. Needs Claude Code 2.1.203 or later.                                    |
+| `ANTHROPIC_FOUNDRY_API_KEY`    | The key from **Endpoints and keys** in the portal.                                                             |
 | Neither                        | The Azure SDK default credential chain: `az login` on a laptop, a service principal or managed identity in CI. |
 
 `Azure AI User` or `Cognitive Services User` covers the permissions needed to
@@ -176,11 +176,11 @@ Azure's.
 
 Checked in order:
 
-| Source                       | Use it when                                                                                        |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- |
+| Source                       | Use it when                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
 | `.claude/foundry.env` in cwd | A repo must run against a specific resource: commit it, and everyone in the directory picks it up |
-| `~/.claude/foundry.env`      | Your own default across repos                                                                      |
-| `~/.claude/settings.json`    | Only if you put Foundry variables there by hand                                                    |
+| `~/.claude/foundry.env`      | Your own default across repos                                                                     |
+| `~/.claude/settings.json`    | Only if you put Foundry variables there by hand                                                   |
 
 Nothing is exported into your shell and no wrapper script is written. Keys are
 handed to the child process and never printed, including by `--status`.

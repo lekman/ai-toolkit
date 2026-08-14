@@ -3,7 +3,7 @@
 **Practice:** keep sensitive data (PII, PHI, financial) from reaching the AI
 agent or being transmitted to the model or any third party.
 
-Where [security/](../security/README.md) protects the *system*, privacy protects
+Where [security/](../security/README.md) protects the _system_, privacy protects
 **data subjects**: customers, patients, and you. If it fails, the people harmed
 are not (only) you: they are the people whose data you hold, plus your own
 exposure under GDPR, HIPAA, or PCI. Treat the agent and the model as data
@@ -24,7 +24,7 @@ on input and on what leaves, not just on what sits in the repo.
 
 Same stance as the commit hooks: catch leaks early and cheaply, but the hook is
 not where responsibility lives. Scan and redact before data lands, in commits
-*and* in prompts, and still assert the same at the repo and in review. It is
+_and_ in prompts, and still assert the same at the repo and in review. It is
 the data owner's job to ensure nothing sensitive is disclosed.
 
 ## Techniques
@@ -40,5 +40,5 @@ Documented as they are added (this is the shape, not yet the implementation):
 ## Relationship to Security
 
 Siblings, not parent and child. Both shift left, both lean on scanning and on
-`deny` / `ask` permissions and hooks. They differ in *who* they protect:
+`deny` / `ask` permissions and hooks. They differ in _who_ they protect:
 security the system, privacy the data subjects. Cross-reference, do not nest.

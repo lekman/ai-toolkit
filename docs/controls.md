@@ -1,14 +1,14 @@
 # Controls: Soft, Hard, Boundary
 
-Three kinds of control shape how an agent behaves here. They differ by *who*
-enforces them and *what has to fail* for the control to fail. Knowing which is
+Three kinds of control shape how an agent behaves here. They differ by _who_
+enforces them and _what has to fail_ for the control to fail. Knowing which is
 which, and matching the strength to the stakes, is the point.
 
 ## Soft Controls: Advisory (the Model Enforces)
 
 `CLAUDE.md`, the files under `standards/`, and rule files (the shareable
 `rules/`, and a repo's own `.claude/rules/`) are **context**, not enforcement.
-They are put in front of the model and it usually follows them, but it *can*
+They are put in front of the model and it usually follows them, but it _can_
 ignore them, and nothing stops it. They are suggestions with good intentions,
 not guarantees.
 
@@ -30,7 +30,7 @@ deliberately not. Rules are suggestions, so editing them freely is fine.
 
 But hard does not mean infallible. The harness is software: a bug, a
 prompt-injection that steers it, a misconfiguration, or a disabled hook runtime
-can all let a "hard" control fail open. It is enforced *inside* the thing you are
+can all let a "hard" control fail open. It is enforced _inside_ the thing you are
 trying to constrain. For anything that really matters, do not stop here.
 
 ## Boundary Controls: Enforced Outside Claude (the Platform Enforces)
@@ -45,7 +45,7 @@ the cloud provider, or GitHub, none of which trust Claude:
   scoped, short-lived token; separate cloud environments, each with its own IAM
   role and least-privilege permissions.
 
-The stance is defence in depth: assume the harness is *not* perfect, and arrange
+The stance is defence in depth: assume the harness is _not_ perfect, and arrange
 that even a total failure of the soft and hard layers leaves a small, contained
 blast radius. Give the agent the least access it needs, so "the agent did
 something it shouldn't" stays survivable.
@@ -58,7 +58,7 @@ one Claude has no way to reach.
 ## A Note on Hook Runtimes
 
 A hook that shells out to a runtime (the commit-hook guard runs `bun`) fails open
-if that runtime is gone, and it fails *immediately*, not after the timeout. Two
+if that runtime is gone, and it fails _immediately_, not after the timeout. Two
 honest responses:
 
 - **Guarantee the runtime at the boundary.** Bake `bun` into the container image
@@ -67,7 +67,7 @@ honest responses:
 - **For a guard that must always run, drop the runtime.** Write it in POSIX `sh`,
   which is always present, at the cost of clumsier parsing.
 
-A `SessionStart` tripwire can *warn* when bun, the guard hook, or the `deny`
+A `SessionStart` tripwire can _warn_ when bun, the guard hook, or the `deny`
 rules look missing: visibility, not enforcement. And none of this is the final
 layer: version control, Dependabot, and secret scanning with alerts catch what
 slips through. Build hooks to shift left, not to be the last line.

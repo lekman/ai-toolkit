@@ -7,12 +7,12 @@ Consumer documentation is in [README.md](README.md) and stays that way.
 
 ## Layout
 
-| Path                 | What it is                                                        |
-| -------------------- | ----------------------------------------------------------------- |
-| `src/cli.ts`         | The only entrypoint. Argument parsing and orchestration.          |
-| `src/lib/engine.ts`  | Finding a container engine, and starting it when it is idle.      |
-| `src/lib/image.ts`   | The Dockerfile and entrypoint, as strings, plus the build.        |
-| `src/lib/session.ts` | Task naming, repo and key resolution, and the `docker run` args.  |
+| Path                 | What it is                                                       |
+| -------------------- | ---------------------------------------------------------------- |
+| `src/cli.ts`         | The only entrypoint. Argument parsing and orchestration.         |
+| `src/lib/engine.ts`  | Finding a container engine, and starting it when it is idle.     |
+| `src/lib/image.ts`   | The Dockerfile and entrypoint, as strings, plus the build.       |
+| `src/lib/session.ts` | Task naming, repo and key resolution, and the `docker run` args. |
 
 Build and release scripts are shared by every package and live at the repo root
 in [scripts/build.ts](../../scripts/build.ts) and

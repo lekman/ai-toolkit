@@ -58,7 +58,7 @@ before committing.
   diff, and let them commit.
 - `--pr`: create a branch `chore/dependabot-onboarding`, commit the files with a
   conventional message (`chore(dependabot): enable alerts, grouped updates,
-  auto-merge`), push, and open a PR. Follow the account's PR conventions.
+auto-merge`), push, and open a PR. Follow the account's PR conventions.
 
 ## Step 3: Verify
 

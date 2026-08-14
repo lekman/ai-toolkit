@@ -8,7 +8,7 @@ not covered, then bring them under one consistent flow.
 | Skill                 | Does                                                                                     | Writes? |
 | --------------------- | ---------------------------------------------------------------------------------------- | ------- |
 | `/dependabot:triage`  | Scans an owner's repos and reports alert coverage gaps and open dependency PRs by status | No      |
-| `/dependabot:onboard` | Enables alerts + security fixes, installs grouped `dependabot.yml` and auto-merge         | Yes     |
+| `/dependabot:onboard` | Enables alerts + security fixes, installs grouped `dependabot.yml` and auto-merge        | Yes     |
 
 ## The Flow Onboard Installs
 

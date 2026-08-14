@@ -71,7 +71,7 @@ waiting on a review, not a failure; say so rather than calling it blocked.
 Output two tables:
 
 1. **Alert coverage**: one row per repo, `DISABLED` / `clean` / `N alerts
-   [severity breakdown]`. List the DISABLED repos first; those are the gaps.
+[severity breakdown]`. List the DISABLED repos first; those are the gaps.
 2. **Open Dependabot PRs**: grouped as green & mergeable, failing checks,
    conflicted, and waiting-on-review.
 

@@ -24,6 +24,18 @@ const exec = promisify(execFile);
 
 /** Gathers IQ probes and drives the OQ flows. Thin wrappers — logic in Iq/Oq. */
 export class QualificationRunner {
+  /** Bytes on disk under the store's data directory; 0 when unmeasurable. */
+  static async measureStorageBytes(dataDir: string): Promise<number> {
+    if (!existsSync(dataDir)) return 0;
+    try {
+      const { stdout } = await exec("du", ["-sk", dataDir]);
+      const kib = Number.parseInt(stdout.trim().split(/\s+/)[0] ?? "", 10);
+      return Number.isNaN(kib) ? 0 : kib * 1024;
+    } catch {
+      return 0;
+    }
+  }
+
   /** Gather every IQ probe from the installed system. */
   static async gatherIqProbes(
     config: RagConfig | null,

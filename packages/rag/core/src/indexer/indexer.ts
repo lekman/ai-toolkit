@@ -45,6 +45,7 @@ export class Indexer {
     const skippedUnreadable: string[] = [];
     let embedded = 0;
     let scannedFiles = 0;
+    let upsertedFiles = 0;
 
     for (const file of files) {
       const content = await reader.readFile(file.relPath);
@@ -68,17 +69,22 @@ export class Indexer {
       const existing = await store.readPath(OBSIDIAN_SOURCE, file.relPath);
       const byId = new Map(existing.map((chunk) => [chunk.id, chunk]));
       const changed: ChunkRecord[] = [];
-      const unchanged: ChunkRecord[] = [];
+      const stale: ChunkRecord[] = [];
+      const identical: ChunkRecord[] = [];
       for (const record of records) {
         const prior = byId.get(record.id);
         if (
-          prior &&
-          prior.contentHash === record.contentHash &&
-          prior.embedding.length > 0
+          !prior ||
+          prior.contentHash !== record.contentHash ||
+          prior.embedding.length === 0
         ) {
-          unchanged.push({ ...record, embedding: prior.embedding });
-        } else {
           changed.push(record);
+        } else if (prior.modifiedAt === record.modifiedAt) {
+          identical.push({ ...record, embedding: prior.embedding });
+        } else {
+          // Same content, newer mtime: no re-embed, but the stored row must
+          // still be refreshed or list_recent orders by a stale timestamp.
+          stale.push({ ...record, embedding: prior.embedding });
         }
       }
 
@@ -94,13 +100,25 @@ export class Indexer {
 
       // A structural change (chunk removed/renamed) leaves stale IDs behind;
       // clearing the path before the upsert keeps the file's chunk set exact.
-      if (
+      const structural =
         existing.length > 0 &&
-        existing.some((chunk) => !records.some((r) => r.id === chunk.id))
-      ) {
+        existing.some((chunk) => !records.some((r) => r.id === chunk.id));
+      if (structural) {
         await store.deleteByPath(OBSIDIAN_SOURCE, file.relPath);
       }
-      await store.upsert([...changed, ...unchanged]);
+
+      // Write only what the store does not already hold. Rewriting identical
+      // rows is what made the store grow: every upsert is a new version, and
+      // a reconcile that rewrote all 607 files on every run wrote ~26,700
+      // versions a day for a vault where one note had changed. After a
+      // structural delete there is nothing left to keep, so everything goes.
+      const toWrite = structural
+        ? [...changed, ...stale, ...identical]
+        : [...changed, ...stale];
+      if (toWrite.length > 0) {
+        await store.upsert(toWrite);
+        upsertedFiles += 1;
+      }
     }
 
     const indexedPaths = await store.listPaths(OBSIDIAN_SOURCE);
@@ -117,6 +135,7 @@ export class Indexer {
       removedPaths,
       scannedFiles,
       skippedUnreadable,
+      upsertedFiles,
     };
   }
 

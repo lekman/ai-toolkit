@@ -10,4 +10,11 @@ export interface ScanReport {
   skippedUnreadable: string[];
   /** Files scanned (eligible, non-excluded). */
   scannedFiles: number;
+  /**
+   * Files that actually wrote to the store this run. Each write is a store
+   * version, so on a quiet reconcile this should be 0 and never the full
+   * file count — a number close to `scannedFiles` means the index is
+   * rewriting rows it already holds.
+   */
+  upsertedFiles: number;
 }

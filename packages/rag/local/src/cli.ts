@@ -93,7 +93,7 @@ switch (command) {
       console.log("first scan starting…");
       const scan = await Indexer.scan(reader, store, embeddings);
       console.log(
-        `scan done: ${scan.scannedFiles} files, ${scan.chunkCount} chunks, ${scan.embedded} embedded`,
+        `scan done: ${scan.scannedFiles} files, ${scan.chunkCount} chunks, ${scan.embedded} embedded, ${scan.upsertedFiles} written`,
       );
       const oqResults = [
         ...(await Oq.readOnlyChecks(
@@ -102,6 +102,7 @@ switch (command) {
           "architecture decisions",
           config.freshnessDays,
           Date.now(),
+          await QualificationRunner.measureStorageBytes(config.dataDir),
         )),
         ...(await QualificationRunner.readWriteChecks(
           config,
@@ -151,6 +152,7 @@ switch (command) {
       "architecture decisions",
       config.freshnessDays,
       Date.now(),
+      await QualificationRunner.measureStorageBytes(config.dataDir),
     );
     if (has("--rw")) {
       const reader = new VaultReader(config.vaultPath);

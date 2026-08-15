@@ -135,6 +135,44 @@ describe("SearchHandlers over an indexed store", () => {
     expect(recent[0]?.path).toBe("Personal/Projects/Workshop.md");
   });
 
+  test("a quiet reconcile writes nothing to the store", async () => {
+    const { embeddings, reader, store } = setup();
+    const first = await Indexer.scan(reader, store, embeddings);
+    expect(first.upsertedFiles).toBe(2);
+
+    const second = await Indexer.scan(reader, store, embeddings);
+    // Nothing changed, so nothing is written. Rewriting rows the store
+    // already holds is what grew the data directory to 29 GB.
+    expect(second.upsertedFiles).toBe(0);
+    expect(second.embedded).toBe(0);
+    expect(second.chunkCount).toBe(2);
+  });
+
+  test("only the edited file writes, not the whole vault", async () => {
+    const { embeddings, reader, store } = setup();
+    await Indexer.scan(reader, store, embeddings);
+    reader.set(
+      "Personal/Projects/Workshop.md",
+      `---\ntype: note\n---\n## Woodworking\n\nA marking gauge scores the shoulder line.\n`,
+      400,
+    );
+    const report = await Indexer.scan(reader, store, embeddings);
+    expect(report.upsertedFiles).toBe(1);
+  });
+
+  test("a touched but unedited file still refreshes its timestamp", async () => {
+    const { embeddings, reader, store } = setup();
+    await Indexer.scan(reader, store, embeddings);
+    reader.set("Clients/AcmeCo/Commercials.md", NOTE_A, 999);
+    const report = await Indexer.scan(reader, store, embeddings);
+    // Same content, so no re-embed — but the row must be rewritten or
+    // list_recent would keep ordering by the old mtime.
+    expect(report.embedded).toBe(0);
+    expect(report.upsertedFiles).toBe(1);
+    const recent = await SearchHandlers.listRecent(store, 5);
+    expect(recent[0]?.path).toBe("Clients/AcmeCo/Commercials.md");
+  });
+
   test("compacts once per scan, after the writes", async () => {
     const { embeddings, reader, store } = setup();
     const now = new Date("2026-08-15T12:00:00.000Z");

@@ -73,7 +73,7 @@ even if Bedrock ships every feature above.
 
 The orchestrator runs under a dedicated operating-system account, one per client,
 on a persistent machine you can reach remotely (see
-[observability](../observability/README.md) for remote control). The account has
+[observability](observability/README.md) for remote control). The account has
 its own home, keychain, and credentials, and carries the client context in
 environment variables so the orchestrator knows which backlog and repositories
 are in scope. Client contexts never mix, and wiping one account touches nothing
@@ -105,7 +105,7 @@ practices pair with this:
   [execute](../plugins/planner/skills/execute/SKILL.md)): the plan is the contract.
   One identity executes the work, a separate identity verifies the plan was met.
   The orchestrator is where that separation is enforced.
-- **[Observability](../observability/README.md)**: how you see the state and get
+- **[Observability](observability/README.md)**: how you see the state and get
   notified when a subagent needs a human.
 
 ## The Blast Radius

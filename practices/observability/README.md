@@ -1,8 +1,8 @@
 # Observability
 
-**Practice:** see what the agent is doing: when it needs you, what it is working
-on, and what it touches. This area starts with **notifications** (knowing when to
-look) and will grow to cover progress and access visibility.
+See what the agent is doing: when it needs you, what it is working on, and what
+it touches. Notifications come first, because knowing when to look is what makes
+the rest optional. Progress and access visibility follow as content lands.
 
 ## Notifications
 
@@ -60,6 +60,9 @@ My customisation makes it signal, not noise: it pings only on **done** and
 `task.complete` is "done", `input.required` is "waiting on you". With the rest
 off, a sound means _look now_, not just _something happened_.
 
+Pick one per context rather than stacking them: two channels firing on the same
+event trains you to ignore both.
+
 The default installs more event hooks than you need (session start and end among
 them): fun for a day, distracting after. But the categories above already do the
 job: with `session.start` off, launch and exit are silent without touching the
@@ -68,7 +71,8 @@ optional tidying, not what quiets them, and a reinstall can put them back, so
 let the config own it. Only remove a hook to stop it _running_ (a perf concern),
 not to silence it.
 
-## More to Come
+## Not Covered Yet
 
-Observability is broader than notifications: seeing the agent's progress, the
-files and resources it accesses, and what it changes. Added as content lands.
+Progress (what the agent is doing right now) and access visibility (which files,
+credentials and services it touches) are the other two halves. Neither has a
+technique here yet; both are added as content lands.

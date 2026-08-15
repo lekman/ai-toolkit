@@ -2,8 +2,8 @@
 
 Patterns and operating models for working with Claude, across projects. Prose,
 not config: the _how_ and _why_ of a way of working. Enforcement lives in the
-other areas (security, observability, plugins); this folder explains the shape
-they add up to.
+other areas (security, privacy, plugins); this folder explains the shape they
+add up to.
 
 ## Agent Isolation
 
@@ -86,3 +86,15 @@ scoped that does.
   by splitting work between a planning orchestrator that never touches code and
   disposable, scoped subagents that do. The operating model behind
   [isolated-agent security](../security/isolated/README.md).
+
+## Observability
+
+Isolation and orchestration decide what the agent may do and who holds the plan.
+Neither tells you what it is doing right now. An agent you cannot see is one you
+end up watching instead of working alongside.
+
+- [observability/README.md](observability/README.md): notifications first, since
+  knowing when to look is what makes watching optional. Three techniques by
+  distance from the keyboard: built-in remote control, Pushover for long runs,
+  and a local sound cue tuned so it means _look now_. Progress and access
+  visibility are named but not yet built.

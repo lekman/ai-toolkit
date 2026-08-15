@@ -9,16 +9,15 @@ in a package's own `CONTRIBUTING.md`.
 The top level is flat and grouped by how each thing is consumed. [CLAUDE.md](../CLAUDE.md)
 is the navigation map; the short version:
 
-| Folder           | For                                                       |
-| ---------------- | --------------------------------------------------------- |
-| `standards/`     | Base Claude instruction files, dropped into `~/.claude`.  |
-| `security/`      | Security settings by level.                               |
-| `privacy/`       | Keeping PII, PHI, and financial data away from the model. |
-| `observability/` | Seeing what the agent does and being notified.            |
-| `practices/`     | Operating models and patterns. Prose, not config.         |
-| `docs/`          | Concepts that span more than one practice.                |
-| `plugins/`       | Claude Code plugins. Also makes this repo a marketplace.  |
-| `packages/`      | Runnable TypeScript: CLIs, MCP servers, base projects.    |
+| Folder       | For                                                       |
+| ------------ | --------------------------------------------------------- |
+| `standards/` | Base Claude instruction files, dropped into `~/.claude`.  |
+| `security/`  | Security settings by level.                               |
+| `privacy/`   | Keeping PII, PHI, and financial data away from the model. |
+| `practices/` | Operating models and patterns. Prose, not config.         |
+| `docs/`      | Concepts that span more than one practice.                |
+| `plugins/`   | Claude Code plugins. Also makes this repo a marketplace.  |
+| `packages/`  | Runnable TypeScript: CLIs, MCP servers, base projects.    |
 
 If a change is guidance, it goes in `practices/`. If it is something you install
 and run, it goes in `packages/` or `plugins/`. If it explains _why_ across

@@ -134,4 +134,32 @@ describe("SearchHandlers over an indexed store", () => {
     const recent = await SearchHandlers.listRecent(store, 5);
     expect(recent[0]?.path).toBe("Personal/Projects/Workshop.md");
   });
+
+  test("compacts once per scan, after the writes", async () => {
+    const { embeddings, reader, store } = setup();
+    const now = new Date("2026-08-15T12:00:00.000Z");
+    await Indexer.scan(reader, store, embeddings, now);
+    expect(store.optimizeCalls).toHaveLength(1);
+    expect(store.optimizeCalls[0]?.toISOString()).toBe(
+      "2026-08-14T12:00:00.000Z",
+    );
+  });
+
+  test("compacts even when a scan writes nothing", async () => {
+    const { embeddings, reader, store } = setup();
+    const now = new Date("2026-08-15T12:00:00.000Z");
+    await Indexer.scan(reader, store, embeddings, now);
+    await Indexer.scan(reader, store, embeddings, now);
+    // Second run re-embeds nothing, but versions still accrue from the
+    // per-file upserts, so skipping compaction on a no-op scan would let the
+    // store grow on exactly the runs that look harmless.
+    expect(store.optimizeCalls).toHaveLength(2);
+  });
+});
+
+describe("Indexer.versionCutoff", () => {
+  test("keeps one day of history", () => {
+    const cutoff = Indexer.versionCutoff(new Date("2026-08-15T12:00:00.000Z"));
+    expect(cutoff.toISOString()).toBe("2026-08-14T12:00:00.000Z");
+  });
 });

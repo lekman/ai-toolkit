@@ -42,6 +42,14 @@ export class StoreMock implements IChunkStore {
     return [...paths].sort();
   }
 
+  /** Recorded retention cutoffs, one per optimize call. */
+  readonly optimizeCalls: Date[] = [];
+
+  /** Record the call; an in-memory store has nothing to reclaim. */
+  async optimize(olderThan: Date): Promise<void> {
+    this.optimizeCalls.push(olderThan);
+  }
+
   /** A file's chunks in ordinal order. */
   async readPath(source: string, path: string): Promise<ChunkRecord[]> {
     return [...this.chunks.values()]

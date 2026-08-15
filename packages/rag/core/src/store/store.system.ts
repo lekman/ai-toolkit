@@ -67,6 +67,18 @@ export class LanceDbChunkStore implements IChunkStore {
     return [...new Set(rows.map((row) => row.path))].sort();
   }
 
+  /**
+   * Merge fragments and prune versions older than `olderThan`. LanceDB writes
+   * a new version per transaction and never reclaims one on its own, so
+   * without this the data directory grows without bound: measured at 29 GB
+   * across 240,511 versions for ~3,000 chunks before this call existed.
+   */
+  async optimize(olderThan: Date): Promise<void> {
+    const table = await this.openIfExists();
+    if (!table) return;
+    await table.optimize({ cleanupOlderThan: olderThan });
+  }
+
   /** All chunks for one file, ordered by ordinal. */
   async readPath(source: string, path: string): Promise<ChunkRecord[]> {
     const table = await this.openIfExists();

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Refuse a commit message naming a client, employer or internal system.
+#
+# The pre-commit hook covers file content; this covers the message, which is
+# worse to get wrong: it travels into pull request titles, notifications and
+# release notes, and only a history rewrite can take it back.
+#
+# Installed by scripts/install-hooks.sh.
+exec "$(git rev-parse --show-toplevel)/scripts/check-no-client-content.sh" --message "$1"

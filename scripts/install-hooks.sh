@@ -28,6 +28,15 @@ else
 fi
 
 echo
-echo "The pre-commit hook now blocks a commit carrying client-identifying"
-echo "content. To check what is already committed:"
-echo "  scripts/check-no-client-content.sh --history"
+echo "Two hooks are now active:"
+echo "  pre-commit  blocks staged FILE CONTENT naming a client"
+echo "  commit-msg  blocks a COMMIT MESSAGE naming one — worse to get wrong,"
+echo "              since only a history rewrite takes it back"
+echo
+echo "Both are skippable with --no-verify, which is why CI runs the same"
+echo "checks on every push and pull request, reading the terms from the"
+echo "CLIENT_TERMS repository secret."
+echo
+echo "To audit what is already committed:"
+echo "  scripts/check-no-client-content.sh --history    # file content"
+echo "  scripts/check-no-client-content.sh --messages   # commit messages"

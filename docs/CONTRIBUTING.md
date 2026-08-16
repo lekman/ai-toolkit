@@ -40,6 +40,44 @@ instructions it ships:
 Say what something costs, not only what it does. A README that lists benefits and
 omits the trade is not finished.
 
+### No client-identifying content — in files or messages
+
+The repo is public. Client names, their repository names, ticket keys, internal
+system names and meeting titles never appear in it, in either the files or the
+commit messages. Examples use placeholders (Acme, Globex, PROJ-123).
+
+Messages matter as much as files and are worse to get wrong: they travel into
+pull request titles, notifications and release notes, and a changelog generator
+turns them into a shipped artefact. Describe the shape of the change instead of
+the party it came from.
+
+```text
+bad   fix(rag): stop indexing Acme Ltd meeting notes
+good  fix(rag): stop indexing notes from an excluded folder
+```
+
+Enforced in two places, because either alone is skippable:
+
+- **Locally**, `pre-commit` and `commit-msg` hooks from `.githooks/`. Install
+  once per clone with `scripts/install-hooks.sh`. Both yield to `--no-verify`.
+- **In CI**, on every push and pull request. The term list is gitignored, so
+  the workflow reads it from the `CLIENT_TERMS` repository secret; a missing
+  secret **fails the job** rather than skipping, since a scan that passes for
+  want of anything to match on is the worst possible green.
+
+CI runs with `--quiet`, reporting locations but never the matched text — this
+repository is public, so its build logs are too.
+
+Audit what is already committed:
+
+```bash
+scripts/check-no-client-content.sh --history    # file content, every blob
+scripts/check-no-client-content.sh --messages   # every commit message
+```
+
+A working tree going clean does not clean the history behind it: a fix commit
+corrects the tip and leaves the earlier blob published.
+
 ## Commits
 
 Conventional commits, enforced by commitlint ([config](../commitlint.config.mjs)).

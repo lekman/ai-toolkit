@@ -1,0 +1,54 @@
+name: Client content
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: No client-identifying content
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history. Both checks read every commit, and a shallow clone
+          # would pass by having almost nothing to read — a zero meaning "did
+          # not look" rather than "found nothing".
+          fetch-depth: 0
+
+      # scripts/client-terms.txt is gitignored: a committed list of client
+      # names is the leak the check exists to prevent. So CI has no terms
+      # unless they are supplied, and a missing secret must FAIL rather than
+      # skip — until now this check only ran as a local hook, which a fresh
+      # clone or `--no-verify` bypasses entirely.
+      - name: Restore the term list from secrets
+        env:
+          CLIENT_TERMS: ${{ secrets.CLIENT_TERMS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLIENT_TERMS:-}" ]; then
+            echo "::error::CLIENT_TERMS is not set. This check cannot run, and must not pass by default."
+            exit 1
+          fi
+          # No echo, no set -x: the value never reaches the log.
+          printf '%s\n' "$CLIENT_TERMS" > scripts/client-terms.txt
+          echo "term list restored ($(grep -cvE '^[[:space:]]*(#|$)' scripts/client-terms.txt) patterns)"
+
+      # --quiet throughout: this repository is public, so its build logs are
+      # too. Reporting the matched string would publish the thing the check
+      # exists to keep out.
+      - name: Scan committed file content
+        run: bash scripts/check-no-client-content.sh --history --quiet
+
+      - name: Scan commit messages
+        run: bash scripts/check-no-client-content.sh --messages --quiet
+
+      - name: Explain a failure without repeating it
+        if: failure()
+        run: |
+          echo "::notice::Client-identifying content found. Run 'scripts/check-no-client-content.sh --history' and '--messages' locally to see what and where."

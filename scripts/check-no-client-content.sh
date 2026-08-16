@@ -15,6 +15,21 @@
 #   (none)      tracked + untracked-but-not-ignored files in the working tree
 #   --staged    the staged blobs only, as the pre-commit hook runs it
 #   --history   every blob in every reachable commit
+#   --message <file>  one commit message, as the commit-msg hook runs it
+#   --messages [range]  every commit message in a range (default: all)
+#   --quiet     report locations only — never the matched text
+#
+# Commit messages need the same rule as file content, and are worse to get
+# wrong. They travel further — pull request titles, notifications, release
+# notes, a `git log` pasted into an issue — and a changelog generator turns
+# them into a shipped artefact. They are also the one thing a later cleanup
+# cannot fix quietly: redacting a file is a commit, redacting a message is a
+# history rewrite.
+#
+# --quiet exists for CI. A failure report that quotes the match puts the very
+# string this check protects into a build log, which is public for a public
+# repo. Locally the full context is printed, because the machine running it
+# already holds the term list.
 #
 # --staged reads staged *content*, not the file on disk. A partially staged
 # file can differ from its working copy, and the commit records the staged one.
@@ -45,10 +60,47 @@ fi
 # necessarily name the thing they look for.
 EXCLUDE='^(bun\.lock|scripts/check-no-client-content\.sh|scripts/client-terms(\.example)?\.txt)$'
 
-MODE="${1:-worktree}"
+# Pull --quiet out of the arguments so it can appear anywhere without being
+# mistaken for a mode, a range or a message path.
+QUIET=0
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--quiet" ]; then QUIET=1; else ARGS+=("$arg"); fi
+done
+
+MODE="${ARGS[0]:-worktree}"
 HITS=""
 
 case "$MODE" in
+  --message)
+    FILE="${ARGS[1]:-}"
+    [ -f "$FILE" ] || { echo "check-no-client-content: no message file at '$FILE'" >&2; exit 2; }
+    # Skip the comment lines git adds to the template; they are never committed.
+    match=$(grep -vE '^\s*#' "$FILE" | grep -InE "$PATTERN")
+    if [ -n "$match" ]; then
+      if [ "$QUIET" -eq 1 ]; then
+        HITS="the commit message names a protected term"
+      else
+        HITS=$(echo "$match" | sed 's/^/    /')
+      fi
+    fi
+    ;;
+
+  --messages)
+    RANGE="${ARGS[1]:-}"
+    while IFS= read -r sha; do
+      if git log -1 --format=%B "$sha" | grep -IiqE "$PATTERN"; then
+        if [ "$QUIET" -eq 1 ]; then
+          HITS="${HITS}${sha}
+"
+        else
+          HITS="${HITS}${sha:0:8} $(git log -1 --format=%s "$sha" | cut -c1-60)
+"
+        fi
+      fi
+    done < <(git rev-list ${RANGE:-HEAD})
+    ;;
+
   --history)
     # Walk every blob once. Paths repeat across commits; report each path once.
     HITS=$(git rev-list --objects --all \
@@ -85,7 +137,16 @@ if [ -n "$HITS" ]; then
   echo "BLOCKED: client-identifying content found." >&2
   echo "$HITS" | sed 's/^/  /' >&2
   echo >&2
-  echo "Replace with a placeholder (Acme, Globex, PROJ-123, acme-platform)." >&2
+  if [ "$QUIET" -eq 1 ]; then
+    echo "Re-run locally without --quiet to see the term and where it is." >&2
+  else
+    echo "Replace with a placeholder (Acme, Globex, PROJ-123, acme-platform)." >&2
+  fi
+  if [ "$MODE" = "--messages" ] || [ "$MODE" = "--message" ]; then
+    echo "For a message, describe the shape of the change instead of the party:" >&2
+    echo "  bad   fix(api): stop importing Acme Ltd invoices" >&2
+    echo "  good  fix(api): stop importing invoices billed to another tenant" >&2
+  fi
   if [ "$MODE" = "--history" ]; then
     echo "Committed already: fixing the working tree is not enough. The blob" >&2
     echo "stays in history until it is rewritten." >&2

@@ -1,0 +1,49 @@
+name: Auto Approve Release Please PR
+
+# Release Please opens the same pull request every time: version bumps and
+# generated changelogs, nothing else. Reviewing it by hand adds no judgement,
+# and a release pull request left sitting is how a release quietly stops
+# happening.
+#
+# The gate moves rather than disappears. Approval is conditional on the author,
+# the label and the paths touched; a release pull request that reached for
+# anything else fails those checks and waits for a human.
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    # Only pull requests from release-please branches.
+    if: startsWith(github.head_ref, 'release-please--')
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # No continue-on-error. In lekman/auto-approve-action that flag let an
+      # expired token report success for three weeks while nothing was being
+      # approved. This job only runs on release-please branches, so failing
+      # loudly here blocks nothing else.
+      - name: Auto approve and merge
+        uses: lekman/auto-approve-action@67402de4e778ed240d3dfe95613da9d337a52dce # v1.3.2
+        with:
+          # Not the App token that opens the pull request: GitHub refuses a
+          # self-approval, so the approver must be a different identity.
+          github-token: ${{ secrets.CODE_OWNER_TOKEN }}
+          # The login the API reports. `gh pr view --json author` prints
+          # "app/lekman-release-please-bot" for the same account, and the
+          # action compares exactly, so the two forms are not interchangeable
+          # until lekman/auto-approve-action#37 lands.
+          allowed-authors: "lekman-release-please-bot[bot]"
+          required-labels: "autorelease: pending"
+          label-match-mode: "all"
+          merge-method: "squash"
+          # This is a manifest release across six packages, so a release pull
+          # request touches thirteen files, not four. Globs rather than a
+          # literal list: adding a package should not silently stop approvals.
+          path-filters: ".github/release-manifest.json,**/CHANGELOG.md,packages/**/package.json"

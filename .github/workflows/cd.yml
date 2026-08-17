@@ -1,0 +1,59 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release Please
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      # Which packages released, for a later publish job to consume. Publishing
+      # still runs from a maintainer machine via scripts/release.ts; this is
+      # the seam for moving it into CI without changing the release flow.
+      paths_released: ${{ steps.release.outputs.paths_released }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Prefer a GitHub App token. It gives the bot its own identity — which is
+      # why CODEOWNERS can assign the changelog and manifest to it — and it
+      # avoids the repository-wide "Actions may create and approve pull
+      # requests" permission, which also lets automation approve its own work.
+      #
+      # continue-on-error so a repo without the secrets still releases via
+      # GITHUB_TOKEN. That path needs the repository setting enabled; the App
+      # path does not, and is the one to end up on.
+      - name: Generate GitHub App token
+        id: app-token
+        continue-on-error: true
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Report which identity is releasing
+        run: |
+          if [ -n "${{ steps.app-token.outputs.token }}" ]; then
+            echo "releasing as the GitHub App"
+          else
+            echo "::warning::vars.APP_ID / secrets.APP_PRIVATE_KEY not set — falling back to GITHUB_TOKEN, which needs 'Allow GitHub Actions to create and approve pull requests' enabled on this repository. Add the App secrets and the setting can be turned back off."
+          fi
+
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          target-branch: ${{ github.ref_name }}
+          config-file: .github/release-config.json
+          manifest-file: .github/release-manifest.json

@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      # Conventional prefix so Release Please files these under Fixes rather
+      # than ignoring them.
+      prefix: "fix(dependabot)"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      # One pull request for all actions rather than one per action: the
+      # churn is what makes action updates get ignored.
+      all-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "fix(dependabot)"

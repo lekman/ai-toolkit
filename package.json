@@ -10,6 +10,8 @@
     "build": "bun run --filter '*' build",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "eslint .",
+    "verify": "bun run lint && bun run hooks && bun run --filter '*' check",
+    "sync:app-credentials": "bun run scripts/sync-app-credentials.ts",
     "hooks": "bun run scripts/hooks.ts",
     "check": "bun run lint && bun run hooks && bun run --filter '*' check",
     "release": "bun run scripts/release.ts"

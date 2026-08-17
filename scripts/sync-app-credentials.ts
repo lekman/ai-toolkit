@@ -25,7 +25,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 
 const argv = process.argv.slice(2);
 const flag = (name: string): string | undefined => {
@@ -64,6 +64,10 @@ if (mode & 0o077) {
     `${keyPath} is mode ${mode.toString(8)} — readable beyond its owner. chmod 600 it before syncing.`,
   );
 }
+
+// Read once rather than per repository: the file is small, and re-reading it
+// in a loop widens the window in which a key sits in memory for no benefit.
+const privateKey = readFileSync(keyPath, "utf8");
 
 interface Repo {
   isArchived: boolean;
@@ -123,9 +127,12 @@ for (const name of targets) {
   }
   try {
     gh(["variable", "set", VARIABLE, "--repo", repo, "--body", appId]);
-    // --body-file rather than an argument: a private key on a command line is
-    // visible in the process table for as long as the call runs.
-    gh(["secret", "set", SECRET, "--repo", repo, "--body-file", keyPath]);
+    // Via stdin, not --body: a private key passed as an argument is readable
+    // from the process table for as long as the call runs. `gh secret set`
+    // reads the value from standard input when --body is omitted; it has no
+    // --body-file, which an earlier version of this script assumed and which
+    // failed on every repository after the first variable was written.
+    gh(["secret", "set", SECRET, "--repo", repo], privateKey);
     console.log(`  updated       ${repo}`);
   } catch (error) {
     failed += 1;

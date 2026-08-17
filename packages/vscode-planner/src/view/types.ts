@@ -12,4 +12,10 @@ export interface PaneModel {
   message: null | string;
   /** Whether to print each client's name above its tasks. */
   showClientHeadings: boolean;
+  /**
+   * Absolute vault path, so a `[Details](Clients/…)` target can be resolved
+   * to a file the markdown preview can open. Undefined when unconfigured, in
+   * which case those links stay plain text.
+   */
+  vaultRoot?: string;
 }

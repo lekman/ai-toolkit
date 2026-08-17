@@ -55,6 +55,7 @@ repository's `.vscode/settings.json` to pin a repository to specific clients:
 | `planner.showClientHeadings` | `"auto"` | Print the client name.     |
 | `planner.showCompleted`      | `true`   | Show `- [x]` tasks.        |
 | `planner.pollSeconds`        | `30`     | Fallback re-read interval. |
+| `planner.vaultRoot`          | `""`     | Vault path, for links.     |
 
 An empty `planner.clients` derives the client from the path map; if that finds
 nothing either, every client is shown. `showClientHeadings` takes `auto`,

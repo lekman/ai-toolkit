@@ -135,6 +135,11 @@
           "default": 30,
           "minimum": 0,
           "markdownDescription": "How often to re-read the dashboard as a fallback, in seconds. The file watcher is the primary trigger; polling covers vaults on iCloud or another sync client, whose writes do not always raise a watcher event. `0` disables polling."
+        },
+        "planner.vaultRoot": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Absolute path to the Obsidian vault. Task links such as `[Details](Clients/\u2026)` are relative to the vault, so this is what they resolve against; clicking one opens it in markdown preview. Leave empty to use `vault` from `~/.claude/obsidian.json`. Without either, those links show as plain text."
         }
       }
     }

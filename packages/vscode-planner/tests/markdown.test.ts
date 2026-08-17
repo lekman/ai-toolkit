@@ -61,3 +61,88 @@ describe("renderInline", () => {
     expect(Markdown.renderInline("2 * 3 = 6")).toBe("2 * 3 = 6");
   });
 });
+
+const VAULT = "/Users/me/Vault";
+
+describe("Markdown.previewLink", () => {
+  test("resolves a vault-relative note to a markdown.showPreview command", () => {
+    const link = Markdown.previewLink("Clients/Acme/Notes.md", VAULT);
+    expect(link?.path).toBe("/Users/me/Vault/Clients/Acme/Notes.md");
+    expect(link?.uri.startsWith("command:markdown.showPreview?")).toBe(true);
+  });
+
+  test("undoes the percent-encoding the dashboard writes", () => {
+    // Real targets carry spaces and em dashes, e.g.
+    // "Acme%20work%20reconciliation%20%E2%80%94%2017%20August%202026.md".
+    const link = Markdown.previewLink("Clients/A%20B/Note%20%E2%80%94%20x.md", VAULT);
+    expect(link?.path).toBe("/Users/me/Vault/Clients/A B/Note — x.md");
+  });
+
+  test("refuses a target that climbs out of the vault", () => {
+    expect(Markdown.previewLink("../../../.ssh/config.md", VAULT)).toBe(null);
+  });
+
+  test("refuses a climb that only nets out inside the vault", () => {
+    // Clients/../../etc lands outside even though it starts inside; the walk
+    // must fail on the step that pops past the root, not on the final path.
+    expect(Markdown.previewLink("Clients/../../etc/passwd.md", VAULT)).toBe(null);
+  });
+
+  test("refuses an absolute path", () => {
+    expect(Markdown.previewLink("/etc/hosts.md", VAULT)).toBe(null);
+  });
+
+  test("refuses anything carrying a URL scheme", () => {
+    expect(Markdown.previewLink("file:///etc/hosts.md", VAULT)).toBe(null);
+    expect(Markdown.previewLink("command:workbench.action.terminal.new.md", VAULT)).toBe(null);
+  });
+
+  test("refuses a non-markdown target", () => {
+    expect(Markdown.previewLink("Clients/Acme/secrets.env", VAULT)).toBe(null);
+  });
+
+  test("returns null without a vault root", () => {
+    expect(Markdown.previewLink("Clients/Acme/Notes.md")).toBe(null);
+    expect(Markdown.previewLink("Clients/Acme/Notes.md", "")).toBe(null);
+  });
+});
+
+describe("renderInline with a vault root", () => {
+  test("[Details] becomes a clickable preview link", () => {
+    const html = Markdown.renderInline(
+      "Ship it [Details](Clients/Acme/Plan.md)",
+      VAULT,
+    );
+    expect(html).toContain("command:markdown.showPreview?");
+    expect(html).toContain(">Details</a>");
+  });
+
+  test("the command argument revives as a file Uri, not a string", () => {
+    const html = Markdown.renderInline("[D](Clients/Acme/Plan.md)", VAULT);
+    const encoded = /command:markdown\.showPreview\?([^"]+)/.exec(html)?.[1];
+    const args = JSON.parse(decodeURIComponent(encoded ?? "[]"));
+    expect(args[0]).toEqual({
+      $mid: 1,
+      path: "/Users/me/Vault/Clients/Acme/Plan.md",
+      scheme: "file",
+    });
+  });
+
+  test("without a vault root the label stays plain text", () => {
+    // A link that resolves to nothing is worse than no link: it looks
+    // clickable and does nothing.
+    const html = Markdown.renderInline("[Details](Clients/Acme/Plan.md)");
+    expect(html).toBe("Details");
+  });
+
+  test("an http link is still an ordinary anchor, not a command", () => {
+    const html = Markdown.renderInline("[PR](https://github.com/x/y/pull/1)", VAULT);
+    expect(html).toContain('href="https://github.com/x/y/pull/1"');
+    expect(html).not.toContain("command:");
+  });
+
+  test("a traversal target renders as text even with a vault root", () => {
+    expect(Markdown.renderInline("[x](../../.ssh/id_rsa.md)", VAULT)).toBe("x");
+  });
+});
+

@@ -16,6 +16,14 @@ export interface PlannerConfig {
   showClientHeadings: ClientHeadingMode;
   /** Whether `- [x]` tasks appear. */
   showCompleted: boolean;
+  /**
+   * Absolute path to the vault, or null when it is not known.
+   *
+   * Task links are written relative to the vault, not to the dashboard, so
+   * this is what a `[Details](Clients/…)` target resolves against. Without it
+   * those links render as plain text.
+   */
+  vaultRoot: null | string;
 }
 
 /** The extension's own settings, as read from VS Code. */
@@ -25,6 +33,7 @@ export interface PlannerSettings {
   pollSeconds: number;
   showClientHeadings: ClientHeadingMode;
   showCompleted: boolean;
+  vaultRoot: string;
 }
 
 /**

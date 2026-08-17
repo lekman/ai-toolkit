@@ -22,6 +22,7 @@ const DEFAULTS: PlannerSettings = {
   pollSeconds: 30,
   showClientHeadings: "auto",
   showCompleted: true,
+  vaultRoot: "",
 };
 
 const SHARED_PATH = "/Users/me/.claude/obsidian.json";
@@ -131,5 +132,31 @@ describe("resolve - view options", () => {
       SHARED_PATH,
     );
     expect(config.pollSeconds).toBe(0);
+  });
+});
+
+describe("vaultRoot", () => {
+  test("falls back to the shared vault when the setting is empty", () => {
+    const config = Config.resolve(DEFAULTS, SHARED, undefined, SHARED_PATH);
+    expect(config.vaultRoot).toBe("/Users/me/Vault");
+  });
+
+  test("the setting wins, so a hand-configured dashboard still links", () => {
+    const config = Config.resolve(
+      { ...DEFAULTS, vaultRoot: "/elsewhere/Vault" },
+      SHARED,
+      undefined,
+      SHARED_PATH,
+    );
+    expect(config.vaultRoot).toBe("/elsewhere/Vault");
+  });
+
+  test("is null with neither, rather than an empty string", () => {
+    // Null and "" would both be falsy, but the view spreads this onto the
+    // model only when truthy; a null says "not known" without pretending a
+    // root of "" exists.
+    expect(Config.resolve(DEFAULTS, null, undefined, SHARED_PATH).vaultRoot).toBe(
+      null,
+    );
   });
 });

@@ -83,6 +83,11 @@ export class Config {
       if (derived) clients = [derived];
     }
 
+    // The setting wins so a manually configured dashboard can still resolve
+    // links; otherwise the shared file, which is where the vault is normally
+    // declared. Neither is required — links simply stay plain text.
+    const vaultRoot = settings.vaultRoot.trim() || shared?.vault?.trim() || null;
+
     return {
       clients,
       dashboardPath,
@@ -90,6 +95,7 @@ export class Config {
       problem,
       showClientHeadings: settings.showClientHeadings,
       showCompleted: settings.showCompleted,
+      vaultRoot,
     };
   }
 

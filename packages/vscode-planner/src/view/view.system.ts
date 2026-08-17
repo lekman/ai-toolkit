@@ -42,7 +42,15 @@ export class PlannerViewProvider implements vscode.WebviewViewProvider {
    */
   resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.view = webviewView;
-    webviewView.webview.options = { enableScripts: false };
+    webviewView.webview.options = {
+      // No scripts at all; the pane is static HTML. Command URIs are the
+      // reason the [Details] links work without one.
+      enableScripts: false,
+      // An allow-list of exactly one command, not `true`. `true` would let
+      // any text in the dashboard invoke any command in the window,
+      // including ones that write files or run tasks.
+      enableCommandUris: ["markdown.showPreview"],
+    };
     this.render();
   }
 

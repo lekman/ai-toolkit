@@ -45,6 +45,7 @@ export class VscodeConfigSource implements IConfigSource {
         "auto",
       ),
       showCompleted: settings.get<boolean>("showCompleted", true),
+      vaultRoot: settings.get<string>("vaultRoot", ""),
     };
   }
 

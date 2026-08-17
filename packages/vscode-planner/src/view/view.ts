@@ -85,7 +85,15 @@ export class View {
       };
     }
 
-    return { groups, heading: day.heading, message: null, showClientHeadings };
+    return {
+      groups,
+      heading: day.heading,
+      message: null,
+      showClientHeadings,
+      // Only when known. An undefined root leaves relative links as text,
+      // which is the honest rendering of a link that cannot be resolved.
+      ...(config.vaultRoot ? { vaultRoot: config.vaultRoot } : {}),
+    };
   }
 
   /**
@@ -110,7 +118,7 @@ export class View {
                 (task) =>
                   `<li class="${task.done ? "done" : "open"}">` +
                   `<input type="checkbox" disabled${task.done ? " checked" : ""} />` +
-                  `<span>${Markdown.renderInline(task.text)}</span></li>`,
+                  `<span>${Markdown.renderInline(task.text, model.vaultRoot)}</span></li>`,
               )
               .join("");
             return `${title}<ul>${items}</ul>`;

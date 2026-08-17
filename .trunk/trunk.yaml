@@ -46,7 +46,17 @@ actions:
       run: bash scripts/check-no-client-content.sh --staged
       triggers:
         - git_hooks: [pre-commit]
+    # Same reasoning as no-client-content above, for the message rather than
+    # the content. Added 17 Aug after finding .githooks/commit-msg had never
+    # run: trunk owns the hooks path, so a hook living only in .githooks is
+    # inert while looking installed.
+    - id: no-client-message
+      display_name: block a commit message naming a client
+      run: bash scripts/check-no-client-content.sh --message
+      triggers:
+        - git_hooks: [commit-msg]
   enabled:
     - commitlint
+    - no-client-message
     - eslint-fix
     - no-client-content

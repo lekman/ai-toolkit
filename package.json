@@ -10,7 +10,8 @@
     "build": "bun run --filter '*' build",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "eslint .",
-    "check": "bun run lint && bun run --filter '*' check",
+    "hooks": "bun run scripts/hooks.ts",
+    "check": "bun run lint && bun run hooks && bun run --filter '*' check",
     "release": "bun run scripts/release.ts"
   },
   "devDependencies": {

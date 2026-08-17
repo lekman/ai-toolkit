@@ -73,7 +73,14 @@ HITS=""
 
 case "$MODE" in
   --message)
+    # Trunk does not expand ${TRUNK_GIT_STDIN_FILE} in an action's `run:`, so
+    # the path arrives empty when this runs as a trunk action. Read it from the
+    # environment instead, then fall back to git's own message file. Relying on
+    # the argument alone made the hook fire and then fail on an empty path —
+    # which at least failed loudly, unlike the hook that never fired at all.
     FILE="${ARGS[1]:-}"
+    [ -n "$FILE" ] || FILE="${TRUNK_GIT_STDIN_FILE:-}"
+    [ -n "$FILE" ] || FILE="$(git rev-parse --git-dir)/COMMIT_EDITMSG"
     [ -f "$FILE" ] || { echo "check-no-client-content: no message file at '$FILE'" >&2; exit 2; }
     # Skip the comment lines git adds to the template; they are never committed.
     match=$(grep -vE '^\s*#' "$FILE" | grep -InE "$PATTERN")

@@ -14,6 +14,7 @@ import { promisify } from "node:util";
 
 import type { CheckResult, RagConfig } from "../config";
 import type { IqProbes } from "./iq";
+import type { ReportKind } from "./types";
 
 import { Config, ConfigStore } from "../config";
 import { LaunchdInstaller } from "../launchd";
@@ -168,7 +169,7 @@ export class QualificationRunner {
   /** Write a qualification report and return its path. */
   static async writeReport(
     storageDir: string,
-    kind: "IQ" | "OQ",
+    kind: ReportKind,
     results: CheckResult[],
   ): Promise<string> {
     const timestamp = new Date().toISOString();

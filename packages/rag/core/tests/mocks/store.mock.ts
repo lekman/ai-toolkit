@@ -42,6 +42,15 @@ export class StoreMock implements IChunkStore {
     return [...paths].sort();
   }
 
+  /** Newest modification time across a source. */
+  async newestModifiedAt(source: string): Promise<number> {
+    let newest = 0;
+    for (const chunk of this.chunks.values()) {
+      if (chunk.source === source) newest = Math.max(newest, chunk.modifiedAt);
+    }
+    return newest;
+  }
+
   /** Recorded retention cutoffs, one per optimize call. */
   readonly optimizeCalls: Date[] = [];
 

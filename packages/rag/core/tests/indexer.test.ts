@@ -201,3 +201,21 @@ describe("Indexer.versionCutoff", () => {
     expect(cutoff.toISOString()).toBe("2026-08-14T12:00:00.000Z");
   });
 });
+
+describe("store freshness", () => {
+  test("newestModifiedAt considers every path, not a prefix", async () => {
+    // The OQ check sampled the first 500 of 607 paths and reported the newest
+    // of the sample: an index 0.7 days old read as 2.6 days. A freshness
+    // answer that looks at part of the data is not a freshness answer.
+    const { embeddings, reader, store } = setup();
+    reader.set("Zzz/newest.md", `---\ntype: note\n---\n## Late\n\nSorts last.\n`, 9999);
+    await Indexer.scan(reader, store, embeddings);
+    const paths = await store.listPaths("obsidian");
+    expect(paths[paths.length - 1]).toBe("Zzz/newest.md");
+    expect(await store.newestModifiedAt("obsidian")).toBe(9999);
+  });
+
+  test("an empty store reports 0 rather than a stale maximum", async () => {
+    expect(await new StoreMock().newestModifiedAt("obsidian")).toBe(0);
+  });
+});

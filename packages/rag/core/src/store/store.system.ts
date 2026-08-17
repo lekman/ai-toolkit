@@ -79,6 +79,18 @@ export class LanceDbChunkStore implements IChunkStore {
     await table.optimize({ cleanupOlderThan: olderThan });
   }
 
+  /** Newest modification time across a source; one query, every row. */
+  async newestModifiedAt(source: string): Promise<number> {
+    const table = await this.openIfExists();
+    if (!table) return 0;
+    const rows = (await table
+      .query()
+      .where(`source = '${escapeSql(source)}'`)
+      .select(["modifiedAt"])
+      .toArray()) as { modifiedAt: number }[];
+    return rows.reduce((max, row) => Math.max(max, row.modifiedAt ?? 0), 0);
+  }
+
   /** All chunks for one file, ordered by ordinal. */
   async readPath(source: string, path: string): Promise<ChunkRecord[]> {
     const table = await this.openIfExists();

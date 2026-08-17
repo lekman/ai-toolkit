@@ -72,15 +72,10 @@ export class Oq {
     });
 
     const paths = await store.listPaths("obsidian");
-    const newest = Math.max(
-      0,
-      ...(await Promise.all(
-        paths.slice(0, 500).map(async (path) => {
-          const [first] = await store.readPath("obsidian", path);
-          return first?.modifiedAt ?? 0;
-        }),
-      )),
-    );
+    // Every row, not a sample. The previous version read the first 500 of 607
+    // paths and reported the newest of those — an index 0.7 days old showed as
+    // 2.6, and a genuinely stale index could have shown as fresh.
+    const newest = await store.newestModifiedAt("obsidian");
     const ageDays = (now - newest) / 86_400_000;
     results.push({
       detail: `newest indexed note is ${ageDays.toFixed(1)} days old (bound ${freshnessDays})`,

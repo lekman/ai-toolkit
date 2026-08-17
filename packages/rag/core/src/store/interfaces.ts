@@ -9,6 +9,15 @@ export interface IChunkStore {
   /** Distinct file paths currently indexed for a source (reconciliation). */
   listPaths(source: string): Promise<string[]>;
   /**
+   * Newest `modifiedAt` across a source, or 0 when empty.
+   *
+   * A freshness answer has to consider every row. Sampling the first N paths
+   * reports the newest *of the sample* and reads as the newest overall — the
+   * OQ check did exactly that over the first 500 of 607 paths, and reported an
+   * index 2.6 days stale when it was 0.7.
+   */
+  newestModifiedAt(source: string): Promise<number>;
+  /**
    * Reclaim storage: merge fragments and drop versions older than `olderThan`.
    * A store that manages its own storage implements this as a no-op. Callers
    * run it after a write batch, never concurrently with one.

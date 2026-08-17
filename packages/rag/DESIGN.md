@@ -261,6 +261,27 @@ during first setup and after ingestion changes:
 The OQ report is the standing answer to "does it still work?" Re-run
 read-only after any upgrade, re-run read-write after touching ingestion.
 
+### Scheduled Maintenance
+
+`rag maintain` compacts the store and then runs the read-only checks, writing
+a `MAINT-*` report and exiting non-zero on failure. A launchd agent runs it
+weekly, half an hour after the daily scan so the two never touch the store at
+once.
+
+It is **not** where the store is kept small — compaction already runs at the
+end of every scan. It exists because nothing was *checking*. The store reached
+29 GB and the only reason anyone noticed was an unrelated investigation; a
+guard no schedule runs reports a problem after it has cost something.
+Compacting again is cheap insurance for the case the scans have stopped, since
+a dead watcher means no compaction either.
+
+Its first run earned its place by finding a bug in one of the checks it runs:
+index freshness sampled the first 500 of 607 paths and reported the newest of
+that sample, showing an index 0.7 days old as 2.6 days stale. A freshness
+answer has to consider every row, so the store now exposes `newestModifiedAt`
+as a single query. The failure direction that matters is the opposite one: the
+same sampling could have reported a genuinely stale index as fresh.
+
 ## Security Boundaries
 
 - Tier is decided at ingestion (folder → tier rule per source) and enforced at

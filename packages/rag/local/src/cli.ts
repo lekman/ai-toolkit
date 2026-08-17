@@ -175,6 +175,54 @@ switch (command) {
     break;
   }
 
+  // Compaction already runs at the end of every scan, so this is not where
+  // the store is kept small — the scan does that. It exists because nothing
+  // was *checking*. The store reached 29 GB on 15 Aug and the only reason
+  // anyone noticed was an unrelated investigation; a guard that no schedule
+  // runs is a guard that reports a problem after it has cost something.
+  //
+  // Compacting again here is cheap insurance for the case the scans have
+  // stopped: a dead watcher means no compaction either, and the checks below
+  // would then be reading a store nobody has maintained.
+  case "maintain": {
+    const config = requireConfig();
+    const embeddings = requireEmbeddings();
+    const store = new LanceDbChunkStore(config.dataDir);
+
+    const before = await QualificationRunner.measureStorageBytes(config.dataDir);
+    await store.optimize(Indexer.versionCutoff(new Date()));
+    const after = await QualificationRunner.measureStorageBytes(config.dataDir);
+
+    const results = await Oq.readOnlyChecks(
+      store,
+      embeddings,
+      "architecture decisions",
+      config.freshnessDays,
+      Date.now(),
+      after,
+    );
+    results.unshift({
+      detail: `${(before / 1_048_576).toFixed(0)} MiB before, ${(after / 1_048_576).toFixed(0)} MiB after`,
+      name: "compaction ran",
+      pass: true,
+      remediation: "",
+    });
+
+    const report = await QualificationRunner.writeReport(
+      storageDir,
+      "MAINT",
+      results,
+    );
+    const ok = Report.allPass(results);
+    console.log(
+      `maintain ${ok ? "PASS" : "FAIL"} — ${(after / 1_048_576).toFixed(0)} MiB, ${await store.count()} chunks — ${report}`,
+    );
+    // Non-zero on failure so launchd records it and `rag maintain` is usable
+    // as a check in any pipeline, not only as a cron body.
+    process.exit(ok ? 0 : 1);
+    break;
+  }
+
   case "scan": {
     const config = requireConfig();
     const report = await Indexer.scan(
@@ -223,7 +271,7 @@ switch (command) {
 
   default:
     console.error(
-      "usage: rag <install|iq|oq [--rw]|scan|watch|mcp> [--vault <path>] [--storage <dir>]",
+      "usage: rag <install|iq|oq [--rw]|maintain|scan|watch|mcp> [--vault <path>] [--storage <dir>]",
     );
     process.exit(2);
 }

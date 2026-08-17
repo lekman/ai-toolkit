@@ -45,3 +45,7 @@ packages/*/*.vsix
 # Editor workspace settings. planner.clients names a real client, which is
 # exactly the content the pre-commit guard exists to keep out of this repo.
 .vscode/
+
+# macOS finder metadata. Ignored globally too, but a repo this one is
+# published from should not depend on every contributor having that set up.
+.DS_Store

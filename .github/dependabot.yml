@@ -8,6 +8,25 @@ updates:
       # Conventional prefix so Release Please files these under Fixes rather
       # than ignoring them.
       prefix: "fix(dependabot)"
+    ignore:
+      # typescript-eslint refuses to load under TypeScript 7 — not degraded
+      # linting, no linting at all:
+      #
+      #   Error: typescript-eslint does not support TS 7.0.
+      #
+      # No configuration avoids it. The same upgrade was checked out and run
+      # in lekman/freeagent: typecheck and every test pass under TypeScript 7,
+      # only the lint toolchain cannot run.
+      #
+      # Closing a pull request skips one version, so 7.0.3 would be raised the
+      # day it ships, into a check that cannot pass.
+      #
+      # Minors and patches are still allowed, and typescript-eslint itself is
+      # deliberately not ignored — its next release is what lifts this. Remove
+      # this entry once it supports TypeScript >= 7.1:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

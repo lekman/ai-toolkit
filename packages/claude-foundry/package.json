@@ -1,6 +1,6 @@
 {
   "name": "@lekman/claude-foundry",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run one Claude Code session against Claude on Microsoft Foundry, without switching your global settings.",
   "license": "MIT",
   "author": "Tobias Lekman",

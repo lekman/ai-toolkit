@@ -27,7 +27,8 @@
   },
   "bin": {
     "rag-indexer": "./dist/bin/rag-indexer.js",
-    "rag-mcp": "./dist/bin/rag-mcp.js"
+    "rag-mcp": "./dist/bin/rag-mcp.js",
+    "rag-server": "./dist/bin/rag-server.js"
   },
   "files": [
     "dist",

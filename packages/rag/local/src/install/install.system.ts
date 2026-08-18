@@ -48,6 +48,7 @@ export class Installer {
   static async installAgents(
     cliPath: string,
     storageDir: string,
+    withServer = false,
   ): Promise<string[]> {
     const logDir = join(storageDir, "logs");
     const node = process.execPath;
@@ -58,6 +59,13 @@ export class Installer {
     paths.push(
       await LaunchdInstaller.install(Launchd.scanAgent(node, cliPath, logDir)),
     );
+    if (withServer) {
+      paths.push(
+        await LaunchdInstaller.install(
+          Launchd.serverAgent(node, cliPath, logDir),
+        ),
+      );
+    }
     return paths;
   }
 

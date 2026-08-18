@@ -28,4 +28,29 @@ describe("Launchd plists", () => {
     expect(agent.xml).toContain("<key>RunAtLoad</key>");
     expect(agent.xml).toContain("<string>scan</string>");
   });
+
+  test("server agent keeps alive and runs the server subcommand", () => {
+    const agent = Launchd.serverAgent(
+      "/usr/local/bin/node",
+      "/opt/rag/cli.js",
+      "/logs",
+    );
+    expect(agent.label).toBe("com.lekman.rag.server");
+    // KeepAlive is what makes it always-on: the laptop queries this while the
+    // Mini is unattended, so a crash must not need a human to notice.
+    expect(agent.xml).toContain("<key>KeepAlive</key>");
+    expect(agent.xml).toContain("<key>RunAtLoad</key>");
+    expect(agent.xml).toContain("<string>server</string>");
+    expect(agent.xml).toContain("/logs/server.log");
+  });
+
+  test("the three agents have distinct labels and log files", () => {
+    const made = [
+      Launchd.watchAgent("/n", "/c", "/logs"),
+      Launchd.scanAgent("/n", "/c", "/logs"),
+      Launchd.serverAgent("/n", "/c", "/logs"),
+    ];
+    // A shared label would make one agent silently replace another in launchd.
+    expect(new Set(made.map((agent) => agent.label)).size).toBe(3);
+  });
 });

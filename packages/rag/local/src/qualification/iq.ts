@@ -13,7 +13,11 @@ export interface IqProbes {
   /** Whether the scan and watch launchd labels are loaded. */
   launchdLoaded: { scan: boolean; server: boolean; watch: boolean };
   /** Last exit status per agent; non-zero means it is loaded but failing. */
-  launchdExit: { scan: null | number; server: null | number; watch: null | number };
+  launchdExit: {
+    scan: null | number;
+    server: null | number;
+    watch: null | number;
+  };
   /** Whether the vault path exists and is readable. */
   vaultReadable: boolean;
   /** HTTP status of a one-token Voyage probe, or null when unreachable. */
@@ -93,8 +97,7 @@ export class Iq {
         // otherwise a Mini whose watcher cannot read the vault reports PASS.
         pass: (["scan", "watch", "server"] as const).every(
           (name) =>
-            probes.launchdLoaded[name] &&
-            (probes.launchdExit[name] ?? 0) === 0,
+            probes.launchdLoaded[name] && (probes.launchdExit[name] ?? 0) === 0,
         ),
         remediation:
           "check ~/.rag/logs/<agent>.log. EPERM on the vault means the agent " +

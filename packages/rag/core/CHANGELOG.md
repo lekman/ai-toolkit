@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.3.0...rag-core@v0.3.1) (2026-08-18)
+
+
+### Fixes
+
+* **rag:** stop excluding notes whose title ends in a year ([#24](https://github.com/lekman/ai-toolkit/issues/24)) ([77242dd](https://github.com/lekman/ai-toolkit/commit/77242dd594e3849bbbddcd9bae500ddcbf76a785))
+
 ## [0.3.0](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.2.1...rag-core@v0.3.0) (2026-08-18)
 
 

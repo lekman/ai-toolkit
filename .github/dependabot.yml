@@ -28,6 +28,21 @@ updates:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
+      # @modelcontextprotocol/sdk pins its own zod 3 rather than resolving
+      # ours, so a move to zod 4 leaves two copies in the tree and the schemas
+      # we build are not the schemas its API is typed against:
+      #
+      #   Type 'ZodOptional<ZodString>' is not assignable to type 'AnySchema'.
+      #
+      # Nominal, not a shape mismatch, so there is nothing to fix on our side.
+      # Confirmed in the lockfile:
+      #   "@modelcontextprotocol/sdk/zod": ["zod@3.25.76", ...]
+      #
+      # Minors and patches still flow. Remove this entry when the SDK resolves
+      # zod 4 for its own types.
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

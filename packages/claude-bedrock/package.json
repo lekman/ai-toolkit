@@ -1,6 +1,6 @@
 {
   "name": "@lekman/claude-bedrock",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Run one Claude Code session against AWS Bedrock, without switching your global settings.",
   "license": "MIT",
   "author": "Tobias Lekman",

@@ -2,7 +2,10 @@
 /**
  * `rag` — the local runtime CLI.
  *
- *   rag install [--vault <path>] [--storage <dir>]   set up + IQ (+ scan + OQ --rw when the key exists)
+ *   rag install [--vault <path>] [--storage <dir>] [--server]
+ *                                                    set up + IQ (+ scan + OQ --rw when the key exists);
+ *                                                    --server also installs the always-on tailnet MCP agent
+ *   rag server [--port <n>] [--host <addr>]          run the tailnet MCP server in the foreground
  *   rag iq                                           installation qualification, report to <storage>/qualification/
  *   rag oq [--rw]                                    operational qualification (read-only, or end-to-end with cleanup)
  *   rag scan                                         one full reconcile of the vault into the store
@@ -12,8 +15,10 @@
 
 import {
   Exclusions,
+  findTailnetAddress,
   Indexer,
   LanceDbChunkStore,
+  McpHttpServer,
   McpStdioServer,
   VaultReader,
   VoyageEmbeddings,
@@ -66,7 +71,12 @@ switch (command) {
     console.log(`storage ready: ${config.storageDir}`);
 
     const cliPath = fileURLToPath(import.meta.url);
-    for (const path of await Installer.installAgents(cliPath, storageDir)) {
+    const withServer = process.argv.includes("--server");
+    for (const path of await Installer.installAgents(
+      cliPath,
+      storageDir,
+      withServer,
+    )) {
       console.log(`launchd agent installed: ${path}`);
     }
     console.log(
@@ -189,7 +199,9 @@ switch (command) {
     const embeddings = requireEmbeddings();
     const store = new LanceDbChunkStore(config.dataDir);
 
-    const before = await QualificationRunner.measureStorageBytes(config.dataDir);
+    const before = await QualificationRunner.measureStorageBytes(
+      config.dataDir,
+    );
     await store.optimize(Indexer.versionCutoff(new Date()));
     const after = await QualificationRunner.measureStorageBytes(config.dataDir);
 
@@ -269,9 +281,34 @@ switch (command) {
     break;
   }
 
+  case "server": {
+    // The always-on tailnet server. Bind discovery is fatal when it fails:
+    // falling back to another interface would put the whole vault index on the
+    // LAN, so an unreachable server is the correct outcome, not a degraded one.
+    const config = requireConfig();
+    const host = arg("host") ?? findTailnetAddress();
+    if (!host) {
+      console.error(
+        "no Tailscale address on this machine — refusing to start.\n" +
+          "This server binds to the tailnet only. Bring Tailscale up first.",
+      );
+      process.exit(4);
+    }
+    const port = Number(arg("port") ?? 7777);
+    const running = await McpHttpServer.serve(
+      new LanceDbChunkStore(config.dataDir),
+      requireEmbeddings(),
+      { host, port },
+    );
+    console.log(
+      `rag server listening on http://${running.address.host}:${String(running.address.port)} (tailnet only)`,
+    );
+    break;
+  }
+
   default:
     console.error(
-      "usage: rag <install|iq|oq [--rw]|maintain|scan|watch|mcp> [--vault <path>] [--storage <dir>]",
+      "usage: rag <install|iq|oq [--rw]|maintain|scan|watch|mcp|server> [--vault <path>] [--storage <dir>]",
     );
     process.exit(2);
 }

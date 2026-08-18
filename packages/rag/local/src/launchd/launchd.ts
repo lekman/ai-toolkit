@@ -14,7 +14,8 @@ const args = (values: string[]): string =>
   values.map((value) => `    <string>${value}</string>`).join("\n");
 
 /**
- * Builds launchd plists for the watcher and the daily reconcile scan.
+ * Builds launchd plists for the watcher, the daily reconcile scan, and the
+ * always-on tailnet MCP server.
  * Pure — strings in, XML out; writing and loading is the system layer's job.
  */
 export class Launchd {
@@ -48,6 +49,37 @@ ${args([nodePath, cliPath, "scan"])}
   <string>${logDir}/scan.log</string>
   <key>StandardErrorPath</key>
   <string>${logDir}/scan.log</string>
+</dict>
+</plist>
+`,
+    };
+  }
+
+  /** Long-lived tailnet MCP server, restarted by launchd if it dies. */
+  static serverAgent(
+    nodePath: string,
+    cliPath: string,
+    logDir: string,
+  ): AgentPlist {
+    const label = "com.lekman.rag.server";
+    return {
+      label,
+      xml: `${header}
+<dict>
+  <key>Label</key>
+  <string>${label}</string>
+  <key>ProgramArguments</key>
+  <array>
+${args([nodePath, cliPath, "server"])}
+  </array>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>${logDir}/server.log</string>
+  <key>StandardErrorPath</key>
+  <string>${logDir}/server.log</string>
 </dict>
 </plist>
 `,

@@ -87,8 +87,14 @@ export class QualificationRunner {
       configProblems: config
         ? Config.validate(config)
         : ["config.json not found"],
+      launchdExit: {
+        scan: await LaunchdInstaller.lastExitStatus("com.lekman.rag.scan"),
+        server: await LaunchdInstaller.lastExitStatus("com.lekman.rag.server"),
+        watch: await LaunchdInstaller.lastExitStatus("com.lekman.rag.watch"),
+      },
       launchdLoaded: {
         scan: await LaunchdInstaller.isLoaded("com.lekman.rag.scan"),
+        server: await LaunchdInstaller.isLoaded("com.lekman.rag.server"),
         watch: await LaunchdInstaller.isLoaded("com.lekman.rag.watch"),
       },
       nodeMajor: Number(process.versions.node.split(".")[0]),

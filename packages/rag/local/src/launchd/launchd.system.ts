@@ -33,4 +33,22 @@ export class LaunchdInstaller {
       return false;
     }
   }
+
+  /**
+   * Last exit status launchd recorded for an agent, or null when unknown.
+   *
+   * "Loaded" is not "working". A KeepAlive agent that crashes on every start is
+   * still loaded, and reporting only that produced an IQ PASS on a Mini where
+   * both vault-reading agents were failing with EPERM. The exit status is what
+   * distinguishes the two.
+   */
+  static async lastExitStatus(label: string): Promise<number | null> {
+    try {
+      const { stdout } = await exec("launchctl", ["list", label]);
+      const match = /"LastExitStatus"\s*=\s*(-?\d+)/.exec(stdout);
+      return match?.[1] === undefined ? null : Number(match[1]);
+    } catch {
+      return null;
+    }
+  }
 }

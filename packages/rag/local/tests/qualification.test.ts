@@ -7,7 +7,8 @@ import { Iq, Oq, Report } from "../src/qualification";
 const healthyProbes: IqProbes = {
   claudeMcpRegistered: true,
   configProblems: [],
-  launchdLoaded: { scan: true, watch: true },
+  launchdExit: { scan: 0, server: 0, watch: 0 },
+  launchdLoaded: { scan: true, server: true, watch: true },
   nodeMajor: 22,
   storageWritable: true,
   vaultReadable: true,
@@ -20,6 +21,22 @@ describe("Iq.evaluate", () => {
     const results = Iq.evaluate(healthyProbes);
     expect(results).toHaveLength(8);
     expect(Report.allPass(results)).toBe(true);
+  });
+
+  test("an agent that is loaded but crash-looping fails the check", () => {
+    // The EPERM case seen on the Mini: launchd reports the agent loaded while
+    // it dies on every start. Reporting only "loaded" produced an IQ PASS on a
+    // machine whose watcher could not read the vault at all.
+    const results = Iq.evaluate({
+      ...healthyProbes,
+      launchdExit: { scan: 1, server: 0, watch: 1 },
+    });
+    const agents = results.find((check) =>
+      check.name.startsWith("launchd agents"),
+    );
+    expect(agents?.pass).toBe(false);
+    expect(agents?.detail).toContain("exit=1");
+    expect(agents?.remediation).toContain("Full Disk Access");
   });
 
   test("each failing probe fails its check with a remediation", () => {

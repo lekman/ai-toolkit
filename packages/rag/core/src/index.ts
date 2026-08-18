@@ -4,8 +4,18 @@ export { VoyageEmbeddings } from "./embeddings";
 export type { IEmbeddingsProvider } from "./embeddings";
 export { Indexer, WatchRunner } from "./indexer";
 export type { ScanReport } from "./indexer";
-export { McpStdioServer, SearchHandlers } from "./mcp";
-export type { DocumentResult } from "./mcp";
+export {
+  assertSafeBindHost,
+  findTailnetAddress,
+  isTailnetAddress,
+  McpHttpServer,
+  McpStdioServer,
+  registerSearchTools,
+  SEARCH_TOOL_NAMES,
+  SearchHandlers,
+  UnsafeBindError,
+} from "./mcp";
+export type { DocumentResult, RunningHttpServer } from "./mcp";
 export type {
   ChunkRecord,
   SearchFilters,

@@ -25,7 +25,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readFileSync } from "node:fs";
 
 const argv = process.argv.slice(2);
 const flag = (name: string): string | undefined => {
@@ -54,20 +54,44 @@ const keyPath = (flag("key") ?? fail("--key is required")).replace(
   process.env["HOME"] ?? "~",
 );
 if (!/^\d+$/.test(appId)) fail(`--app-id must be numeric, got "${appId}"`);
-if (!existsSync(keyPath)) fail(`no key file at ${keyPath}`);
 
 // A world-readable private key is worth stopping for. It is about to be copied
 // to a dozen places; the copy is not the problem, the original is.
-const mode = statSync(keyPath).mode & 0o777;
-if (mode & 0o077) {
+//
+// The mode is checked on the open handle rather than on the path, and the same
+// handle is then read. Checking the path and reading it afterwards leaves a
+// window in which the file that was approved is not the file that is sent —
+// the whole point of the check is that this one is trusted.
+//
+// Read once rather than per repository: the file is small, and re-reading it
+// in a loop widens the window in which a key sits in memory for no benefit.
+// Opened without an existsSync first. Asking whether the file is there and
+// then opening it by name is two answers about two moments; the open is the
+// only one that matters, and its failure already says what went wrong.
+let fd: number;
+try {
+  fd = openSync(keyPath, "r");
+} catch (error) {
+  const code = (error as NodeJS.ErrnoException).code;
   fail(
-    `${keyPath} is mode ${mode.toString(8)} — readable beyond its owner. chmod 600 it before syncing.`,
+    code === "ENOENT"
+      ? `no key file at ${keyPath}`
+      : `cannot open ${keyPath}: ${(error as Error).message}`,
   );
 }
 
-// Read once rather than per repository: the file is small, and re-reading it
-// in a loop widens the window in which a key sits in memory for no benefit.
-const privateKey = readFileSync(keyPath, "utf8");
+let privateKey: string;
+try {
+  const mode = fstatSync(fd).mode & 0o777;
+  if (mode & 0o077) {
+    fail(
+      `${keyPath} is mode ${mode.toString(8)} — readable beyond its owner. chmod 600 it before syncing.`,
+    );
+  }
+  privateKey = readFileSync(fd, "utf8");
+} finally {
+  closeSync(fd);
+}
 
 interface Repo {
   isArchived: boolean;

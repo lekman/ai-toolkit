@@ -57,12 +57,21 @@ export class Markdown {
   ): { path: string; uri: string } | null {
     if (vaultRoot === undefined || vaultRoot === "") return null;
 
-    const unescaped = href
-      .replace(/&amp;/g, "&")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">");
+    // One pass, not five. Replacing &amp; first meant its output was fed to
+    // the later rules, so a link containing the literal text "&lt;" came back
+    // as "<" — a character that was never in the dashboard. A single regex
+    // cannot double-unescape, because each match is consumed once.
+    const ENTITIES: Record<string, string> = {
+      "&#39;": "'",
+      "&amp;": "&",
+      "&gt;": ">",
+      "&lt;": "<",
+      "&quot;": '"',
+    };
+    const unescaped = href.replace(
+      /&(?:amp|quot|#39|lt|gt);/g,
+      (entity) => ENTITIES[entity] ?? entity,
+    );
 
     let target: string;
     try {

@@ -74,7 +74,10 @@ describe("Markdown.previewLink", () => {
   test("undoes the percent-encoding the dashboard writes", () => {
     // Real targets carry spaces and em dashes, e.g.
     // "Acme%20work%20reconciliation%20%E2%80%94%2017%20August%202026.md".
-    const link = Markdown.previewLink("Clients/A%20B/Note%20%E2%80%94%20x.md", VAULT);
+    const link = Markdown.previewLink(
+      "Clients/A%20B/Note%20%E2%80%94%20x.md",
+      VAULT,
+    );
     expect(link?.path).toBe("/Users/me/Vault/Clients/A B/Note — x.md");
   });
 
@@ -85,7 +88,9 @@ describe("Markdown.previewLink", () => {
   test("refuses a climb that only nets out inside the vault", () => {
     // Clients/../../etc lands outside even though it starts inside; the walk
     // must fail on the step that pops past the root, not on the final path.
-    expect(Markdown.previewLink("Clients/../../etc/passwd.md", VAULT)).toBe(null);
+    expect(Markdown.previewLink("Clients/../../etc/passwd.md", VAULT)).toBe(
+      null,
+    );
   });
 
   test("refuses an absolute path", () => {
@@ -94,7 +99,9 @@ describe("Markdown.previewLink", () => {
 
   test("refuses anything carrying a URL scheme", () => {
     expect(Markdown.previewLink("file:///etc/hosts.md", VAULT)).toBe(null);
-    expect(Markdown.previewLink("command:workbench.action.terminal.new.md", VAULT)).toBe(null);
+    expect(
+      Markdown.previewLink("command:workbench.action.terminal.new.md", VAULT),
+    ).toBe(null);
   });
 
   test("refuses a non-markdown target", () => {
@@ -136,7 +143,10 @@ describe("renderInline with a vault root", () => {
   });
 
   test("an http link is still an ordinary anchor, not a command", () => {
-    const html = Markdown.renderInline("[PR](https://github.com/x/y/pull/1)", VAULT);
+    const html = Markdown.renderInline(
+      "[PR](https://github.com/x/y/pull/1)",
+      VAULT,
+    );
     expect(html).toContain('href="https://github.com/x/y/pull/1"');
     expect(html).not.toContain("command:");
   });
@@ -146,3 +156,34 @@ describe("renderInline with a vault root", () => {
   });
 });
 
+describe("entity decoding cannot double-unescape", () => {
+  test("a link whose text is literally &lt; stays literal", () => {
+    // escapeHtml turns "&" into "&amp;", so the escaped form of the literal
+    // text "&lt;" is "&amp;lt;". Undoing &amp; first fed its own output to
+    // the next rule and produced "<" — a character never in the dashboard.
+    expect(Markdown.previewLink("Clients/&amp;lt;.md", VAULT)?.path).toBe(
+      "/Users/me/Vault/Clients/&lt;.md",
+    );
+  });
+
+  test("a literal &amp; round-trips to a single ampersand, not further", () => {
+    expect(Markdown.previewLink("Clients/a&amp;amp;b.md", VAULT)?.path).toBe(
+      "/Users/me/Vault/Clients/a&amp;b.md",
+    );
+  });
+
+  test("ordinary entities still decode", () => {
+    expect(Markdown.previewLink("Clients/a&amp;b.md", VAULT)?.path).toBe(
+      "/Users/me/Vault/Clients/a&b.md",
+    );
+    expect(Markdown.previewLink("Clients/&quot;q&quot;.md", VAULT)?.path).toBe(
+      '/Users/me/Vault/Clients/"q".md',
+    );
+  });
+
+  test("an unknown entity is left alone rather than dropped", () => {
+    expect(Markdown.previewLink("Clients/a&nbsp;b.md", VAULT)?.path).toBe(
+      "/Users/me/Vault/Clients/a&nbsp;b.md",
+    );
+  });
+});

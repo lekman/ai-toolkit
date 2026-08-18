@@ -34,7 +34,11 @@ export class Exclusions {
       name.endsWith(" — Master Plan.md")
     )
       return "volatile";
-    if (/\.bak[^/]*$/.test(name) || name.includes(".bak-")) return "backup";
+    // name is a basename, so it holds no "/" and the old /\.bak[^/]*$/
+    // scanned for ".bak" from every position — quadratic, and measurably
+    // so. A plain substring test is linear and, on a basename, means
+    // exactly the same thing. The ".bak-" arm it replaces was a subset.
+    if (name.includes(".bak")) return "backup";
     if (/ \d+\.md$/.test(name) || / \(conflict\)/i.test(name))
       return "conflict-copy";
     if (segments[0] === "Personal" && segments[1] === "Health")

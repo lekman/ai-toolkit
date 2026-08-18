@@ -24,3 +24,19 @@ query-filters:
       problems.severity:
         - warning
         - recommendation
+
+  # Reading a local file and sending it to an HTTP API is what this repository
+  # is for: an OAuth client posts a refresh token to a token endpoint and
+  # caches the reply, and the indexer sends note text to an embeddings API.
+  # Both rules therefore fire on the feature rather than on a defect, in every
+  # package, and will keep doing so. Excluded by rule rather than dismissed
+  # alert by alert, because a dismissal is tied to the code not moving and
+  # these will be written again.
+  #
+  # Deliberately NOT excluded here: js/polynomial-redos and
+  # js/file-system-race. Both found something real in this repository, so the
+  # rules stay on and the individual false positives are dismissed instead.
+  - exclude:
+      id:
+        - js/file-access-to-http
+        - js/http-to-file-access

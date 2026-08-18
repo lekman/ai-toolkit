@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.2.0...rag-core@v0.2.1) (2026-08-18)
+
+
+### Fixes
+
+* resolve the code scanning alerts worth resolving ([#18](https://github.com/lekman/ai-toolkit/issues/18)) ([f6898c7](https://github.com/lekman/ai-toolkit/commit/f6898c7d9640ee8868078f39046212be71e31b90))
+
 ## [0.2.0](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.1.0...rag-core@v0.2.0) (2026-08-18)
 
 

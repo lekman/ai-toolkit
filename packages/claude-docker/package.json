@@ -1,6 +1,6 @@
 {
   "name": "@lekman/claude-docker",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Run one Claude Code task in an isolated container that clones only that task's repo and branch.",
   "license": "MIT",
   "author": "Tobias Lekman",

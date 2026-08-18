@@ -1,6 +1,6 @@
 {
   "name": "@lekman/rag-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "RAG toolkit core: document model, chunking, stores, embeddings, indexer, and MCP servers.",
   "license": "MIT",
   "author": "Tobias Lekman",

@@ -1,6 +1,6 @@
 {
   "name": "@lekman/claude-local",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Run Claude Code against a local model on Apple Silicon, via LM Studio's Anthropic-compatible endpoint.",
   "license": "MIT",
   "author": "Tobias Lekman",

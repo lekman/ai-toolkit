@@ -1,3 +1,7 @@
+<!-- markdownlint-disable-file MD041 -->
+<!-- The handoff contract requires the status header on the first line, ahead of
+     the H1. Same exemption as .github/pull_request_template.md. -->
+
 > **Status:** Dispatched | **Date:** 2026-08-18 | **Author:** planning session (weekly Dependabot routine, cloud) | **Repos:** `lekman/auto-approve-action`
 
 # Guard Secret-Dependent CI Jobs Against Dependabot
@@ -15,7 +19,7 @@ what makes a genuine failure easy to miss.
 
 ## Already done, do not redo
 
-- `lekman/ai-toolkit` PR #20 — merged 2026-08-18 — applied the same *idea* to a
+- `lekman/ai-toolkit` PR #20 — merged 2026-08-18 — applied the same _idea_ to a
   different repo, guarding its `client-content.yml` scan job with
   `if: github.actor != 'dependabot[bot]'`. Reuse the reasoning, not the diff.
   ai-toolkit needs nothing further.
@@ -27,16 +31,16 @@ what makes a genuine failure easy to miss.
 From pull request #36 (`typescript 6.0.3 → 7.0.2`, merged red by `lekman`), CI
 run `28976187656`:
 
-| Job | Failing step |
-| --- | ------------ |
-| Integration Tests | `Get GitHub App token` |
-| Label Validation Tests | `Get GitHub App token` |
-| Input Validation Tests | `Get GitHub App token` |
-| Path Validation Tests | `Get GitHub App token` |
-| Size Validation Tests | `Get GitHub App token` |
-| Approval Execution Tests | `Get GitHub App token` |
-| Unit Tests | `Install dependencies` |
-| CI Success | `Check all tests passed` |
+| Job                      | Failing step             |
+| ------------------------ | ------------------------ |
+| Integration Tests        | `Get GitHub App token`   |
+| Label Validation Tests   | `Get GitHub App token`   |
+| Input Validation Tests   | `Get GitHub App token`   |
+| Path Validation Tests    | `Get GitHub App token`   |
+| Size Validation Tests    | `Get GitHub App token`   |
+| Approval Execution Tests | `Get GitHub App token`   |
+| Unit Tests               | `Install dependencies`   |
+| CI Success               | `Check all tests passed` |
 
 Current guards on those jobs exclude release-please only, not Dependabot:
 
@@ -97,7 +101,7 @@ position in `.github/workflows/ci.yml`, sits above the first
 
 5. **Verify against a real Dependabot pull request.** Either wait for the next
    one, or comment `@dependabot recreate` on a recent closed one to regenerate
-   it. The six jobs should report *skipped*, `Unit Tests` should run and pass,
+   it. The six jobs should report _skipped_, `Unit Tests` should run and pass,
    and `CI Success` should be green. Skipped rather than passing is the intended
    outcome: a green tick on a job that never ran would misrepresent coverage.
 
@@ -115,6 +119,6 @@ position in `.github/workflows/ci.yml`, sits above the first
 
 ## Outcome
 
-*Empty at dispatch. The implementing session fills this in: date, what the
+_Empty at dispatch. The implementing session fills this in: date, what the
 `Unit Tests` log showed, whether `CI Success` needed adjusting, the pull request
-link, and confirmation that a real Dependabot pull request went green.*
+link, and confirmation that a real Dependabot pull request went green._

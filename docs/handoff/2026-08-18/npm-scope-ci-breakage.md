@@ -1,3 +1,7 @@
+<!-- markdownlint-disable-file MD041 -->
+<!-- The handoff contract requires the status header on the first line, ahead of
+     the H1. Same exemption as .github/pull_request_template.md. -->
+
 > **Status:** Dispatched | **Date:** 2026-08-18 | **Author:** planning session (weekly Dependabot routine, cloud) | **Repos:** `lekman/mmd`, `lekman/n8n-workflows`
 
 # Private npm Scope Breaks CI Installs
@@ -31,7 +35,7 @@ Established directly by the planning session:
 
 - `@northbridge-security/ai-toolkit@^0.1.12` is a devDependency in `mmd` and
   `n8n-workflows` (and in the now-archived `cdn`).
-- `devops-toolkit` is **not** a consumer. It only *publishes* under the scope.
+- `devops-toolkit` is **not** a consumer. It only _publishes_ under the scope.
 - Unauthenticated requests return 404 for both the packument
   (`https://registry.npmjs.org/@northbridge-security%2Fai-toolkit`) and the
   tarball for `0.1.12`.
@@ -71,8 +75,8 @@ Established directly by the planning session:
 
    Expected: either the package resolves and is marked private (the assumed
    case), or it does not exist at all. **This branches the whole brief.**
-   - *Private and present* → continue to step 2.
-   - *Genuinely gone* → stop and consult the operator. The remedy is then to
+   - _Private and present_ → continue to step 2.
+   - _Genuinely gone_ → stop and consult the operator. The remedy is then to
      republish it, vendor it, or remove the dependency, and that is a product
      decision, not a CI fix.
 
@@ -125,7 +129,7 @@ Established directly by the planning session:
   not an auth problem. The manifest and lockfile disagree. Fix by regenerating
   the lockfile and committing it. Never fix this by dropping
   `--frozen-lockfile`; that flag is what makes CI reproducible.
-- **`GET ... .tgz - 404`** is resolution or auth. If it persists *after* a token
+- **`GET ... .tgz - 404`** is resolution or auth. If it persists _after_ a token
   is configured, the token lacks read access to the scope; it is not a bun
   problem.
 - These two can appear in sequence on the same repo, as they did in `cdn`: the
@@ -137,7 +141,7 @@ Established directly by the planning session:
 
 ## Outcome
 
-*Empty at dispatch. The implementing session fills this in: date, what the npm
+_Empty at dispatch. The implementing session fills this in: date, what the npm
 lookup in step 1 returned, which registry approach was taken, which repos were
 changed, pull request links, and whether the stuck Dependabot pull requests went
-green.*
+green._

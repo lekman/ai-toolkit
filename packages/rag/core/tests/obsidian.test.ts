@@ -15,7 +15,10 @@ describe("Exclusions", () => {
     ["Notes.bak-old.md", "backup"],
     ["Dashboard 2.md", "volatile"],
     ["Clients/AcmeCo/Note 2.md", "conflict-copy"],
+    ["Clients/AcmeCo/Note 12.md", "conflict-copy"],
     ["Clients/AcmeCo/Plan (conflict).md", "conflict-copy"],
+    // a conflict copy of a dated note still ends in the counter
+    ["Clients/AcmeCo/Handover, Tue 11 Aug 2026 2.md", "conflict-copy"],
     [".obsidian/config.md", "system"],
     ["_Attachments/scan.md", "system"],
     ["CLAUDE.md", "system"],
@@ -34,6 +37,12 @@ describe("Exclusions", () => {
     "Archive/Old Plan.md",
     // plan subpages are indexed — only the master-plan worklist note is state
     "Clients/AcmeCo/Initiatives/acme-app/proj-101-feature.md",
+    // a title ending in a year is not a conflict copy. The handover naming
+    // convention ends in one, so an unbounded counter pattern hid every
+    // handover note from the index.
+    "Clients/AcmeCo/Handover — outbound delivery, Tue 11 Aug 2026.md",
+    "Personal/Budget 2026.md",
+    "Archive/Work Logs/2026.md",
   ])("keeps %s", (path) => {
     expect(Exclusions.check(path)).toBeNull();
   });

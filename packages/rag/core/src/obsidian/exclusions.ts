@@ -39,7 +39,15 @@ export class Exclusions {
     // so. A plain substring test is linear and, on a basename, means
     // exactly the same thing. The ".bak-" arm it replaces was a subset.
     if (name.includes(".bak")) return "backup";
-    if (/ \d+\.md$/.test(name) || / \(conflict\)/i.test(name))
+    // A sync conflict appends a small counter: "Note 2.md". The bound matters.
+    // An unbounded \d+ also matches a trailing year, so every note whose title
+    // ends in one — "Budget 2026.md", and every file following the
+    // "<topic>, <Day> <D> <Mon> <YYYY>.md" handover convention — was excluded
+    // as a phantom conflict copy and never reached the index. Two digits keeps
+    // real conflict copies out and stops a four-digit year looking like one.
+    // A conflict copy *of* a dated note still ends in the counter, so it is
+    // still caught.
+    if (/ \d{1,2}\.md$/.test(name) || / \(conflict\)/i.test(name))
       return "conflict-copy";
     if (segments[0] === "Personal" && segments[1] === "Health")
       return "health-deferred";

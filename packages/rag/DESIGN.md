@@ -110,6 +110,32 @@ failure repairs rather than duplicates. Sync runs scheduled (see Triggers).
 The cloud replica tolerates minutes of lag; it serves knowledge, not task
 state.
 
+### One Indexer, Many Readers
+
+A second machine does not get a second index. The syncing vault is the source
+of truth and each store is a _derived cache_ of it, so two stores means two
+caches of the same thing and a divergence to arbitrate. There is deliberately
+**no store-to-store sync** at this layer.
+
+The shape that follows: one always-on host indexes and serves the index
+read-only over MCP on a private network interface; every other machine
+registers that endpoint and holds no store at all.
+
+What this buys, and what it costs:
+
+- **Fewer standing grants.** A machine that does not index needs no
+  filesystem grant for the vault (see Security Boundaries).
+- **Embedding cost falls to one pass.** Two indexers embed every chunk twice,
+  for identical vectors.
+- **Offline search disappears.** Not degraded — absent. A reader that cannot
+  reach the serving host has no search. This is the trade, and it is only
+  worth taking where the network reaches almost everywhere.
+
+Parity between two derived stores stops being measurable, because there is no
+second store to compare. If an index is ever put back on a reader, the answer
+is still not a sync job: it is two independent derivations from the same
+vault, and parity becomes something to measure again.
+
 ## Ingestion from iCloud
 
 iCloud Drive is a syncing filesystem, not a plain folder. Three behaviours
@@ -122,7 +148,14 @@ shape the indexer:
 - **Conflict and backup copies.** Sync conflicts create sibling files
   (`Note 2.md`, `Note (conflict).md`); tooling leaves `.bak` files. These are
   excluded by pattern, or the index fills with near-duplicates that poison
-  retrieval.
+  retrieval. **The counter must be bounded.** An unbounded run of digits also
+  matches a trailing year, so any note whose title ends in one — a yearly
+  budget, a log named for its year, or any file following a
+  `<topic>, <Day> <D> <Mon> <YYYY>` convention — reads as a phantom conflict
+  copy and never reaches the index. Silently: an excluded file produces no
+  error, so the only symptom is a search that should have hit and did not.
+  Two digits covers real conflict copies; a conflict copy _of_ a dated file
+  still ends in the counter, so it is still caught.
 - **Burst writes.** Sync delivers many rapid change events for one logical
   edit. The watcher debounces (settle window of a few seconds) before
   re-indexing a file.
@@ -269,7 +302,7 @@ weekly, half an hour after the daily scan so the two never touch the store at
 once.
 
 It is **not** where the store is kept small — compaction already runs at the
-end of every scan. It exists because nothing was *checking*. The store reached
+end of every scan. It exists because nothing was _checking_. The store reached
 29 GB and the only reason anyone noticed was an unrelated investigation; a
 guard no schedule runs reports a problem after it has cost something.
 Compacting again is cheap insurance for the case the scans have stopped, since
@@ -291,6 +324,34 @@ same sampling could have reported a genuinely stale index as fresh.
   exactly this reason: it does not enter any index until the gate exists.
 - Secrets (embedding API keys, search keys) come from the environment locally
   and Key Vault in Azure; nothing is stored in the index or the repo.
+- The serving endpoint binds to one private interface, refused in code rather
+  than by convention: a wildcard bind is rejected and the server does not
+  start. It is the mistake that turns a private service into a network service
+  while every functional test still passes.
+
+### The Filesystem Grant, and Why the Interpreter Is Copied
+
+A syncing vault sits behind the platform's file-access controls, and a process
+started by the system's background job manager **does not inherit** the grant
+held by the terminal a human runs commands in. So a scheduled indexer needs a
+grant of its own.
+
+Granting it to the shared language interpreter is much wider than it looks:
+that binary is general-purpose, so the grant reaches every script any
+background job ever runs under it. Instead the installer copies the
+interpreter into its own storage directory and re-signs the copy ad-hoc,
+giving it a code identity distinct from the original. The grant is then made
+to one binary that runs one program.
+
+Two things follow, and both have bitten:
+
+- **Verify the identity, not the intent.** The copy and the original must
+  present as different binaries to the access-control layer, or the grant
+  covers both and nothing was gained.
+- **"Loaded" is not "working".** A job manager reports a crash-looping agent
+  as loaded indefinitely. A health check that asks whether an agent is loaded
+  will pass while the agent has never once read the vault. Read the last exit
+  status.
 
 ## Decisions
 

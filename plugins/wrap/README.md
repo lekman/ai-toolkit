@@ -6,9 +6,10 @@ itself when it moves to someone else.
 - **`/wrap:day`**: end of the working day, once per client. Reconciles the
   Obsidian dashboard against what actually happened (`.tmp/TODO.md`, PRs
   authored/merged/reviewed today), rolls open items to the next working day,
-  archives the finished day to `Archive.md`, prunes merged-and-deleted git
-  branches and stale worktrees, and reports: goal met?, achievements,
-  tomorrow's intent and tasks.
+  archives the finished day into the month work log
+  (`Archive/Work Logs/<year>/<Month>.md`, newest day first), prunes
+  merged-and-deleted git branches and stale worktrees, and reports: goal met?,
+  achievements, tomorrow's intent and tasks.
 - **`/wrap:session`**: end of a long session, instead of `/compact`. Analyses
   the conversation for learnings and writes `.tmp/session-handover.md` with the
   branch, a short summary, carry-overs, a suggested next work item, and

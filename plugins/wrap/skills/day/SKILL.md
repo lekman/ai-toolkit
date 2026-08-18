@@ -83,8 +83,71 @@ Archiving is all-or-nothing per day, across all clients:
   the section in place and report which clients still need their own
   `/wrap:day` run.
 - If today's section has **zero** open items left, cut the entire dated section
-  from `Dashboard.md` and prepend it to `Archive.md` in the vault root (newest
-  day first). Create `Archive.md` with a `# Archive` heading if missing.
+  from `Dashboard.md` and merge it into the month's work log.
+
+### Where the archive lives
+
+One file per month, under a year folder:
+
+```text
+Archive/Work Logs/<YYYY>/<Month>.md      e.g. Archive/Work Logs/2026/August.md
+```
+
+Not a single `Archive.md` in the vault root. A vault that has one is carrying a
+stale file from before the split — consolidate it into the month files and
+delete it rather than writing to it.
+
+The month comes from the day heading being archived and the year from today, so
+archiving a December day in January needs the year checked by hand.
+
+`/planner:archive` writes to the same place and translates the same way. Keep
+the two in step; if they disagree, one of them is corrupting the log.
+
+Create the month file if missing, with frontmatter and an `# Work Log: <Month>
+<Year>` heading:
+
+```markdown
+---
+type: reference
+client: <the vault's default client>
+status: active
+tags: [work-log, archive]
+created: <YYYY-MM-01>
+---
+
+# Work Log: <Month> <Year>
+```
+
+### The archive uses a different shape from the dashboard
+
+Convert as you move, or the month file grows two competing formats:
+
+|             | Dashboard (`## Focus`)      | Month work log                                 |
+| ----------- | --------------------------- | ---------------------------------------------- |
+| Day order   | chronological, oldest first | **reverse — newest day first**                 |
+| Day heading | `### <Weekday> <D> <Month>` | `#### <Weekday> <D> <Month>`                   |
+| Client      | `#### **<Client>**`         | `**<Client>**` (bold paragraph, not a heading) |
+
+Keep each client's overview or intention callout with its items.
+
+### One day, one entry
+
+A day may already be in the month file: `/wrap:day` runs once per client, and a
+day can be archived per client while another client is still working. So
+**check before writing**.
+
+- Day heading absent → insert the whole day, positioned by day number so newest
+  stays first.
+- Day heading present → do **not** add a second one. Merge each client's items
+  into that day's matching `**<Client>**` sub-block, appending at its end. Add
+  the sub-block only if that client has none yet.
+- Deduplicate on the item line before appending. A re-run must not double
+  entries.
+
+Verify by counting checkboxes before and after: what leaves `Dashboard.md` plus
+what was already in the month file should equal what the month file holds
+afterwards. A mismatch means items were dropped or duplicated, and it is far
+cheaper to catch here than in a 150 KB log a week later.
 
 Never touch `## Initiatives` or `#### Other active work`.
 

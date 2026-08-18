@@ -8,7 +8,7 @@
 import { basename, dirname } from "node:path";
 import * as vscode from "vscode";
 
-import type { PaneState } from "./view/index.ts";
+import type { PaneState, ToggleRequest } from "./view/index.ts";
 
 import { Config, VscodeConfigSource } from "./config/index.ts";
 import { Dashboard, FileDashboardReader } from "./dashboard/index.ts";
@@ -30,8 +30,44 @@ export function activate(context: vscode.ExtensionContext): void {
     today: new Date(),
   };
 
-  const today = new PlannerViewProvider(0, () => state);
-  const tomorrow = new PlannerViewProvider(1, () => state);
+  /**
+   * Apply a checkbox click to the file.
+   *
+   * The pane renders a snapshot, and the vault is written by Obsidian, by
+   * iCloud sync and by other agents, so the file is re-read here rather than
+   * the parsed state being trusted. Dashboard.toggle refuses when the line is
+   * no longer the checkbox the pane was showing, and a refusal reloads instead
+   * of writing — the worst outcome of a stale click is a redraw, never a task
+   * ticked that nobody clicked.
+   */
+  const applyToggle = ({ done, line }: ToggleRequest) => {
+    const path = state.config.dashboardPath;
+    if (!path) return;
+
+    const markdown = reader.read(path);
+    if (markdown === null) {
+      reload();
+      return;
+    }
+
+    const updated = Dashboard.toggle(markdown, line, done);
+    if (updated === null) {
+      void vscode.window.showWarningMessage(
+        "That task changed on disk, so it was not updated. The panel has been refreshed.",
+      );
+      reload();
+      return;
+    }
+
+    if (!reader.write(path, updated)) {
+      void vscode.window.showErrorMessage(`Could not write ${path}.`);
+    }
+    // Either way, re-read: the pane must show the file, not the request.
+    reload();
+  };
+
+  const today = new PlannerViewProvider(0, () => state, applyToggle);
+  const tomorrow = new PlannerViewProvider(1, () => state, applyToggle);
 
   let watcher: undefined | vscode.FileSystemWatcher;
   let timer: NodeJS.Timeout | undefined;

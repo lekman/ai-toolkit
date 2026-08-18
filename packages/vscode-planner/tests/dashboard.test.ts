@@ -180,3 +180,88 @@ describe("filterGroups", () => {
     );
   });
 });
+
+const FILE = [
+  "## Focus",
+  "### Monday 18 August",
+  "#### **Acme**",
+  "- [ ] open task",
+  "- [x] done task",
+  "  continuation line",
+  "not a task",
+].join("\n");
+
+describe("Dashboard.toggle", () => {
+  test("ticks an open task and leaves everything else byte-identical", () => {
+    const out = Dashboard.toggle(FILE, 3, false);
+    expect(out).not.toBeNull();
+    const lines = (out ?? "").split("\n");
+    expect(lines[3]).toBe("- [x] open task");
+    expect(lines.filter((_, i) => i !== 3)).toEqual(
+      FILE.split("\n").filter((_, i) => i !== 3),
+    );
+  });
+
+  test("unticks a done task", () => {
+    expect((Dashboard.toggle(FILE, 4, true) ?? "").split("\n")[4]).toBe(
+      "- [ ] done task",
+    );
+  });
+
+  test("refuses when the line is no longer in the state the pane showed", () => {
+    // The pane rendered an open box; the file already says done. Someone else
+    // ticked it in between, so the click is stale and writing would be a lie.
+    expect(Dashboard.toggle(FILE, 4, false)).toBeNull();
+  });
+
+  test("refuses when the line is not a checkbox at all", () => {
+    expect(Dashboard.toggle(FILE, 6, false)).toBeNull();
+    expect(Dashboard.toggle(FILE, 2, false)).toBeNull();
+  });
+
+  test("refuses a line past the end of the file", () => {
+    expect(Dashboard.toggle(FILE, 999, false)).toBeNull();
+  });
+
+  test("refuses a negative line rather than counting from the end", () => {
+    expect(Dashboard.toggle(FILE, -1, false)).toBeNull();
+  });
+
+  test("keeps CRLF line endings intact", () => {
+    // The vault syncs across machines, so the file may arrive with CRLF.
+    // Rewriting every line ending would show up as a whole-file diff.
+    const crlf = "- [ ] a\r\n- [ ] b\r\n";
+    const out = Dashboard.toggle(crlf, 0, false) ?? "";
+    expect(out).toBe("- [x] a\r\n- [ ] b\r\n");
+  });
+
+  test("preserves indentation and the bullet character", () => {
+    const nested = "  * [ ] indented with a star";
+    expect(Dashboard.toggle(nested, 0, false)).toBe(
+      "  * [x] indented with a star",
+    );
+  });
+
+  test("accepts an upper-case X as done", () => {
+    expect(Dashboard.toggle("- [X] shouty", 0, true)).toBe("- [ ] shouty");
+  });
+
+  test("round-trips back to the original file", () => {
+    const once = Dashboard.toggle(FILE, 3, false) ?? "";
+    expect(Dashboard.toggle(once, 3, true)).toBe(FILE);
+  });
+});
+
+describe("parsed tasks carry their source line", () => {
+  test("line points at the checkbox that produced the task", () => {
+    const days = Dashboard.parse(FILE, new Date("2026-08-18T12:00:00"));
+    const tasks = days[0]?.groups[0]?.tasks ?? [];
+    expect(tasks.map((t) => t.line)).toEqual([3, 4]);
+    // And the line is usable: toggling by it hits the right row.
+    expect(
+      (Dashboard.toggle(FILE, tasks[0]?.line ?? -1, false) ?? "").split(
+        "\n",
+      )[3],
+    ).toBe("- [x] open task");
+  });
+});

@@ -117,7 +117,12 @@ export class View {
               .map(
                 (task) =>
                   `<li class="${task.done ? "done" : "open"}">` +
-                  `<input type="checkbox" disabled${task.done ? " checked" : ""} />` +
+                  // data-line and data-done travel back with the click. The
+                  // extension re-reads the file and checks both before writing,
+                  // so a stale render cannot tick the wrong task.
+                  `<input type="checkbox" data-line="${task.line}"` +
+                  ` data-done="${task.done ? "1" : "0"}"` +
+                  `${task.done ? " checked" : ""} />` +
                   `<span>${Markdown.renderInline(task.text, model.vaultRoot)}</span></li>`,
               )
               .join("");
@@ -133,7 +138,7 @@ export class View {
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; font-src ${cspSource};" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'; font-src ${cspSource};" />
 <style nonce="${nonce}">
   body {
     color: var(--vscode-foreground);
@@ -175,7 +180,13 @@ export class View {
     margin: 3px 0 0;
     flex: 0 0 auto;
     accent-color: var(--vscode-checkbox-selectBackground);
+    cursor: pointer;
   }
+  /* While a write is in flight the box is not clickable again. The file is
+     re-read and the pane re-rendered on success, so a second click before
+     that would be acting on a state that no longer exists. */
+  li.pending { opacity: 0.55; }
+  li.pending input[type="checkbox"] { cursor: progress; }
   a { color: var(--vscode-textLink-foreground); }
   code {
     background: var(--vscode-textCodeBlock-background);
@@ -186,7 +197,26 @@ export class View {
   }
 </style>
 </head>
-<body>${heading}${body}</body>
+<body>${heading}${body}
+<script nonce="${nonce}">
+  // The only script in the pane, and it does one thing: report a click.
+  // Nothing is toggled here. The extension owns the file, decides whether the
+  // write is still safe, and re-renders — so the box the user sees always
+  // reflects what is on disk rather than what they asked for.
+  const vscode = acquireVsCodeApi();
+  document.addEventListener("change", (event) => {
+    const box = event.target;
+    if (!(box instanceof HTMLInputElement) || box.type !== "checkbox") return;
+    box.closest("li")?.classList.add("pending");
+    box.disabled = true;
+    vscode.postMessage({
+      done: box.dataset.done === "1",
+      line: Number(box.dataset.line),
+      type: "toggle",
+    });
+  });
+</script>
+</body>
 </html>`;
   }
 }

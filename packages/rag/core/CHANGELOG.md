@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.2.1...rag-core@v0.3.0) (2026-08-18)
+
+
+### Features
+
+* **rag:** serve the index over MCP on a private interface ([#22](https://github.com/lekman/ai-toolkit/issues/22)) ([eb554c3](https://github.com/lekman/ai-toolkit/commit/eb554c308f5ec6dd331bd41b68e50fea23075ce3))
+
 ## [0.2.1](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.2.0...rag-core@v0.2.1) (2026-08-18)
 
 

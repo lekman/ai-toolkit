@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { appendFile, chmod, copyFile, mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -44,6 +44,39 @@ export class Installer {
     return config;
   }
 
+  /**
+   * A private copy of the Node binary for the agents to run under.
+   *
+   * macOS gates access to the iCloud-synced vault through TCC, and a process
+   * spawned by launchd does not inherit the Full Disk Access granted to the
+   * terminal. Something has to hold that grant. Granting it to the shared
+   * interpreter would extend full disk access to every script any launchd
+   * agent runs under it, which is far wider than this tool needs.
+   *
+   * So the agents run under their own copy, re-signed ad-hoc to give it a code
+   * identity distinct from the original. The operator then grants Full Disk
+   * Access to this one binary, and the shared interpreter stays ungranted.
+   *
+   * Best effort: if the copy or the signing fails, the caller falls back to
+   * the running interpreter and the operator makes the wider grant knowingly.
+   */
+  static async prepareInterpreter(storageDir: string): Promise<string> {
+    const binDir = join(storageDir, "bin");
+    const target = join(binDir, "node");
+    try {
+      await mkdir(binDir, { recursive: true });
+      await copyFile(process.execPath, target);
+      await chmod(target, 0o755);
+      // Ad-hoc signature: replaces the inherited one so TCC sees a separate
+      // identity rather than treating this as the same binary it was copied
+      // from. Without this the grant could apply to both.
+      await exec("codesign", ["--force", "--sign", "-", target]);
+      return target;
+    } catch {
+      return process.execPath;
+    }
+  }
+
   /** Install and bootstrap both launchd agents for this CLI build. */
   static async installAgents(
     cliPath: string,
@@ -51,7 +84,7 @@ export class Installer {
     withServer = false,
   ): Promise<string[]> {
     const logDir = join(storageDir, "logs");
-    const node = process.execPath;
+    const node = await Installer.prepareInterpreter(storageDir);
     const paths: string[] = [];
     paths.push(
       await LaunchdInstaller.install(Launchd.watchAgent(node, cliPath, logDir)),

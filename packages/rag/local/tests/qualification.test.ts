@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { IqProbes } from "../src/qualification";
 
-import { Iq, Oq, Report } from "../src/qualification";
+import { decodeWaitStatus, Iq, Oq, Report } from "../src/qualification";
 
 const healthyProbes: IqProbes = {
   claudeMcpRegistered: true,
@@ -26,17 +26,46 @@ describe("Iq.evaluate", () => {
   test("an agent that is loaded but crash-looping fails the check", () => {
     // The EPERM case seen on the Mini: launchd reports the agent loaded while
     // it dies on every start. Reporting only "loaded" produced an IQ PASS on a
-    // machine whose watcher could not read the vault at all.
+    // machine whose watcher could not read the vault at all. LastExitStatus is
+    // a raw wait status, so exit code 1 arrives as 256.
     const results = Iq.evaluate({
       ...healthyProbes,
-      launchdExit: { scan: 1, server: 0, watch: 1 },
+      launchdExit: { scan: 256, server: 0, watch: 256 },
     });
     const agents = results.find((check) =>
       check.name.startsWith("launchd agents"),
     );
     expect(agents?.pass).toBe(false);
-    expect(agents?.detail).toContain("exit=1");
+    expect(agents?.detail).toContain("exit code 1");
     expect(agents?.remediation).toContain("Full Disk Access");
+  });
+
+  test("a signal death does not fail the check, and the detail says so", () => {
+    // A deliberate `launchctl kickstart -k` restart SIGTERMs the agent, and
+    // launchd records the signal number (15) as LastExitStatus. That is a
+    // restart, not a crash — failing on it made every restart flip IQ to FAIL.
+    const results = Iq.evaluate({
+      ...healthyProbes,
+      launchdExit: { scan: 0, server: 0, watch: 15 },
+    });
+    const agents = results.find((check) =>
+      check.name.startsWith("launchd agents"),
+    );
+    expect(agents?.pass).toBe(true);
+    expect(agents?.detail).toContain("SIGTERM");
+    expect(agents?.detail).not.toContain("exit");
+  });
+
+  test("an unknown last exit status behaves like a clean one", () => {
+    const results = Iq.evaluate({
+      ...healthyProbes,
+      launchdExit: { scan: null, server: null, watch: null },
+    });
+    const agents = results.find((check) =>
+      check.name.startsWith("launchd agents"),
+    );
+    expect(agents?.pass).toBe(true);
+    expect(agents?.detail).toBe("scan: loaded, watch: loaded, server: loaded");
   });
 
   test("each failing probe fails its check with a remediation", () => {
@@ -53,6 +82,33 @@ describe("Iq.evaluate", () => {
       "MCP registration",
     ]);
     expect(failing.every((result) => result.remediation.length > 0)).toBe(true);
+  });
+});
+
+describe("decodeWaitStatus", () => {
+  test("decodes launchd's raw wait status", () => {
+    expect(decodeWaitStatus(null)).toEqual({ kind: "unknown" });
+    expect(decodeWaitStatus(0)).toEqual({ kind: "clean" });
+    // exit codes live in the high byte
+    expect(decodeWaitStatus(256)).toEqual({ code: 1, kind: "exit" });
+    expect(decodeWaitStatus(512)).toEqual({ code: 2, kind: "exit" });
+    // signals live in the low seven bits
+    expect(decodeWaitStatus(15)).toEqual({
+      kind: "signal",
+      name: "SIGTERM",
+      signal: 15,
+    });
+    expect(decodeWaitStatus(9)).toEqual({
+      kind: "signal",
+      name: "SIGKILL",
+      signal: 9,
+    });
+    // 0x80 is the core-dump flag on top of the signal number
+    expect(decodeWaitStatus(0x8b)).toEqual({
+      kind: "signal",
+      name: "SIGSEGV",
+      signal: 11,
+    });
   });
 });
 

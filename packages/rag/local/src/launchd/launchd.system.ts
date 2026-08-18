@@ -35,12 +35,17 @@ export class LaunchdInstaller {
   }
 
   /**
-   * Last exit status launchd recorded for an agent, or null when unknown.
+   * Last raw wait status launchd recorded for an agent, or null when unknown.
    *
    * "Loaded" is not "working". A KeepAlive agent that crashes on every start is
    * still loaded, and reporting only that produced an IQ PASS on a Mini where
    * both vault-reading agents were failing with EPERM. The exit status is what
    * distinguishes the two.
+   *
+   * The value is `LastExitStatus` verbatim, which is a wait(2) status, not an
+   * exit code: exit 1 reads as 256, and a SIGTERM death reads as 15. The
+   * qualification layer decodes it (`decodeWaitStatus`); this wrapper stays
+   * thin and reports what launchd said.
    */
   static async lastExitStatus(label: string): Promise<number | null> {
     try {

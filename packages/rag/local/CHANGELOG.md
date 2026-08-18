@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.3.0...rag-local@v0.3.1) (2026-08-18)
+
+
+### Fixes
+
+* **rag:** stop IQ failing after a deliberate agent restart ([#27](https://github.com/lekman/ai-toolkit/issues/27)) ([b200fd7](https://github.com/lekman/ai-toolkit/commit/b200fd7bc4048567698d12f5a33296019fc4f7b6))
+
 ## [0.3.0](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.2.0...rag-local@v0.3.0) (2026-08-18)
 
 

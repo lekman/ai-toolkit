@@ -1,6 +1,6 @@
 {
   "name": "@lekman/rag-local",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Local runtime for the RAG toolkit: install automation, launchd agents, and IQ/OQ qualification.",
   "license": "MIT",
   "author": "Tobias Lekman",

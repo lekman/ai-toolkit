@@ -70,8 +70,11 @@ if (!existsSync(dashboardPath)) fail(`no dashboard at ${dashboardPath}`);
 // An iCloud conflict copy means two versions disagree; never edit blind.
 const conflicts = (() => {
   try {
+    // Grouped, because ^ bound only to the first branch: this read as
+    // "starts with Dashboard<digit>" OR "contains conflicted anywhere".
+    // That is what was wanted, but nothing in the pattern said so.
     return readdirSync(vault).filter((f) =>
-      /^Dashboard \d|conflicted/i.test(f),
+      /(?:^Dashboard \d)|(?:conflicted)/i.test(f),
     );
   } catch {
     return [];

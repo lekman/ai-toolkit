@@ -237,7 +237,9 @@ describe("Dashboard.toggle", () => {
 
   test("preserves indentation and the bullet character", () => {
     const nested = "  * [ ] indented with a star";
-    expect(Dashboard.toggle(nested, 0, false)).toBe("  * [x] indented with a star");
+    expect(Dashboard.toggle(nested, 0, false)).toBe(
+      "  * [x] indented with a star",
+    );
   });
 
   test("accepts an upper-case X as done", () => {
@@ -256,8 +258,10 @@ describe("parsed tasks carry their source line", () => {
     const tasks = days[0]?.groups[0]?.tasks ?? [];
     expect(tasks.map((t) => t.line)).toEqual([3, 4]);
     // And the line is usable: toggling by it hits the right row.
-    expect((Dashboard.toggle(FILE, tasks[0]?.line ?? -1, false) ?? "").split("\n")[3]).toBe(
-      "- [x] open task",
-    );
+    expect(
+      (Dashboard.toggle(FILE, tasks[0]?.line ?? -1, false) ?? "").split(
+        "\n",
+      )[3],
+    ).toBe("- [x] open task");
   });
 });

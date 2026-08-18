@@ -13,6 +13,10 @@ jobs:
     name: No client-identifying content
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Dependabot PRs never receive repo secrets (GitHub's design, not this
+    # repo's), so CLIENT_TERMS is always absent there. The fail-closed
+    # behavior below still applies to every other actor, including forks.
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

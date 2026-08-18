@@ -18,3 +18,15 @@ export interface IDashboardReader {
    */
   read(path: string): null | string;
 }
+
+/** Writes the dashboard file back. Implemented by the system layer. */
+export interface IDashboardWriter {
+  /**
+   * Overwrite a file's contents.
+   *
+   * @param path - Absolute path to the file.
+   * @param contents - The full new contents.
+   * @returns True when the write succeeded.
+   */
+  write(path: string, contents: string): boolean;
+}

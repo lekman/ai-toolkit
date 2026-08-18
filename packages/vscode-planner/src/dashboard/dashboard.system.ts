@@ -1,11 +1,11 @@
 /** Filesystem adapter for the dashboard domain. */
 
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
 
-import type { IDashboardReader } from "./interfaces.ts";
+import type { IDashboardReader, IDashboardWriter } from "./interfaces.ts";
 
 /** Reads the dashboard from disk. */
-export class FileDashboardReader implements IDashboardReader {
+export class FileDashboardReader implements IDashboardReader, IDashboardWriter {
   /**
    * Last-modified time, used to poll for changes without re-parsing.
    *
@@ -31,6 +31,22 @@ export class FileDashboardReader implements IDashboardReader {
       return readFileSync(path, "utf8");
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Overwrite a file's contents.
+   *
+   * @param path - Absolute path to the file.
+   * @param contents - The full new contents.
+   * @returns True when the write succeeded.
+   */
+  write(path: string, contents: string): boolean {
+    try {
+      writeFileSync(path, contents, "utf8");
+      return true;
+    } catch {
+      return false;
     }
   }
 }

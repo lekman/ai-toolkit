@@ -44,6 +44,46 @@ const WEEKDAYS = [
 /** Turns dashboard markdown into days, client groups and tasks. */
 export class Dashboard {
   /**
+   * Flip one checkbox in the dashboard's markdown.
+   *
+   * Pure, and deliberately suspicious. The pane renders a snapshot, and the
+   * file behind it is written by Obsidian, by iCloud sync and by other agents,
+   * so a line number from the last render is a guess about the present. The
+   * `was` argument is what the pane believed the box read: if the line is no
+   * longer a checkbox, or no longer in that state, nothing is written and the
+   * caller re-reads instead. Writing to a stale line number would tick a task
+   * nobody clicked, in a file that is the record of the day.
+   *
+   * Only the marker changes. The task's text, its indentation and the rest of
+   * the file are left exactly as they were, so a toggle never reformats a file
+   * that another tool is also editing.
+   *
+   * @param markdown - The file's current contents.
+   * @param line - Zero-based index of the line to flip.
+   * @param was - The state the pane displayed: true for `- [x]`.
+   * @returns The updated markdown, or null when the line no longer matches.
+   */
+  static toggle(markdown: string, line: number, was: boolean): null | string {
+    // Split on \n alone and keep the \r, so a CRLF file survives the round
+    // trip unchanged rather than being silently converted.
+    const lines = markdown.split("\n");
+    const current = lines[line];
+    if (current === undefined) return null;
+
+    // [^\n] rather than a dot: a dot does not match \r, so on a CRLF file
+    // every line ends in a character the pattern rejects and no box could
+    // ever be ticked.
+    const match = /^(\s*[-*]\s+\[)([ xX])(\][^\n]*)$/.exec(current);
+    if (!match) return null;
+
+    const done = (match[2] ?? " ").toLowerCase() === "x";
+    if (done !== was) return null;
+
+    lines[line] = `${match[1]}${done ? " " : "x"}${match[3]}`;
+    return lines.join("\n");
+  }
+
+  /**
    * Find the day whose heading resolves to a given date.
    *
    * @param days - Parsed days.
@@ -102,7 +142,7 @@ export class Dashboard {
     let group: ClientGroup | undefined;
     let task: Task | undefined;
 
-    for (const line of lines) {
+    for (const [index, line] of lines.entries()) {
       const heading = /^(#{2,4})\s+(.*)$/.exec(line);
 
       if (heading) {
@@ -151,6 +191,7 @@ export class Dashboard {
         }
         task = {
           done: (checkbox[1] ?? " ").toLowerCase() === "x",
+          line: index,
           text: checkbox[2] ?? "",
         };
         group.tasks.push(task);

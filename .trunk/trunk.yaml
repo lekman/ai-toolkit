@@ -22,6 +22,15 @@ lint:
     - linters: [markdownlint]
       paths:
         - packages/rag/*/tests/fixtures/**
+
+    # Release Please writes the changelogs, and not to prettier's rules.
+    # Formatting them would be undone by the next release, and until this
+    # was ignored every release pull request failed here — a check that
+    # blocks the release it is reviewing.
+    - linters: [prettier, markdownlint]
+      paths:
+        - CHANGELOG.md
+        - packages/**/CHANGELOG.md
   enabled:
     - gitleaks@8.30.1
     - git-diff-check

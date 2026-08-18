@@ -48,7 +48,7 @@
     "check": "bun run typecheck && bun test && bun run build"
   },
   "dependencies": {
-    "@lancedb/lancedb": "^0.33.0",
+    "@lancedb/lancedb": "^0.37.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.25.0"
   },

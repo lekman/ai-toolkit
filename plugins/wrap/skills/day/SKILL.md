@@ -100,7 +100,12 @@ Archiving is all-or-nothing per day, across all clients:
   the section in place and report which clients still need their own
   `/wrap:day` run.
 - If today's section has **zero** open items left, cut the entire dated section
-  from `Dashboard.md` and merge it into the month's work log.
+  from `Dashboard.md` and merge it into the month's work log — then perform
+  the **day shift**: promote the earliest day section out of the
+  `> [!note]- Future` callout (cut it, strip one `"> "` level from every line,
+  insert it above the callout) so the dashboard is staged for the next
+  morning. The run that archives the final client owns this; an empty Future
+  block means nothing to promote. `/planner:today` Step 2b stays the fallback.
 
 ### Where the archive lives
 

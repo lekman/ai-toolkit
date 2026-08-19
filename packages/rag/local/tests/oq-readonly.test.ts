@@ -45,7 +45,11 @@ describe("Oq.readOnlyChecks against a healthy indexed store", () => {
     const embeddings = new EmbeddingsMock();
     const now = Date.now();
     reader.set("Clients/AcmeCo/Decisions.md", NOTE, now - 1_000);
-    reader.set("Clients/AcmeCo/Reports/Weekly call — 14 August 2026.md", NOTE, now - 1_000);
+    reader.set(
+      "Clients/AcmeCo/Reports/Weekly call — 14 August 2026.md",
+      NOTE,
+      now - 1_000,
+    );
     reader.set("Clients/AcmeCo/Budget 2026.md", NOTE, now - 1_000);
     await Indexer.scan(reader, store, embeddings);
 

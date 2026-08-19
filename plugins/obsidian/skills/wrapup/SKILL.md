@@ -19,7 +19,9 @@ Same conflict-copy check as the other skills.
 
 ## Step 3: List Today's Open Items
 
-Find all `- [ ]` lines under today's heading inside `## Focus`. Include every client (no filtering: wrapup is intentionally cross-client).
+Find all `- [ ]` lines under today's heading inside `## Focus` — today's
+section is the unprefixed one; `> - [ ]` lines belong to future days inside
+the collapsed `> [!note]- Future` callout and are out of scope. Include every client (no filtering: wrapup is intentionally cross-client).
 
 If zero items: report "nothing open for today" and exit 0.
 

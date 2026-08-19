@@ -24,7 +24,16 @@ Same conflict-copy check as the other skills.
 
 Default heading: `date "+%A %-d %B"` (e.g. `Saturday 26 April`).
 
-Look for `### <heading>` or `## <heading>` inside `## Focus`. If neither exists:
+Today's section is the unprefixed one directly under `## Focus`; every other
+day lives inside the collapsed `> [!note]- Future` callout with every line
+`"> "`-prefixed (`> ### Thursday 20 August`, `> - [ ] …`, blank lines a lone
+`>`). With `--day` targeting a future day, locate or create its heading
+**inside** that callout in chronological order and write the new item with the
+`"> "` prefix.
+
+For today: look for `### <heading>` or `## <heading>` inside `## Focus`. If
+neither exists (check the Future block too — a day found there gets promoted
+per `/planner:today` Step 2b rather than duplicated):
 
 - Insert `### <heading>` immediately after the `## Focus` heading (and the existing intro paragraph if present).
 - Heading level: use `###` to match the existing pattern for in-week days. The user may upgrade to `##` for a new week boundary manually.

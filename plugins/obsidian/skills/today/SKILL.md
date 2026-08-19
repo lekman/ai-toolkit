@@ -19,6 +19,12 @@ Same as the `dashboard` skill: read `~/.claude/obsidian.json`, resolve vault pat
 
 Today's heading uses `date "+%A %-d %B"` (e.g. `Saturday 26 April`). Match either `### <heading>` or `## <heading>`: both formats appear in the dashboard.
 
+Today's section is the unprefixed one outside the collapsed `> [!note]- Future`
+callout. If today's heading appears only inside that callout (`> ### <heading>`),
+promote it first — cut the day's section out of the callout, strip one `"> "`
+level from every line, and re-insert it above the `> [!note]- Future` line —
+then proceed.
+
 If today's heading does not exist, report "no items for today" and exit 0.
 
 ## Step 3: List Items

@@ -102,6 +102,11 @@ the order of the entries themselves.
 
 ### 3b.1: Missing `[Details]` Links
 
+Non-today days sit inside the collapsed `> [!note]- Future` callout, where
+every line carries a `"> "` prefix — treat `> - [ ]` / `> - [x]` as checkboxes,
+preserve the prefix byte-for-byte on every repair, and treat a lone `>` as the
+blank line when finding run boundaries inside the block.
+
 For every checkbox in `<vault>/Dashboard.md` that belongs to this repo's
 client:
 

@@ -58,7 +58,10 @@ Reuses the obsidian plugin's config at `~/.claude/obsidian.json` (`vault`,
 `dashboard`). See
 [obsidian.example.json](../obsidian/obsidian.example.json).
 
-Dashboard conventions assumed: day headings as `## <Weekday> <d> <Month>` or
+Dashboard layout assumed: today's day section sits unprefixed under
+`## Focus`; every other day is inside a collapsed `> [!note]- Future` callout
+with each line `"> "`-prefixed (the skills promote today out of the block and
+write future days into it). Day headings as `## <Weekday> <d> <Month>` or
 `### …`, client groups as `#### **<Client>**` inside each day, tasks as
 `- [ ]` / `- [x]` checkboxes.
 

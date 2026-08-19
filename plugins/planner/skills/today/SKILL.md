@@ -44,7 +44,9 @@ the dashboard (Step 3), the ISO form for the calendar fetch (Step 4).
 Rules, in order:
 
 1. Look for today's heading (`## <TODAY>` or `### <TODAY>`) with at least one
-   open `- [ ]` item.
+   open `- [ ]` item. If it is not found unprefixed, look inside the collapsed
+   `> [!note]- Future` callout for `> ## <TODAY>` or `> ### <TODAY>` — found
+   there, promote it first (Step 2b) and re-apply this rule.
 2. **If today is Saturday or Sunday and rule 1 found nothing** (no heading,
    or a heading whose items are all ticked; completed counts as nothing
    left), use `MONDAY` as the target day and look for its heading instead.
@@ -55,6 +57,38 @@ Rules, in order:
 3. If neither heading exists (or neither has open items), say so plainly and
    offer `/obsidian:add` to plan the day. Do not go searching calendars or
    RAG as a substitute for a missing plan.
+
+On a weekend fall-forward, Monday's heading normally sits inside the Future
+block. Do **not** promote a future day — read its section in place, stripping
+the prefix for display and extraction (`sed -E 's/^> ?//'` over the block
+before the Step 3 awk).
+
+## Step 2b: Promote Today out of the Future Block
+
+The dashboard keeps exactly one day expanded. Today's day section sits
+directly under `## Focus`, unprefixed — today _is_ the section outside the
+blocks; there is no "Now" heading. Every other day (and `### Unscheduled — no
+day assigned`) lives inside a collapsed callout that starts `> [!note]- Future`,
+in chronological order, and every line inside it carries a `"> "` prefix: day
+headings read `> ### Thursday 20 August`, checkboxes `> - [ ] …`, client
+intention callouts nest as `> > [!note]`, and a blank line inside the block is
+a lone `>` — an unprefixed blank line ends the callout and spills the days
+below it onto the page. The `## Initiatives` body sits in its own collapsed
+`> [!note]- All clients` callout under the same prefix rules. Reading or
+writing a non-today day therefore means tolerating — and, when writing,
+producing — the `"> "` prefix.
+
+When a day inside the block becomes today, promote it before anything else
+reads or writes the dashboard:
+
+1. Cut the day's section — from its `> ### <day>` line to the line before the
+   next `> ###`/`> ##` day heading (or the end of the callout).
+2. Strip exactly one `"> "` level from every cut line (`> ### …` → `### …`,
+   `> > [!note]` → `> [!note]`, lone `>` → blank line).
+3. Re-insert the section directly **above** the `> [!note]- Future` line.
+4. Idempotent: a day already outside the block is never promoted again, and
+   the callout must survive intact — check the line after the removed section
+   still starts with `>`.
 
 ## Step 3: List the Plate
 

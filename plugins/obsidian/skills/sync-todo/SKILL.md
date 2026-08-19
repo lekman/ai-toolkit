@@ -46,7 +46,7 @@ Read `Dashboard.md`. Inside `## Focus` only:
 
 For each TODO row:
 
-- **Has Jira key**: find every dashboard `- [ ]` checkbox whose text contains the same key.
+- **Has Jira key**: find every dashboard `- [ ]` checkbox whose text contains the same key. (Match `> - [ ]` inside the collapsed `> [!note]- Future` callout too, and preserve that prefix on any edit; new items are appended under today's heading, which is the unprefixed section outside the block.)
   - **In `## Done`** + matches found → tick all matching checkboxes (`- [ ]` → `- [x]`).
   - **In `## In Progress` or `## Backlog`** + no matching open or closed checkbox → append `- [ ] <client>: <row title> ([JIRA-KEY](https://<jira_host>/browse/JIRA-KEY))` under today's heading. Take `<jira_host>` from `~/.claude/obsidian.json#jira_host`, or reuse the URL pattern from existing TODO.md links if present.
   - **In `## In Progress`** + matching closed checkbox → no action (already done; don't reopen).

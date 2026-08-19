@@ -61,10 +61,10 @@ dozen or more subagents, and installs a third-party toolchain to do it. The two
 questions from [Practices](../README.md) both apply, and they are still
 independent.
 
-| Question | What the analysis does | What answers it |
-| --- | --- | --- |
-| Where does inference run? | Sends a summary of every file in scope to a model, so the shape of the codebase leaves your control | [Local Models](../local-models/README.md), [Bedrock](../bedrock/README.md), [Microsoft Foundry](../foundry/README.md) |
-| What can the agent reach? | Reads every file, writes into the repository, and runs a package install that executes native build scripts | [Isolated Container](../isolated-container/README.md), [Isolated Agent](../../security/isolated/README.md) |
+| Question                  | What the analysis does                                                                                      | What answers it                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Where does inference run? | Sends a summary of every file in scope to a model, so the shape of the codebase leaves your control         | [Local Models](../local-models/README.md), [Bedrock](../bedrock/README.md), [Microsoft Foundry](../foundry/README.md) |
+| What can the agent reach? | Reads every file, writes into the repository, and runs a package install that executes native build scripts | [Isolated Container](../isolated-container/README.md), [Isolated Agent](../../security/isolated/README.md)            |
 
 ### Data Leaving: Pick the Inference Path First
 
@@ -153,8 +153,8 @@ issues.
 The plugin installs two hooks. Both stay dormant unless a project has a `.ua/`
 directory with `"autoUpdate": true` in its `config.json`:
 
-- A `PostToolUse` hook on Bash, which fires only for commands matching `git
-  commit`, `merge`, `cherry-pick` or `rebase`.
+- A `PostToolUse` hook on Bash. It fires only for commands matching
+  `git commit`, `git merge`, `git cherry-pick` or `git rebase`.
 - A `SessionStart` hook that compares the recorded commit hash against `HEAD`.
 
 Neither writes files or runs commands. Both inject a prompt telling the agent to
@@ -250,10 +250,10 @@ this is worth checking.
 
 Two files make re-runs incremental rather than full rebuilds:
 
-| File | Purpose |
-| --- | --- |
-| `.ua/fingerprints.json` | Structural fingerprints per file, so a re-run can tell a formatting change from a structural one |
-| `.ua/intermediate/scan-result.json` | The file inventory, so a re-run skips the scan phase |
+| File                                | Purpose                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `.ua/fingerprints.json`             | Structural fingerprints per file, so a re-run can tell a formatting change from a structural one |
+| `.ua/intermediate/scan-result.json` | The file inventory, so a re-run skips the scan phase                                             |
 
 The fingerprint baseline must be written before the metadata file that records
 the commit hash. If the hash is recorded without fingerprints, every later

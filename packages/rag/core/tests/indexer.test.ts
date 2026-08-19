@@ -173,32 +173,49 @@ describe("SearchHandlers over an indexed store", () => {
     expect(recent[0]?.path).toBe("Clients/AcmeCo/Commercials.md");
   });
 
-  test("compacts once per scan, after the writes", async () => {
+  test("compacts once per scan that wrote, after the writes", async () => {
     const { embeddings, reader, store } = setup();
     const now = new Date("2026-08-15T12:00:00.000Z");
     await Indexer.scan(reader, store, embeddings, now);
     expect(store.optimizeCalls).toHaveLength(1);
     expect(store.optimizeCalls[0]?.toISOString()).toBe(
-      "2026-08-14T12:00:00.000Z",
+      "2026-08-15T11:00:00.000Z",
     );
   });
 
-  test("compacts even when a scan writes nothing", async () => {
+  test("skips compaction when a scan writes nothing", async () => {
     const { embeddings, reader, store } = setup();
     const now = new Date("2026-08-15T12:00:00.000Z");
     await Indexer.scan(reader, store, embeddings, now);
     await Indexer.scan(reader, store, embeddings, now);
-    // Second run re-embeds nothing, but versions still accrue from the
-    // per-file upserts, so skipping compaction on a no-op scan would let the
-    // store grow on exactly the runs that look harmless.
+    // The second run upserts nothing and removes nothing, so there is no new
+    // version to reclaim — and compaction is itself a table rewrite, so
+    // running it here is what grew the store: ~50 retained ~25 MB copies of
+    // an unchanged table, measured 19 Aug. An earlier version of this test
+    // asserted the opposite on the grounds that per-file upserts still
+    // accrued versions; that stopped being true when unchanged rows stopped
+    // being rewritten.
+    expect(store.optimizeCalls).toHaveLength(1);
+  });
+
+  test("a removed-path-only scan still compacts", async () => {
+    const { embeddings, reader, store } = setup();
+    const now = new Date("2026-08-15T12:00:00.000Z");
+    await Indexer.scan(reader, store, embeddings, now);
+    reader.files.delete("Clients/AcmeCo/Commercials.md");
+    const report = await Indexer.scan(reader, store, embeddings, now);
+    // A deletion is a write: it creates a version even though no file was
+    // upserted, so the reclaim must still run.
+    expect(report.upsertedFiles).toBe(0);
+    expect(report.removedPaths).toEqual(["Clients/AcmeCo/Commercials.md"]);
     expect(store.optimizeCalls).toHaveLength(2);
   });
 });
 
 describe("Indexer.versionCutoff", () => {
-  test("keeps one day of history", () => {
+  test("keeps one hour of history", () => {
     const cutoff = Indexer.versionCutoff(new Date("2026-08-15T12:00:00.000Z"));
-    expect(cutoff.toISOString()).toBe("2026-08-14T12:00:00.000Z");
+    expect(cutoff.toISOString()).toBe("2026-08-15T11:00:00.000Z");
   });
 });
 
@@ -208,7 +225,11 @@ describe("store freshness", () => {
     // of the sample: an index 0.7 days old read as 2.6 days. A freshness
     // answer that looks at part of the data is not a freshness answer.
     const { embeddings, reader, store } = setup();
-    reader.set("Zzz/newest.md", `---\ntype: note\n---\n## Late\n\nSorts last.\n`, 9999);
+    reader.set(
+      "Zzz/newest.md",
+      `---\ntype: note\n---\n## Late\n\nSorts last.\n`,
+      9999,
+    );
     await Indexer.scan(reader, store, embeddings);
     const paths = await store.listPaths("obsidian");
     expect(paths[paths.length - 1]).toBe("Zzz/newest.md");

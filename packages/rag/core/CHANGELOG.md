@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.3.1...rag-core@v0.3.2) (2026-08-19)
+
+
+### Fixes
+
+* **rag:** stop compacting unchanged stores, keep one hour of versions ([#31](https://github.com/lekman/ai-toolkit/issues/31)) ([f5c61d5](https://github.com/lekman/ai-toolkit/commit/f5c61d5debfa3e9d8ddf6e1cec61b57c9b7da9ae))
+
 ## [0.3.1](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.3.0...rag-core@v0.3.1) (2026-08-18)
 
 

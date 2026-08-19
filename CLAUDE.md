@@ -10,7 +10,9 @@ Top level is flat and grouped by how each thing is consumed:
 - `privacy/`: keep PII / PHI / financial data from reaching the agent or model.
 - `practices/`: best practices, patterns, and workflows (guidance, prose).
   Includes `observability/`: see what the agent does and get notified
-  (notifications now, progress and access visibility to come).
+  (notifications now, progress and access visibility to come); and `graphs/`:
+  build a structural graph of a repository, and where to run the analysis
+  given that it reads every file and fans out across the repo.
 - `docs/`: cross-cutting concepts that span practices (e.g. hard vs soft controls).
 - `plugins/`: Claude Code plugins.
 - `skills/`: Claude Code skills.

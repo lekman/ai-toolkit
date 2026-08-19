@@ -36,6 +36,28 @@ No tables, no summary of what moved, no narration before or after. If the
 operator wants the detail they will ask, or read the work log. Reporting
 volume is the thing this skill is trying to reduce.
 
+## The Future block
+
+The dashboard keeps exactly one day expanded. Today's day section sits
+directly under `## Focus`, unprefixed — today _is_ the section outside the
+blocks; there is no "Now" heading. Every other day (and `### Unscheduled — no
+day assigned`) lives inside a collapsed callout that starts `> [!note]- Future`,
+in chronological order, and every line inside it carries a `"> "` prefix: day
+headings read `> ### Thursday 20 August`, checkboxes `> - [ ] …`, client
+intention callouts nest as `> > [!note]`, and a blank line inside the block is
+a lone `>` — an unprefixed blank line ends the callout and spills the days
+below it onto the page. The `## Initiatives` body sits in its own collapsed
+`> [!note]- All clients` callout under the same prefix rules. Reading or
+writing a non-today day therefore means tolerating — and, when writing,
+producing — the `"> "` prefix.
+
+For this skill that means: day headings inside the block are `> ###`-prefixed
+and their checkboxes are `> - [x] …`. When moving lines into the work log,
+strip exactly one `"> "` level so archived entries land unprefixed (nested
+`> > [!note]` intention callouts become plain `> [!note]`). A day emptied
+inside the block loses its `> ###` heading from the block; keep the callout's
+lone-`>` blank lines consistent so the block does not split.
+
 An error is the exception: a missing dashboard, an unparseable day heading, or
 an iCloud conflict copy stops the run and says so. Never edit a dashboard that
 has a conflict copy beside it: two versions disagree and the write picks a

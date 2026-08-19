@@ -1,6 +1,10 @@
 # Obsidian
 
-Skills that keep an Obsidian `Dashboard.md` in sync from Claude Code: add, tick,
+The dashboard keeps only today expanded: today's section sits unprefixed under
+`## Focus`, while future days live inside a collapsed `> [!note]- Future`
+callout (every line `"> "`-prefixed) and the Initiatives body inside
+`> [!note]- All clients`. Skills that keep an Obsidian `Dashboard.md` in sync
+from Claude Code: add, tick,
 and list tasks, reconcile a repo's `.tmp/TODO.md`, and load the note you are
 working on. The active client is resolved by **discovery** (from your working
 directory), so no client name is ever written into a skill.

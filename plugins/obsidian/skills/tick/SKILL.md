@@ -24,7 +24,9 @@ ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
 
 ## Step 3: Match
 
-Read `Dashboard.md`. Under today's heading inside `## Focus`, find every `- [ ]` line whose text contains the supplied substring (case-insensitive). Default scope: lines starting with `<active-client>:`. `--all` widens to every client.
+Read `Dashboard.md`. Prefixed `> - [ ]` lines belong to other days inside the
+collapsed `> [!note]- Future` callout — never match or tick them. Under
+today's heading inside `## Focus`, find every `- [ ]` line whose text contains the supplied substring (case-insensitive). Default scope: lines starting with `<active-client>:`. `--all` widens to every client.
 
 Resolution:
 

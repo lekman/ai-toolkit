@@ -46,6 +46,6 @@ ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
 Read `$DASHBOARD` with the Read tool, then report a one-line summary to the user:
 
 - Path and active client (e.g. `Dashboard.md — Active client: Acme`)
-- Today's open vs done counts under `## Focus` (count `- [ ]` and `- [x]` under the heading matching today's date: formats `### <Weekday> <day> <Month>` and `## <Weekday> <day> <Month>` both appear).
+- Today's open vs done counts under `## Focus` (count `- [ ]` and `- [x]` under the heading matching today's date: formats `### <Weekday> <day> <Month>` and `## <Weekday> <day> <Month>` both appear). Today's section is the unprefixed one; `"> "`-prefixed lines inside the collapsed `> [!note]- Future` callout are other days — exclude them.
 
 Today's date format: use `date "+%A %-d %B"` (e.g. `Saturday 26 April`).

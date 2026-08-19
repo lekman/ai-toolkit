@@ -34,6 +34,22 @@ obsidian skills.
 Today's heading format: `date "+%A %-d %B"` (matches `### <Weekday> <day> <Month>`
 or `## <Weekday> <day> <Month>`).
 
+The dashboard keeps exactly one day expanded. Today's day section sits
+directly under `## Focus`, unprefixed — today _is_ the section outside the
+blocks; there is no "Now" heading. Every other day (and `### Unscheduled — no
+day assigned`) lives inside a collapsed callout that starts `> [!note]- Future`,
+in chronological order, and every line inside it carries a `"> "` prefix: day
+headings read `> ### Thursday 20 August`, checkboxes `> - [ ] …`, client
+intention callouts nest as `> > [!note]`, and a blank line inside the block is
+a lone `>` — an unprefixed blank line ends the callout and spills the days
+below it onto the page. The `## Initiatives` body sits in its own collapsed
+`> [!note]- All clients` callout under the same prefix rules. Reading or
+writing a non-today day therefore means tolerating — and, when writing,
+producing — the `"> "` prefix.
+
+Today's section is the unprefixed one outside the block; everything this skill
+writes to another day goes inside the block, prefixed.
+
 ## Step 2: Reconcile the Dashboard Against Real State
 
 Scope: only the active client's items under today's heading in `## Focus`.
@@ -71,9 +87,10 @@ heading:
 
 1. Compute the next working day (skip Saturday/Sunday):
    `date -v+1d "+%A %-d %B"`, adding days until the weekday is Mon–Fri.
-2. Create that heading under `## Focus` if it does not exist (same heading level
-   as today's).
-3. Move the open items there unchanged.
+2. Find that day inside the `> [!note]- Future` callout (`> ### <day>`), or
+   create it there in chronological order — never as an unprefixed section.
+3. Move the open items into it with a `"> "` prefix added to each line (`- [ ] …`
+   → `> - [ ] …`); separating blank lines inside the block are a lone `>`.
 
 ## Step 4: Archive the Finished Day
 

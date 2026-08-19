@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.3.1...rag-local@v0.3.2) (2026-08-19)
+
+
+### Fixes
+
+* **rag:** verify OQ exclusions against the canonical rule, not a copy ([#29](https://github.com/lekman/ai-toolkit/issues/29)) ([b7baafb](https://github.com/lekman/ai-toolkit/commit/b7baafb4dfd92f25d46f63d4ce531db29fd5d3bb))
+
 ## [0.3.1](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.3.0...rag-local@v0.3.1) (2026-08-18)
 
 

@@ -36,6 +36,112 @@ describe("Oq.readOnlyChecks against a healthy indexed store", () => {
     ]);
   });
 
+  test("date-suffixed titles in the store do not fail the exclusion check", async () => {
+    // The #24 regression shape: the indexer's rules admit a trailing year,
+    // and an inline copy of the rules here used to flag it as a phantom
+    // conflict copy — a correct index reporting as a leak.
+    const reader = new ReaderMock();
+    const store = new StoreMock();
+    const embeddings = new EmbeddingsMock();
+    const now = Date.now();
+    reader.set("Clients/AcmeCo/Decisions.md", NOTE, now - 1_000);
+    reader.set("Clients/AcmeCo/Reports/Weekly call — 14 August 2026.md", NOTE, now - 1_000);
+    reader.set("Clients/AcmeCo/Budget 2026.md", NOTE, now - 1_000);
+    await Indexer.scan(reader, store, embeddings);
+
+    const results = await Oq.readOnlyChecks(
+      store,
+      embeddings,
+      "architecture decisions",
+      30,
+      now,
+    );
+    const row = results.find(
+      (result) => result.name === "negative: excluded content absent",
+    );
+    expect(row?.pass).toBe(true);
+  });
+
+  test("genuinely excluded content in the store still fails the check", async () => {
+    const store = new StoreMock();
+    const embeddings = new EmbeddingsMock();
+    const now = Date.now();
+    // Injected directly: the indexer would refuse these, which is exactly why
+    // their presence in a live store must fail OQ.
+    const chunk = (id: string, path: string) => ({
+      contentHash: id,
+      embedding: [0],
+      headingPath: "t",
+      id,
+      metadata: {},
+      modifiedAt: now,
+      ordinal: 0,
+      path,
+      source: "obsidian",
+      text: "t",
+      tier: "private-business" as const,
+    });
+    await store.upsert([
+      chunk("a", "Clients/AcmeCo/Note 2.md"),
+      chunk("b", "Clients/AcmeCo/old.md.bak"),
+      chunk("c", "Templates/Weekly.md"),
+      chunk("d", "Dashboard.md"),
+    ]);
+
+    const results = await Oq.readOnlyChecks(
+      store,
+      embeddings,
+      "architecture decisions",
+      30,
+      now,
+    );
+    const row = results.find(
+      (result) => result.name === "negative: excluded content absent",
+    );
+    expect(row?.pass).toBe(false);
+    expect(row?.detail).toContain("Note 2.md");
+    expect(row?.detail).toContain("old.md.bak");
+    expect(row?.detail).toContain("Templates/Weekly.md");
+    expect(row?.detail).toContain("Dashboard.md");
+  });
+
+  test("health paths belong to the health row, not the exclusion row", async () => {
+    const store = new StoreMock();
+    const embeddings = new EmbeddingsMock();
+    const now = Date.now();
+    await store.upsert([
+      {
+        contentHash: "h",
+        embedding: [0],
+        headingPath: "t",
+        id: "h",
+        metadata: {},
+        modifiedAt: now,
+        ordinal: 0,
+        path: "Personal/Health/journal.md",
+        source: "obsidian",
+        text: "t",
+        tier: "private-business" as const,
+      },
+    ]);
+
+    const results = await Oq.readOnlyChecks(
+      store,
+      embeddings,
+      "architecture decisions",
+      30,
+      now,
+    );
+    const exclusionRow = results.find(
+      (result) => result.name === "negative: excluded content absent",
+    );
+    const healthRow = results.find(
+      (result) => result.name === "negative: health content deferred (phase 1)",
+    );
+    expect(exclusionRow?.pass).toBe(true);
+    expect(healthRow?.pass).toBe(false);
+  });
+
   test("negative: a bloated store fails the growth guard", async () => {
     const reader = new ReaderMock();
     const store = new StoreMock();

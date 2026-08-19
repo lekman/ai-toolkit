@@ -58,6 +58,22 @@ strip exactly one `"> "` level so archived entries land unprefixed (nested
 inside the block loses its `> ###` heading from the block; keep the callout's
 lone-`>` blank lines consistent so the block does not split.
 
+### The day shift
+
+Archiving is what turns the page. When this operation removes the day's
+**last** open section — zero open items across all clients, the all-or-nothing
+rule above — it also promotes the next day into focus: take the **earliest**
+day section inside the `> [!note]- Future` callout, cut it out, strip exactly
+one `"> "` level from every line (`> ### …` → `### …`, `> > [!note]` →
+`> [!note]`, lone `>` → blank line), and insert it above the `> [!note]- Future`
+line. The dashboard is then staged for the next morning.
+
+- Only the run that archives the **final** client performs the shift; a run
+  that leaves other clients' items open changes nothing.
+- An empty Future block means nothing to promote — report that plainly.
+- `/planner:today` Step 2b remains the fallback for a day that was never
+  shifted (for example after hand edits).
+
 An error is the exception: a missing dashboard, an unparseable day heading, or
 an iCloud conflict copy stops the run and says so. Never edit a dashboard that
 has a conflict copy beside it: two versions disagree and the write picks a
@@ -71,7 +87,8 @@ Three levels, each following from the last:
 2. **A client group with no checkbox items left** moves entirely: heading,
    intention callout, handover links, topical paragraphs. An empty group is
    noise on a worklist, and its prose belongs with the work it describes.
-3. **A day with no client groups left** loses its heading too.
+3. **A day with no client groups left** loses its heading too — and triggers
+   the day shift below.
 
 A group keeps its place when anything is still open: only the ticked lines
 leave, and the prose around them is untouched.

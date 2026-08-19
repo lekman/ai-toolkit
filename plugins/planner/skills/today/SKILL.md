@@ -78,8 +78,11 @@ below it onto the page. The `## Initiatives` body sits in its own collapsed
 writing a non-today day therefore means tolerating — and, when writing,
 producing — the `"> "` prefix.
 
-When a day inside the block becomes today, promote it before anything else
-reads or writes the dashboard:
+Normally the previous day's final archive run has already performed this
+shift (see `/planner:archive` and `/wrap:day` — the run that archives a day's
+last client promotes the next day out of the block). This step is the
+fallback. When a day inside the block becomes today and is still in it,
+promote it before anything else reads or writes the dashboard:
 
 1. Cut the day's section — from its `> ### <day>` line to the line before the
    next `> ###`/`> ##` day heading (or the end of the callout).

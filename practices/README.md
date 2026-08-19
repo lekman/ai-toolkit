@@ -66,10 +66,61 @@ generation adds a derived, searchable layer over knowledge sources (a
 BI/warehouse layer for AI, queried just-in-time) while live state stays
 behind APIs and connectors.
 
+The split is the useful part. Knowledge that changes slowly is worth indexing.
+State that changes constantly is not, and belongs behind a live query.
+
+```mermaid
+flowchart LR
+    subgraph fits["Indexable — knowledge, changes slowly"]
+        N["notes, docs, wikis<br/>exported files, shares"]
+    end
+
+    subgraph live["Not indexable — state, changes constantly"]
+        T["tickets, orders,<br/>calendars, inboxes"]
+    end
+
+    N --> IDX[("RAG index<br/>derived, rebuildable")]
+    T --> CONN["connector<br/>queried live"]
+    IDX --> A["grounded answer"]
+    CONN --> A
+```
+
 - [rag/README.md](rag/README.md): the mental model (fed like a warehouse,
   queried like a search index); why transactional data does not fit; when a
   live connector beats a pipeline. Design for the implementation in
   [packages/rag/DESIGN.md](../packages/rag/DESIGN.md).
+
+## Codebase Graphs
+
+Retrieval makes prose searchable. The equivalent for code is structural: a graph
+of files, symbols, layers and the relationships between them, so an agent gets a
+map before it edits rather than grepping its way to one.
+
+The two layers answer different questions, and neither replaces the other.
+
+```mermaid
+flowchart TB
+    subgraph prose["Prose — what was said"]
+        D["notes, docs, decisions"] --> R[("RAG index<br/>semantic, many sources")]
+    end
+
+    subgraph code["Code — what connects to what"]
+        S["one repository"] --> G[("codebase graph<br/>structural, one repo")]
+    end
+
+    R --> Q["where was this discussed,<br/>and what did we decide?"]
+    G --> P["what calls this,<br/>and what breaks if I change it?"]
+```
+
+Building a graph reaches further than most tasks, so it lands on both axes
+above. It summarises every file in scope, which decides where inference must
+run, and it fans out across the whole repository, which decides whether it
+belongs in a container.
+
+- [Codebase Graphs](graphs/README.md): when a graph pays for itself, how to
+  scope and run one without overspending, which parts of the output to
+  distrust, and how the run combines with local models and the isolated
+  container.
 
 ## Orchestration
 

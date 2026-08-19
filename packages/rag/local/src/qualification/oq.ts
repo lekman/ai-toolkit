@@ -1,6 +1,6 @@
 import type { IChunkStore, IEmbeddingsProvider } from "@lekman/rag-core";
 
-import { SearchHandlers } from "@lekman/rag-core";
+import { Exclusions, SearchHandlers } from "@lekman/rag-core";
 
 import type { CheckResult } from "../config";
 
@@ -108,13 +108,15 @@ export class Oq {
       remediation: "check VOYAGE_API_KEY and the store contents",
     });
 
-    const excluded = paths.filter(
-      (path) =>
-        path.startsWith("Templates/") ||
-        path.includes(".bak") ||
-        / \d+\.md$/.test(path) ||
-        path.startsWith("Dashboard"),
-    );
+    // One rule, one place: verify the store against the same Exclusions.check
+    // the indexer obeys. An inline copy of the rules lived here once and
+    // diverged at the first fix — #24 bounded the conflict-copy digits, the
+    // copy kept matching trailing years, and a correct index reported as a
+    // leak. Health paths are skipped: the dedicated row below owns them.
+    const excluded = paths.filter((path) => {
+      const reason = Exclusions.check(path);
+      return reason !== null && reason !== "health-deferred";
+    });
     results.push({
       detail:
         excluded.length === 0

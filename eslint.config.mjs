@@ -4,7 +4,9 @@ import perfectionist from "eslint-plugin-perfectionist";
 import tseslint from "typescript-eslint";
 
 export default [
-  { ignores: ["**/dist/", "**/node_modules/"] },
+  // `.ua/` holds generated knowledge-graph data and the scratch scripts the
+  // analysis writes. Gitignored, but eslint keeps its own list.
+  { ignores: ["**/dist/", "**/node_modules/", "**/.ua/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

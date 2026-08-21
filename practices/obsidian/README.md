@@ -169,7 +169,7 @@ Worth knowing about, because it explains behaviour that otherwise looks like
 magic.
 
 **Instruction files chain.** `~/.claude/CLAUDE.md` points at this repository's
-[standards](../../standards/), which split the house rules into small files:
+[standards](../../standards/CLAUDE.md), which split the house rules into small files:
 how to work together, tone, bias, evidence, judgment and proportion. The
 vault's own `CLAUDE.md` adds the vault-specific part on top.
 

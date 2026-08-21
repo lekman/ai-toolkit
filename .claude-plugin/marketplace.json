@@ -62,6 +62,11 @@
       "description": "Documentation tone skill: plain language, banned filler and empty modifiers, UK English, and export-safe markdown structure for markdown, Word, PDF, and HTML deliverables, with a copyable **/*.md rule that points back to the skill",
       "category": "writing",
       "tags": ["tone", "writing", "documentation", "plain-language", "markdown"]
+    },
+    {
+      "name": "mail",
+      "source": "./plugins/mail",
+      "description": "Junk-mail triage for Microsoft 365: read-only inventory, keep/delete table, then rescue-to-Inbox and recoverable delete only after approval."
     }
   ]
 }

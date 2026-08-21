@@ -1,0 +1,5 @@
+{
+  "name": "mail",
+  "version": "0.1.0",
+  "description": "Personal mailbox hygiene: triage the Junk Email folder — rescue false positives to the Inbox, delete the rest behind an explicit gate"
+}

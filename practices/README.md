@@ -138,6 +138,20 @@ scoped that does.
   disposable, scoped subagents that do. The operating model behind
   [isolated-agent security](../security/isolated/README.md).
 
+## An Agent-Operated Notes Vault
+
+Where the working notes live and how an agent maintains them. Obsidian holds
+the markdown; Claude Code runs inside the vault (via the ObsidiBot plugin)
+and does the filing, the daily plan and the recurring documents. The value is
+written conventions, not plugins: a frontmatter schema, one folder and one
+dashboard group per client, and skills for anything written the same way
+three times.
+
+- [Obsidian as an Agent-Operated Workspace](obsidian/README.md): the full
+  practice, from vault settings to conventions, the dashboard method, the
+  agent layer underneath, and the cautions (iCloud races, secrets, client
+  separation as a contractual matter).
+
 ## Observability
 
 Isolation and orchestration decide what the agent may do and who holds the plan.

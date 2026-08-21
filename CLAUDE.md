@@ -9,7 +9,8 @@ Top level is flat and grouped by how each thing is consumed:
 - `security/`: security settings by level (machine, isolated, and later CI…).
 - `privacy/`: keep PII / PHI / financial data from reaching the agent or model.
 - `practices/`: best practices, patterns, and workflows (guidance, prose).
-  Includes `observability/`: see what the agent does and get notified
+  Includes `obsidian/`: run an Obsidian vault as an agent-operated
+  workspace; `observability/`: see what the agent does and get notified
   (notifications now, progress and access visibility to come); and `graphs/`:
   build a structural graph of a repository, and where to run the analysis
   given that it reads every file and fans out across the repo.

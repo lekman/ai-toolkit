@@ -156,28 +156,69 @@ explicit warnings rather than dropping them. Calendars marked
 Use the **target day** from Step 2: on a weekend fall-forward, fetch
 Monday's events, not today's.
 
-## Step 4b: Office 365 Calendars (Live Graph, OAuth)
+## Step 4b: Office 365 Calendar (Microsoft 365 Connector)
 
-When `~/.claude/calendar.json` exists, also fetch the O365 day view. Its
-`cli` field points at the calendar package's entrypoint, so this skill never
-hardcodes a machine path:
+**Prefer the Microsoft 365 connector.** It reads the calendar over the
+session's own authenticated connection, so nothing needs a client secret, a
+refresh token, or a credential cache on disk.
+
+Find it by **tool name, never by server id** — the MCP server id is an opaque
+per-install UUID and hardcoding one breaks the skill on every other machine:
+
+```text
+ToolSearch: "select:outlook_calendar_search"
+```
+
+Then query the target day from Step 2:
+
+```text
+outlook_calendar_search(query: "*", afterDateTime: "<TARGET_ISO>T00:00:00",
+                        beforeDateTime: "<TARGET_ISO>T23:59:59",
+                        order: "oldest", limit: 25)
+```
+
+Reading the result:
+
+- **`start` and `end` are `{dateTime, timeZone}` wall-clock pairs.** `dateTime`
+  is local time in the named zone — **never re-interpret it as UTC**. Present it
+  with its zone.
+- **`attendees` present → a meeting.** `attendees` empty or null with the user
+  as `organizer` → a **self-event**, which by convention is a todo: the subject
+  is the task.
+- **Skip `isCancelled`.** A cancelled event is not the shape of the day.
+- **`calendarName`** maps the event to a client, same as an ICS feed name;
+  fall back to `default_client` when it is null.
+- **Paginate** while the response carries `nextOffset`; a day with more than 25
+  events is rare but silently truncating one is not acceptable.
+
+This path knows more than the ICS one does. `ics-today.ts` exposes only title,
+time, all-day and calendar name, which is why Step 4c leans on a placeholder
+title list. The connector returns `attendees`, `isAllDay`, `showAs` and
+`categories`, so a self-event is identified by **having no attendees** rather
+than by guessing from its title.
+
+### Fallback: the local CLI
+
+Only when the connector is unavailable — a headless or cron run, where an
+interactively-authenticated MCP server may not be present — fall back to
+`~/.claude/calendar.json` if it exists:
 
 ```bash
 bun "$(jq -r .cli ~/.claude/calendar.json)" --date "$TARGET_ISO"
 ```
 
-It returns three sections: **Meetings** (events with attendees),
-**Todos (from calendar)** (self-events: the subject is the task, by
-convention), and **Admin** (recurring admin/deadline calendars as a
-checklist). Merge its Meetings with the ICS ones, sorted by time.
+It returns **Meetings**, **Todos (from calendar)** and **Admin** sections.
+Neither path available → skip this step silently; the plate alone is the
+answer. A path that is available but **fails** is stated loudly, same rule as
+ICS.
 
-Calendar **todos** and **admin** items stay display only: the dashboard is
-the task tracker, and a self-event is a reminder, not a commitment. Promote
-those with `/obsidian:add`. **Meetings** are different: they are written to
-the dashboard by Step 4c below.
+### Both Paths
 
-No `calendar.json` → skip silently. A failed fetch is stated loudly, same
-rule as ICS.
+Merge Meetings with the ICS ones, sorted by time. Calendar **todos** and
+**admin** items stay display only: the dashboard is the task tracker, and a
+self-event is a reminder, not a commitment. Promote those with
+`/obsidian:add`. **Meetings** are different: Step 4c writes them to the
+dashboard.
 
 ## Step 4c: Write Today's Meetings Onto the Dashboard
 
@@ -192,21 +233,23 @@ Include a **timed meeting on a client calendar**. Exclude:
 - **All-day and multi-day events**, including everything on a calendar marked
   `"kind": "travel"`. Those describe the shape of the day, not a thing to do,
   and Step 5 already leads with them.
-- **Calendar todos and admin items** from `calendar.json` (Step 4b).
+- **Calendar todos and admin items** from Step 4b — self-events with no
+  attendees, and the admin calendars.
 - **Placeholders**, matched case-insensitively on the title: `focus`,
   `blocked`, `busy`, `hold`, `private`, `lunch`, `travel`, `ooo`,
   `out of office`, `no meetings`, `tentative`.
 
 This is deliberately generous: a real meeting is included even if it is
-routine. Tighten the placeholder list rather than guessing at importance:
-`ics-today.ts` exposes only title, time, all-day and calendar name, so
-attendee count or organiser cannot be used to rank an event.
+routine. Tighten the placeholder list rather than guessing at importance.
+The placeholder list exists because `ics-today.ts` exposes only title, time,
+all-day and calendar name; on the connector path, use `attendees` and
+`showAs` directly instead of inferring from the title.
 
 ### Which Client
 
 From the **calendar name** in `calendars.json`, which is already per client
-(one feed per client). Events from the O365 `calendar.json` belong to
-`default_client` in `~/.claude/obsidian.json`. A calendar name that matches no
+(one feed per client). Connector events map by `calendarName`, falling back to `default_client` in
+`~/.claude/obsidian.json`; CLI events belong to `default_client`. A calendar name that matches no
 client group under today's heading is **reported, not written**: never invent
 a `####` group.
 

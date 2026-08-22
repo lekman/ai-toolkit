@@ -19,7 +19,8 @@ Then invoke a skill, for example `/git:commit`.
 
 ## Plugins
 
-- **git**, [commit](git/skills/commit/SKILL.md) / [pr](git/skills/pr/SKILL.md):
+- **git**, [commit](git/skills/commit/SKILL.md) / [pr](git/skills/pr/SKILL.md)
+  / [purge](git/skills/purge/SKILL.md):
   analyse changes and create grouped conventional commits with QA checks and
   strict hook compliance; open pull requests from the repository's own template,
   falling back to a tracker-agnostic
@@ -27,7 +28,10 @@ Then invoke a skill, for example `/git:commit`.
   [stack guard](git/hooks/stack-guard.sh) that blocks a second `gh pr create`
   against the default branch while one of your pull requests is still open, and
   redirects to `gh stack`, with a typed `STACK_OK=1` escape for work that is
-  genuinely independent. See [git/README.md](git/README.md).
+  genuinely independent. Purge fast-forwards the default branch and clears
+  merged branches local and remote, judging "merged" from the pull request
+  rather than the commit graph, because a squash merge leaves none of the
+  branch's commits on the default branch. See [git/README.md](git/README.md).
 - **planner (goal workflow)**, [goal](planner/skills/goal/SKILL.md) /
   [execute](planner/skills/execute/SKILL.md): agree a Definition of Done as a
   Test Plan with the operator, then execute it autonomously to a validated

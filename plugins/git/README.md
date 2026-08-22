@@ -1,7 +1,7 @@
 # Git
 
-Git workflow: two skills you invoke, and a hook that runs whether you remember
-it or not.
+Git workflow: three skills you invoke, and a hook that runs whether you
+remember it or not.
 
 - **`/git:commit`**: [skills/commit/SKILL.md](skills/commit/SKILL.md). Groups
   changed files by what they are for, generates a conventional message per
@@ -9,9 +9,37 @@ it or not.
   rather than one large one.
 - **`/git:pr`**: [skills/pr/SKILL.md](skills/pr/SKILL.md). Opens a pull request
   using the repository's own template, or the plugin's default when it has none.
+- **`/git:purge`**: [skills/purge/SKILL.md](skills/purge/SKILL.md).
+  Fast-forwards the default branch, deletes local and remote branches whose work
+  is already merged, and turns on delete-branch-on-merge so it stops recurring.
 - **The stack guard**: [hooks/stack-guard.sh](hooks/stack-guard.sh). Stops a
   second pull request against the default branch while one of yours is still
   open, and points at `gh stack`.
+
+## Why Purge Does Not Trust `git branch --merged`
+
+A squash merge rewrites a branch into one new commit on the default branch, so
+the branch's own commits are never ancestors of it. `git branch --merged` then
+reports nothing merged, and it is right: those commits genuinely are not there.
+The work is. In a squash-merge repository the pull request is the only
+authoritative record of that, which is why `/git:purge` asks GitHub rather than
+the commit graph.
+
+Two more traps it handles, both of which make a merged branch look like live
+work:
+
+- **A dangling upstream ref.** When the remote branch is deleted on merge, the
+  local branch keeps pointing at it until `git fetch --prune`. Until then every
+  ahead/behind count is computed against a branch that no longer exists.
+- **An orphan history.** After a history rewrite or an import, a branch can
+  share no common ancestor with the default branch. `git diff main...branch`
+  then fails outright, and ahead/behind counts and `git cherry` compare
+  unrelated roots — "39 commits ahead" describes nothing at all. Purge checks
+  `git merge-base` before reading any count, and falls back to comparing trees.
+
+The rule underneath all three: only a file that exists on the branch and
+nowhere on the default branch can actually be lost. Everything else is the
+default branch having moved on.
 
 ## The Pull Request Template
 

@@ -19,8 +19,16 @@ Same as the `dashboard` skill. Flags:
 - `--admin`: tag the item as an administrative job by prefixing the text with
   `🧾`. [`/planner:next`](../../../planner/skills/next/SKILL.md) clears tagged
   items ahead of project work, because they finish fast and a morning spent on
-  them is a morning not spent on work that needs a whole head. The tag is the
-  only signal for this: nothing infers "administrative" from the item text.
+  them is a morning not spent on work that needs a whole head.
+- `--blocked`: tag the item as waiting on someone else by prefixing the text
+  with `🚧`. `/planner:next` skips tagged items and reports them rather than
+  starting them.
+
+Both tags are the **only** signal for their state: nothing infers
+"administrative" or "blocked" from the item text, because a command run several
+times a day cannot afford a guess that disagrees with itself between sessions.
+Combine them with `--client` and `--day` freely; the tag goes at the front of
+the text, before any severity marker.
 
 ## Step 2: Refuse on iCloud Conflict
 

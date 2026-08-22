@@ -51,6 +51,12 @@ Resolution:
 
 Use the `Edit` tool with the exact original line as `old_string` and the same line with `[ ]` → `[x]` as `new_string`. Single-line edit, no surrounding context needed because GFM checkboxes are unique line-level constructs.
 
+**Drop a `🔄` claim marker in the same edit.** `/planner:next` writes `🔄` when
+it takes a task, and a finished task is not claimed — an unfinished-looking
+marker on a ticked item is the loose end the claim exists to make visible.
+Remove only that marker and the space after it; leave `🧾`, `🚧` and the
+severity markers exactly as written.
+
 ## Constraints
 
 - Touch only `## Focus`. Never edit `## Initiatives` or `#### Other active work`.

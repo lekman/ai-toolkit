@@ -25,6 +25,13 @@ whole task.
 The colour markers some items carry (🔴 🟡 🟢 ⚪) are **defect severity, not
 priority**, and most items carry none at all. Nothing ranks by them.
 
+State that changes what the command does is **tagged, never inferred**: `🧾`
+for an administrative job, `🚧` for work waiting on someone else. A command run
+several times a day cannot afford to re-read prose and decide differently than
+it did yesterday, so an untagged item is simply available work. `/obsidian:add`
+writes both tags; `/planner:next` only reads them, and writes nothing but the
+`🔄` claim it clears through `/obsidian:tick` and `/wrap:day`.
+
 ## Why a Separate Skill
 
 Sessions asked "what's my plan" tend to reach for calendars or a knowledge
@@ -39,7 +46,7 @@ first, retrieval and calendars as supplements only.
 - `/planner:next`: pick the next task for one client and start it, with no
   discussion. The dashboard's own ordering is the priority signal, so it takes
   the first open item, moving only `🧾` admin jobs and items with no
-  `[Details]` plan ahead of it. Claims the item before working, because several
+  `[Details]` plan ahead of it, and skipping anything tagged `🚧` as blocked. Claims the item before working, because several
   agents share one dashboard. Pass `confirm`, `ask` or `dry-run` — all the same
   thing — to be told the choice and the reasoning instead of it starting.
 - `/planner:plan`: create or update the current repo's master-plan note in

@@ -91,6 +91,11 @@ heading:
    create it there in chronological order — never as an unprefixed section.
 3. Move the open items into it with a `"> "` prefix added to each line (`- [ ] …`
    → `> - [ ] …`); separating blank lines inside the block are a lone `>`.
+4. **Drop any `🔄` claim marker as the item moves.** `/planner:next` writes it
+   when a session takes a task, and a task rolled to tomorrow is no longer held
+   by a session that has ended. Leaving it would make tomorrow's run skip work
+   nobody is doing. Remove only that marker; `🧾`, `🚧` and the severity markers
+   travel with the item.
 
 ## Step 4: Archive the Finished Day
 

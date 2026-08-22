@@ -61,6 +61,11 @@ first, retrieval and calendars as supplements only.
   authenticated connector may not be present. The connector is found by tool
   name, never by server id: that id is a per-install UUID.
 
+- `/planner:triage`: reorder a day's work and move what does not fit, or with
+  `week`, spread the working week by `📅` deadline and by load. It is the one
+  planning skill that **always proposes and never writes unconfirmed** — every
+  other skill reads item order as the operator's priority signal, and this one
+  changes it.
 - `/planner:plan`: create or update the current repo's master-plan note in
   the Obsidian vault. State (backlog tables, status balls) lives only in the
   vault; repos keep detail pages. Client and tracker (Jira / GitHub / Monday /

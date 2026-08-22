@@ -57,6 +57,10 @@ Then invoke a skill, for example `/git:commit`.
   to the [handover contract](wrap/HANDOVER.md): constraints before tasks, each
   task with its verification command, what is already done, and which earlier
   beliefs turned out wrong. See [wrap/README.md](wrap/README.md).
+- **planner**, [triage](planner/skills/triage/SKILL.md): reorder a day and
+  offload what does not fit, or spread a week by `📅` deadline and calendar
+  load. The one planning skill that always proposes and never writes
+  unconfirmed, because it changes the priority signal every other skill reads.
 - **planner**, [pull](planner/skills/pull/SKILL.md): tomorrow's next task moved
   into today and started, for the moment today's list is clear and there is
   time left. Delegates choosing and starting to `next`; it owns only the move,

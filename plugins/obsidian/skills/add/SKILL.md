@@ -23,6 +23,13 @@ Same as the `dashboard` skill. Flags:
 - `--blocked`: tag the item as waiting on someone else by prefixing the text
   with `🚧`. `/planner:next` skips tagged items and reports them rather than
   starting them.
+- `--due <date>`: record a real deadline by appending `📅 <YYYY-MM-DD>` to the
+  item text. Only [`/planner:triage`](../../../planner/skills/triage/SKILL.md)
+  reads it, to spread a week by delivery order. **A due date is not a
+  priority**: within a day, position still decides what comes first, and a
+  dated item is not started sooner for being dated. Omit it unless the date is
+  externally fixed — a date invented to express urgency makes the one signal
+  that means "this genuinely cannot slip" worthless.
 
 Both tags are the **only** signal for their state: nothing infers
 "administrative" or "blocked" from the item text, because a command run several

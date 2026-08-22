@@ -101,8 +101,8 @@ Every planned goal must be reachable from the root dashboard
 (`<vault>/Dashboard.md`, path from `~/.claude/obsidian.json#dashboard`), so the
 day's worklist points at the contract.
 
-**The dashboard keeps non-today days inside a collapsed `> [!note]- Future`
-callout**, so an entry there reads `> - [ ] …` — match checkboxes with an
+**The dashboard keeps non-today days inside the collapsed `> [!note]- Tomorrow`
+and `> [!note]- Future` callouts**, so an entry there reads `> - [ ] …` — match checkboxes with an
 optional `"> "` prefix, and when updating such an entry in place, preserve its
 prefix byte-for-byte. New entries are appended under today's heading, which is
 the unprefixed section outside the block.

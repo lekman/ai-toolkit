@@ -102,8 +102,8 @@ the order of the entries themselves.
 
 ### 3b.1: Missing `[Details]` Links
 
-Non-today days sit inside the collapsed `> [!note]- Future` callout, where
-every line carries a `"> "` prefix — treat `> - [ ]` / `> - [x]` as checkboxes,
+Non-today days sit inside the collapsed `> [!note]- Tomorrow` and
+`> [!note]- Future` callouts, where every line carries a `"> "` prefix — treat `> - [ ]` / `> - [x]` as checkboxes,
 preserve the prefix byte-for-byte on every repair, and treat a lone `>` as the
 blank line when finding run boundaries inside the block.
 

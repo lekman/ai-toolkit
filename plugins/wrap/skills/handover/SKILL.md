@@ -97,8 +97,9 @@ Two rules that are easy to lose under time pressure:
 
 ## Step 5: Link It from the Dashboard
 
-Today's section is the unprefixed one outside the collapsed `> [!note]- Future`
-callout (future days live inside it, `"> "`-prefixed — do not write there).
+Today's section is the unprefixed one outside the collapsed
+`> [!note]- Tomorrow` and `> [!note]- Future` callouts (later days live inside
+them, `"> "`-prefixed — do not write there).
 Under `## Focus`, find today's heading (`date "+%A %-d %B"`) and the active
 client's `#### <Client>` sub-heading. Insert directly **below** that client's
 intention or overview callout, before the checkboxes:

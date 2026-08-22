@@ -41,7 +41,8 @@ Rules, in order:
 
 1. Look for today's heading (`## <TODAY>` or `### <TODAY>`) with at least one
    open `- [ ]` item. If it is not found unprefixed, look inside the collapsed
-   `> [!note]- Future` callout for `> ## <TODAY>` or `> ### <TODAY>` — found
+   `> [!note]- Tomorrow` callout first, then `> [!note]- Future`, for
+   `> ## <TODAY>` or `> ### <TODAY>` — found
    there, promote it first (Step 2b) and re-apply this rule.
 2. **If today is Saturday or Sunday and rule 1 found nothing** (no heading,
    or a heading whose items are all ticked; completed counts as nothing
@@ -59,20 +60,14 @@ block. Do **not** promote a future day — read its section in place, stripping
 the prefix for display and extraction (`sed -E 's/^> ?//'` over the block
 before the Step 3 awk).
 
-## Step 2b: Promote Today out of the Future Block
+## Step 2b: Promote Today out of the Tomorrow Band
 
-The dashboard keeps exactly one day expanded. Today's day section sits
-directly under `## Focus`, unprefixed — today _is_ the section outside the
-blocks; there is no "Now" heading. Every other day (and `### Unscheduled — no
-day assigned`) lives inside a collapsed callout that starts `> [!note]- Future`,
-in chronological order, and every line inside it carries a `"> "` prefix: day
-headings read `> ### Thursday 20 August`, checkboxes `> - [ ] …`, client
-intention callouts nest as `> > [!note]`, and a blank line inside the block is
-a lone `>` — an unprefixed blank line ends the callout and spills the days
-below it onto the page. The `## Initiatives` body sits in its own collapsed
-`> [!note]- All clients` callout under the same prefix rules. Reading or
-writing a non-today day therefore means tolerating — and, when writing,
-producing — the `"> "` prefix.
+The dashboard holds three bands under `## Focus`: today unprefixed, exactly
+one day in a collapsed `> [!note]- Tomorrow` callout, and every later day in
+a collapsed `> [!note]- Future` callout. See
+[the dashboard structure](../../../obsidian/rules/dashboard-structure.md) for the prefix discipline, what
+"tomorrow" resolves to, and the two-stage day shift. Reading a non-today day
+means stripping one `"> "` level; writing one means producing it.
 
 Normally the previous day's final archive run has already performed this
 shift (see `/planner:archive` and `/wrap:day` — the run that archives a day's
@@ -84,10 +79,23 @@ promote it before anything else reads or writes the dashboard:
    next `> ###`/`> ##` day heading (or the end of the callout).
 2. Strip exactly one `"> "` level from every cut line (`> ### …` → `### …`,
    `> > [!note]` → `> [!note]`, lone `>` → blank line).
-3. Re-insert the section directly **above** the `> [!note]- Future` line.
-4. Idempotent: a day already outside the block is never promoted again, and
-   the callout must survive intact — check the line after the removed section
-   still starts with `>`.
+3. Re-insert the section directly **above** the `> [!note]- Tomorrow` line.
+4. **Refill Tomorrow.** The band must hold exactly one day, so move the
+   earliest day out of `> [!note]- Future` into the now-empty Tomorrow callout,
+   at the same prefix depth. An empty Future leaves an empty Tomorrow, which is
+   correct — the callout itself always stays.
+5. Idempotent: a day already outside the bands is never promoted again, and
+   both callouts must survive intact — check the line after each removed
+   section still starts with `>`.
+
+Today's day is normally found in Tomorrow. If it is deeper in Future instead —
+a gap of unworked days — promote it from there and refill Tomorrow from what
+is left, same two stages.
+
+A dashboard with no `> [!note]- Tomorrow` callout at all predates this
+structure: create the empty band above `> [!note]- Future` and carry on. The
+first skill to touch the file migrates it, so there is no separate migration
+step to forget.
 
 ## Step 3: List the Plate
 

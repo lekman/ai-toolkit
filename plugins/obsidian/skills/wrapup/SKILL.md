@@ -22,8 +22,9 @@ can be attributed rather than guessed at. A non-zero exit stops the skill.
 ## Step 3: List Today's Open Items
 
 Find all `- [ ]` lines under today's heading inside `## Focus` — today's
-section is the unprefixed one; `> - [ ]` lines belong to future days inside
-the collapsed `> [!note]- Future` callout and are out of scope. Include every client (no filtering: wrapup is intentionally cross-client).
+section is the unprefixed one; `> - [ ]` lines belong to later days inside
+the collapsed `> [!note]- Tomorrow` and `> [!note]- Future` callouts and are
+out of scope. Include every client (no filtering: wrapup is intentionally cross-client).
 
 The day is divided into `#### **<Client>**` client groups, and an item belongs
 to the group it sits under. The day's section therefore ends at the next

@@ -22,7 +22,8 @@ can be attributed rather than guessed at. A non-zero exit stops the skill.
 ## Step 3: Match
 
 Read `Dashboard.md`. Prefixed `> - [ ]` lines belong to other days inside the
-collapsed `> [!note]- Future` callout — never match or tick them. Under
+collapsed `> [!note]- Tomorrow` and `> [!note]- Future` callouts — never match
+or tick them. Under
 today's heading inside `## Focus`, find every `- [ ]` line whose text contains
 the supplied substring (case-insensitive).
 

@@ -35,21 +35,15 @@ can be attributed rather than guessed at. A non-zero exit stops the skill.
 Today's heading format: `date "+%A %-d %B"` (matches `### <Weekday> <day> <Month>`
 or `## <Weekday> <day> <Month>`).
 
-The dashboard keeps exactly one day expanded. Today's day section sits
-directly under `## Focus`, unprefixed — today _is_ the section outside the
-blocks; there is no "Now" heading. Every other day (and `### Unscheduled — no
-day assigned`) lives inside a collapsed callout that starts `> [!note]- Future`,
-in chronological order, and every line inside it carries a `"> "` prefix: day
-headings read `> ### Thursday 20 August`, checkboxes `> - [ ] …`, client
-intention callouts nest as `> > [!note]`, and a blank line inside the block is
-a lone `>` — an unprefixed blank line ends the callout and spills the days
-below it onto the page. The `## Initiatives` body sits in its own collapsed
-`> [!note]- All clients` callout under the same prefix rules. Reading or
-writing a non-today day therefore means tolerating — and, when writing,
-producing — the `"> "` prefix.
+The dashboard holds three bands under `## Focus`: today unprefixed, exactly
+one day in a collapsed `> [!note]- Tomorrow` callout, and every later day in
+a collapsed `> [!note]- Future` callout. See
+[the dashboard structure](../../../obsidian/rules/dashboard-structure.md) for the prefix discipline, what
+"tomorrow" resolves to, and the two-stage day shift. Reading a non-today day
+means stripping one `"> "` level; writing one means producing it.
 
-Today's section is the unprefixed one outside the block; everything this skill
-writes to another day goes inside the block, prefixed.
+Today's section is the unprefixed one; items this skill rolls forward go into
+the Tomorrow callout, prefixed, and days beyond it stay in Future untouched.
 
 ## Step 2: Reconcile the Dashboard Against Real State
 
@@ -81,17 +75,23 @@ Then fix the boxes:
   `- [x] <client>: <PR title> ([#123](url))` under today's heading so the day's
   record is complete.
 
-## Step 3: Roll Open Items to the Next Working Day
+## Step 3: Roll Open Items into Tomorrow
 
 For each remaining `- [ ]` item belonging to the active client under today's
 heading:
 
-1. Compute the next working day (skip Saturday/Sunday):
-   `date -v+1d "+%A %-d %B"`, adding days until the weekday is Mon–Fri.
-2. Find that day inside the `> [!note]- Future` callout (`> ### <day>`), or
-   create it there in chronological order — never as an unprefixed section.
+1. The target is the day already sitting in the `> [!note]- Tomorrow` callout.
+   Do **not** compute a next working day here — the band's day is the answer,
+   and [the dashboard structure](../../../obsidian/rules/dashboard-structure.md)
+   defines how it was chosen. One definition of "tomorrow", in one place.
+2. If the Tomorrow callout is missing entirely — a dashboard predating this
+   structure — create it above the `> [!note]- Future` line, then continue. If
+   it is present but empty, create the day heading inside it, resolving the
+   date by that same rule: next Mon–Fri, unless the next weekend day already
+   has items.
 3. Move the open items into it with a `"> "` prefix added to each line (`- [ ] …`
-   → `> - [ ] …`); separating blank lines inside the block are a lone `>`.
+   → `> - [ ] …`); separating blank lines inside the block are a lone `>`. Days
+   beyond tomorrow are untouched — they stay in Future.
 4. **Drop any `🔄` claim marker as the item moves.** `/planner:next` writes it
    when a session takes a task, and a task rolled to tomorrow is no longer held
    by a session that has ended. Leaving it would make tomorrow's run skip work
@@ -106,12 +106,14 @@ Archiving is all-or-nothing per day, across all clients:
   the section in place and report which clients still need their own
   `/wrap:day` run.
 - If today's section has **zero** open items left, cut the entire dated section
-  from `Dashboard.md` and merge it into the month's work log — then perform
-  the **day shift**: promote the earliest day section out of the
-  `> [!note]- Future` callout (cut it, strip one `"> "` level from every line,
-  insert it above the callout) so the dashboard is staged for the next
-  morning. The run that archives the final client owns this; an empty Future
-  block means nothing to promote. `/planner:today` Step 2b stays the fallback.
+  from `Dashboard.md` and merge it into the month's work log — then perform the
+  **two-stage day shift**: promote the day in `> [!note]- Tomorrow` to today
+  (cut it, strip one `"> "` level from every line, insert it above the Tomorrow
+  callout), then move the earliest `> [!note]- Future` day into Tomorrow at the
+  same prefix depth. The dashboard is then staged for the next morning. The run
+  that archives the final client owns this; an empty Future leaves an empty
+  Tomorrow callout, which is correct and stays in the file.
+  `/planner:today` Step 2b stays the fallback.
 
 ### Where the archive lives
 

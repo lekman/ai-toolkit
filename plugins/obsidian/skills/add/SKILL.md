@@ -40,12 +40,21 @@ can be attributed rather than guessed at. A non-zero exit stops the skill.
 
 Default heading: `date "+%A %-d %B"` (e.g. `Saturday 26 April`).
 
-Today's section is the unprefixed one directly under `## Focus`; every other
-day lives inside the collapsed `> [!note]- Future` callout with every line
-`"> "`-prefixed (`> ### Thursday 20 August`, `> - [ ] …`, blank lines a lone
-`>`). With `--day` targeting a future day, locate or create its heading
-**inside** that callout in chronological order and write the new item with the
-`"> "` prefix.
+Three bands, so `--day` routes to one of three places — see
+[the dashboard structure](../../rules/dashboard-structure.md):
+
+| `--day` resolves to | Goes in                                                 | Prefix |
+| ------------------- | ------------------------------------------------------- | ------ |
+| today               | the unprefixed section                                  | none   |
+| tomorrow            | the `> [!note]- Tomorrow` callout                       | `"> "` |
+| any later day       | the `> [!note]- Future` callout, in chronological order | `"> "` |
+
+"Tomorrow" is the next working day, weekend-aware, and the Tomorrow band holds
+**exactly one** day: a `--day` that resolves past it belongs in Future, even if
+Tomorrow is empty. Never create a second day inside Tomorrow.
+
+Locate or create the day heading inside the right band and write the item with
+the band's prefix.
 
 For today: look for `### <heading>` or `## <heading>` inside `## Focus`. If
 neither exists (check the Future block too — a day found there gets promoted

@@ -58,7 +58,7 @@ With no filter, resolve the client from the working directory exactly as
 
 Same as [`/planner:today`](../today/SKILL.md) Step 2, including the weekend
 fall-forward to Monday and the promotion of a day found only inside the
-collapsed `> [!note]- Future` callout. Reuse that skill's rules rather than
+collapsed `> [!note]- Tomorrow` or `> [!note]- Future` callouts. Reuse that skill's rules rather than
 restating them; a day this skill cannot see is a task it will not pick.
 
 Run the [dashboard write protocol](../../../obsidian/rules/dashboard-write.md) before any edit: it refuses on

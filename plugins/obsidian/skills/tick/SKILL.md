@@ -13,14 +13,11 @@ Find an open `- [ ]` item that contains the supplied substring, rewrite it to `-
 
 Same as the `dashboard` skill.
 
-## Step 2: Refuse on iCloud Conflict
+## Step 2: Guard the Write
 
-```bash
-ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
-  echo "iCloud conflict copies present. Resolve before continuing."
-  exit 1
-}
-```
+Run the [dashboard write protocol](../../rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill.
 
 ## Step 3: Match
 

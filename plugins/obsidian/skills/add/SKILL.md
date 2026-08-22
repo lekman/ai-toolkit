@@ -30,9 +30,11 @@ times a day cannot afford a guess that disagrees with itself between sessions.
 Combine them with `--client` and `--day` freely; the tag goes at the front of
 the text, before any severity marker.
 
-## Step 2: Refuse on iCloud Conflict
+## Step 2: Guard the Write
 
-Same conflict-copy check as the other skills.
+Run the [dashboard write protocol](../../rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill.
 
 ## Step 3: Locate or Create the Day Heading
 

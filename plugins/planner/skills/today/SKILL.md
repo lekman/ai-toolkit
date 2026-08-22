@@ -19,14 +19,10 @@ VAULT=$(jq -r .vault "$CONFIG")
 DASHBOARD="$VAULT/$(jq -r .dashboard "$CONFIG")"
 ```
 
-Refuse on iCloud conflict copies (same guard as the dashboard skill):
-
-```bash
-ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
-  echo "iCloud conflict copies present. Resolve before continuing."
-  exit 1
-}
-```
+Run the [dashboard write protocol](../../../obsidian/rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill. Step 4c writes
+meetings onto the dashboard, so this applies to this skill too.
 
 ## Step 2: Resolve the Target Day (Weekend Fall-Forward)
 

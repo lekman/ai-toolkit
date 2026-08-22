@@ -28,8 +28,9 @@ ACTIVE=$(jq -r --arg cwd "$CWD" '
 [ -z "$ACTIVE" ] || [ "$ACTIVE" = "null" ] && ACTIVE=$(jq -r .default_client "$CONFIG")
 ```
 
-Refuse on iCloud conflict copies (`ls "$VAULT"/Dashboard\ *.md`), same as the
-obsidian skills.
+Run the [dashboard write protocol](../../../obsidian/rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill.
 
 Today's heading format: `date "+%A %-d %B"` (matches `### <Weekday> <day> <Month>`
 or `## <Weekday> <day> <Month>`).

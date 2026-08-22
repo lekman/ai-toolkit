@@ -115,7 +115,8 @@ Monday item id) or, if there is no ticket, the initiative's slug or title.
   not duplicate it under today.
 - **Not found**: append a new entry under today's heading in `## Focus`, in the
   active client's group, following `/obsidian:add`'s conventions (day heading
-  `date "+%A %-d %B"`, created if absent; refuse on an iCloud conflict copy).
+  `date "+%A %-d %B"`, created if absent). The dashboard edit follows the
+  [dashboard write protocol](../../../obsidian/rules/dashboard-write.md): guard, write, verify.
 
 **Entry shape**, in both cases:
 

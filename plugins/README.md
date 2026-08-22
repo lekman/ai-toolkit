@@ -39,7 +39,11 @@ Then invoke a skill, for example `/git:commit`.
   separate reviewing identity: one agent's goal is to complete the work, the
   other's is to verify the goal plan was met.
 - **obsidian**, [dashboard sync skills](obsidian/README.md) (add, tick,
-  wrapup, sync-todo, focus): resolve the active client by discovery from the
+  wrapup, sync-todo, focus) plus the
+  [write protocol](obsidian/rules/dashboard-write.md) every dashboard-writing
+  skill follows — refuse on an iCloud conflict copy, snapshot outside the
+  vault, then verify — because the vault has no version control and several
+  agents write to one file: resolve the active client by discovery from the
   working directory and read/write a `Dashboard.md`, without hardcoding any
   client name. Client identities live only in a local, uncommitted config.
 

@@ -17,7 +17,9 @@ Read `~/.claude/obsidian.json`. Resolve vault, dashboard path, and active client
 
 Exit 0 silently if `$(pwd)/.tmp/TODO.md` does not exist (this skill is a no-op in repos that don't use the TODO tracker).
 
-Refuse if any `Dashboard <n>.md` conflict copy exists in the vault: surface the conflict to the user instead of writing.
+Run the [dashboard write protocol](../../rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill.
 
 ## Step 3: Hash Short-Circuit
 

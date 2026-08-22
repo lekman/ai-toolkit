@@ -79,6 +79,10 @@ an iCloud conflict copy stops the run and says so. Never edit a dashboard that
 has a conflict copy beside it: two versions disagree and the write picks a
 winner silently.
 
+Run the [dashboard write protocol](../../../obsidian/rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill.
+
 ## What Moves
 
 Three levels, each following from the last:

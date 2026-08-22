@@ -61,7 +61,9 @@ fall-forward to Monday and the promotion of a day found only inside the
 collapsed `> [!note]- Future` callout. Reuse that skill's rules rather than
 restating them; a day this skill cannot see is a task it will not pick.
 
-Refuse on iCloud conflict copies, same guard as every other dashboard skill.
+Run the [dashboard write protocol](../../../obsidian/rules/dashboard-write.md) before any edit: it refuses on
+an iCloud conflict copy and snapshots the file first, so a later difference
+can be attributed rather than guessed at. A non-zero exit stops the skill.
 
 ## Step 3: Read the Client's Group
 

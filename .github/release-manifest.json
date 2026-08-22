@@ -4,5 +4,5 @@
   "packages/claude-foundry": "0.1.1",
   "packages/claude-local": "0.2.3",
   "packages/rag/core": "0.4.1",
-  "packages/rag/local": "0.4.0"
+  "packages/rag/local": "0.4.1"
 }

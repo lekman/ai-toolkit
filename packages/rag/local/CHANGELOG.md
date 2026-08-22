@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.4.0...rag-local@v0.4.1) (2026-08-22)
+
+
+### Fixes
+
+* **rag:** stop IQ reporting "not registered" when it could not check ([#51](https://github.com/lekman/ai-toolkit/issues/51)) ([7a80fad](https://github.com/lekman/ai-toolkit/commit/7a80fad320494c1527adddc3bd3225f668c33a6b))
+
 ## [0.4.0](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.3.2...rag-local@v0.4.0) (2026-08-22)
 
 

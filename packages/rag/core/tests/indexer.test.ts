@@ -125,6 +125,51 @@ describe("Indexer.scan", () => {
     },
   );
 
+  test.each([
+    ["an empty file", ""],
+    ["a frontmatter-only stub", "---\ntype: note\nclient: AcmeCo\n---\n"],
+    ["whitespace only", "   \n\n  \n"],
+  ])("%s is reported, not silently dropped", async (_label, content) => {
+    const { embeddings, reader, store } = setup();
+    reader.set("Clients/AcmeCo/Stub.md", content, 1);
+    const report = await Indexer.scan(reader, store, embeddings);
+
+    expect(report.skippedNoChunks).toEqual(["Clients/AcmeCo/Stub.md"]);
+    // It is not a read failure, and it is not a scanned file. Before this it
+    // was neither, which is how two notes went missing from a clean report.
+    expect(report.skippedUnreadable).toEqual([]);
+    expect(await store.listPaths("obsidian")).not.toContain(
+      "Clients/AcmeCo/Stub.md",
+    );
+  });
+
+  test("an excluded file is not reported as yielding no chunks", async () => {
+    const { embeddings, reader, store } = setup();
+    // toRecords also returns [] for exclusions. The scan checks exclusions
+    // before the read, so that can no longer land in this bucket — assert it,
+    // because the whole value of the field is that it means one thing.
+    reader.set("_Drafts/scratch.md", "# Draft\n\nreal body text", 1);
+    const report = await Indexer.scan(reader, store, embeddings);
+    expect(report.skippedNoChunks).toEqual([]);
+  });
+
+  test("a note that empties still has its stale chunks reconciled away", async () => {
+    const { embeddings, reader, store } = setup();
+    reader.set("Clients/AcmeCo/Fading.md", "# Fading\n\nbody text", 1);
+    await Indexer.scan(reader, store, embeddings);
+    expect(await store.listPaths("obsidian")).toContain(
+      "Clients/AcmeCo/Fading.md",
+    );
+
+    reader.set("Clients/AcmeCo/Fading.md", "", 2);
+    const report = await Indexer.scan(reader, store, embeddings);
+    expect(report.skippedNoChunks).toEqual(["Clients/AcmeCo/Fading.md"]);
+    expect(report.removedPaths).toEqual(["Clients/AcmeCo/Fading.md"]);
+    expect(await store.listPaths("obsidian")).not.toContain(
+      "Clients/AcmeCo/Fading.md",
+    );
+  });
+
   test("a vault that yields no files does not destroy the index", async () => {
     const { embeddings, reader, store } = setup();
     await Indexer.scan(reader, store, embeddings);

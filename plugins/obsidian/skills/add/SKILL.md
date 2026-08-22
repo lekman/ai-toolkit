@@ -1,13 +1,14 @@
 ---
 name: add
-description: Append a new task as a checkbox under today's heading in Dashboard.md's Focus section, prefixed with the active client. Use when the user says "/obsidian:add <text>", "add task X", or "remind me to X".
+description: Append a new task as a checkbox under today's heading in Dashboard.md's Focus section, inside the active client's group. Use when the user says "/obsidian:add <text>", "add task X", or "remind me to X".
 user-invocable: true
 allowed-tools: Read, Edit, Bash
 ---
 
 # Add a Task
 
-Append `- [ ] <client>: <text>` under today's heading in `## Focus`.
+Append `- [ ] <text>` under today's heading in `## Focus`, inside the active
+client's `####` group.
 
 ## Step 1: Resolve Config and Active Client
 
@@ -38,12 +39,43 @@ per `/planner:today` Step 2b rather than duplicated):
 - Insert `### <heading>` immediately after the `## Focus` heading (and the existing intro paragraph if present).
 - Heading level: use `###` to match the existing pattern for in-week days. The user may upgrade to `##` for a new week boundary manually.
 
-## Step 4: Append
+## Step 4: Locate the Client Group
 
-Insert `- [ ] <client>: <text>` as the last line under the day heading (before the next `##`-or-`###` heading, or end of `## Focus` if last).
+A day is divided into **client groups**: `#### **<Client>**` subheadings
+inside the day's section (e.g. `#### **Acme**`). The group is what assigns an
+item to a client — the item text itself carries no `<Client>:` prefix.
+The day's section therefore ends at the next heading of _2–3_ hashes; a
+`####` line is a group boundary inside it, not the end.
 
-If the user's text already starts with `<known-client>:` (matches a value in `obsidian.json#clients`), do not double-prefix: use the user's text verbatim.
+Under the day heading, find `#### **<client>**` (match on the client name,
+ignoring `#` and `*`, case-insensitively).
 
-## Step 5: Report
+- **Found**: that group is the target.
+- **Not found**: create it as the last group in the day, `#### **<client>**`
+  followed by a blank line. Creating a group here is correct — the operator
+  asked for this item. (`/planner:today` Step 4c is the opposite case: it
+  never invents a group, because a calendar feed is not an instruction.)
 
-One line: `added: - [ ] <client>: <text> (under <heading>)`.
+If the user's text starts with `<known-client>:` (matches a value in
+`obsidian.json#clients`), strip that prefix and use **that** client's group
+instead of the cwd-resolved one. The prefix is how the operator overrides
+discovery inline; it is never written to the file.
+
+## Step 5: Append
+
+Insert `- [ ] <text>` as the last checkbox line in the target group — before
+the next `####` heading, the next `##`-or-`###` heading, or the end of
+`## Focus`, whichever comes first.
+
+Never append after a trailing prose paragraph inside the group: a paragraph
+frames the run of checkboxes beneath it, so an item placed under the wrong
+paragraph reads as part of a topic it has nothing to do with. Where the group
+ends in prose, open a new checkbox run after it.
+
+Leave intention callouts (`> [!note] Intention: …`) and every other prose
+line untouched.
+
+## Step 6: Report
+
+One line: `added: - [ ] <text> (under <heading> › <client>)`. Say when the
+client group was created rather than found.

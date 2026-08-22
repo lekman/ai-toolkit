@@ -48,15 +48,26 @@ For each TODO row:
 
 - **Has Jira key**: find every dashboard `- [ ]` checkbox whose text contains the same key. (Match `> - [ ]` inside the collapsed `> [!note]- Future` callout too, and preserve that prefix on any edit; new items are appended under today's heading, which is the unprefixed section outside the block.)
   - **In `## Done`** + matches found → tick all matching checkboxes (`- [ ]` → `- [x]`).
-  - **In `## In Progress` or `## Backlog`** + no matching open or closed checkbox → append `- [ ] <client>: <row title> ([JIRA-KEY](https://<jira_host>/browse/JIRA-KEY))` under today's heading. Take `<jira_host>` from `~/.claude/obsidian.json#jira_host`, or reuse the URL pattern from existing TODO.md links if present.
+  - **In `## In Progress` or `## Backlog`** + no matching open or closed checkbox → append `- [ ] <row title> ([JIRA-KEY](https://<jira_host>/browse/JIRA-KEY))` under today's heading, inside the active client's `#### **<client>**` group (Step 6). Take `<jira_host>` from `~/.claude/obsidian.json#jira_host`, or reuse the URL pattern from existing TODO.md links if present.
   - **In `## In Progress`** + matching closed checkbox → no action (already done; don't reopen).
 - **No Jira key**: substring match on the row title against open dashboard checkbox text.
   - Exactly one match in Done-section: tick.
   - Zero or multiple matches: log "no/ambiguous match for `<title>`, skipped" and skip. Do not guess.
 
-## Step 6: Locate or Create Today's Heading
+## Step 6: Locate or Create Today's Heading and Client Group
 
 Today's heading: `date "+%A %-d %B"` (e.g. `Saturday 26 April`). Match `### <heading>` or `## <heading>` inside `## Focus`. If missing, insert `### <heading>` immediately after `## Focus` (and any intro paragraph).
+
+A day is divided into **client groups**: `#### **<Client>**` subheadings
+inside the day's section. An item belongs to the group it sits under, and its
+text carries no client name. So the day's section ends at the next heading of
+_2–3_ hashes; a `####` line is a group boundary inside it, not the end.
+
+Find `#### **<client>**` under the day heading; create it as the last group in
+the day if absent. New items go at the end of that group's checkbox run, never
+after a trailing prose paragraph — a paragraph frames the run beneath it, and
+an item placed under the wrong one reads as part of another topic. Same rule
+as `/obsidian:add` Steps 4 and 5.
 
 ## Step 7: Apply Edits
 
@@ -77,7 +88,7 @@ mv "$TMP" "$CACHE"
 One line per change:
 
 - `ticked: <client>: <title> (matched JIRA-KEY)`
-- `added: <client>: <title> ([JIRA-KEY](...))`
+- `added: <title> ([JIRA-KEY](...)) → <client>`
 - `skipped: no/ambiguous match for "<title>"`
 
 Silent on no-op (after the hash short-circuit, no further output).

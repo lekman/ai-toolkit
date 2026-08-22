@@ -4,13 +4,14 @@ The dashboard keeps only today expanded: today's section sits unprefixed under
 `## Focus`, while future days live inside a collapsed `> [!note]- Future`
 callout (every line `"> "`-prefixed) and the Initiatives body inside
 `> [!note]- All clients`. Skills that keep an Obsidian `Dashboard.md` in sync
-from Claude Code: add, tick,
-and list tasks, reconcile a repo's `.tmp/TODO.md`, and load the note you are
-working on. The active client is resolved by **discovery** (from your working
-directory), so no client name is ever written into a skill.
+from Claude Code: add and tick tasks, reconcile a repo's `.tmp/TODO.md`, and
+load the note you are working on. Reading the day back is
+[`/planner:today`](../planner/skills/today/SKILL.md), which owns the plate view
+and the calendar overlay. The active client is resolved by **discovery** (from
+your working directory), so no client name is ever written into a skill.
 
 Invoke as `/obsidian:dashboard`, `/obsidian:add`, `/obsidian:tick`,
-`/obsidian:today`, `/obsidian:wrapup`, `/obsidian:sync-todo`, `/obsidian:focus`.
+`/obsidian:wrapup`, `/obsidian:sync-todo`, `/obsidian:focus`.
 
 ## Privacy Model: Three Tiers, Only One Is Shareable
 
@@ -128,9 +129,15 @@ notes, not reading them. See the boundary notes in the
 ## Skills
 
 - **dashboard**: open `Dashboard.md` and report the active client.
-- **add**: append `- [ ] <client>: <text>` under today's heading.
+- **add**: append `- [ ] <text>` under today's heading, inside the active
+  client's `####` group.
 - **tick**: mark a task done by substring match, scoped to the active client.
-- **today**: list today's open tasks, filtered to the active client.
 - **wrapup**: end-of-session multi-select tick across all clients.
 - **sync-todo**: reconcile a repo's `.tmp/TODO.md` into the dashboard.
 - **focus**: load the most recently edited vault note as working context.
+
+Reading the day back lives in the planner plugin:
+[`/planner:today`](../planner/skills/today/SKILL.md). It reads the same
+`Dashboard.md`, groups by client, falls forward to Monday at the weekend, and
+overlays the calendar. This plugin used to carry its own `today`; the two
+drifted, so the read path is now in one place only.

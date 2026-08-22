@@ -34,7 +34,7 @@ Then invoke a skill, for example `/git:commit`.
   result. The plan document is the contract between the executing agent and a
   separate reviewing identity: one agent's goal is to complete the work, the
   other's is to verify the goal plan was met.
-- **obsidian**, [dashboard sync skills](obsidian/README.md) (add, tick, today,
+- **obsidian**, [dashboard sync skills](obsidian/README.md) (add, tick,
   wrapup, sync-todo, focus): resolve the active client by discovery from the
   working directory and read/write a `Dashboard.md`, without hardcoding any
   client name. Client identities live only in a local, uncommitted config.

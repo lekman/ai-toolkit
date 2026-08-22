@@ -26,7 +26,20 @@ ls "$VAULT"/Dashboard\ *.md 2>/dev/null && {
 
 Read `Dashboard.md`. Prefixed `> - [ ]` lines belong to other days inside the
 collapsed `> [!note]- Future` callout — never match or tick them. Under
-today's heading inside `## Focus`, find every `- [ ]` line whose text contains the supplied substring (case-insensitive). Default scope: lines starting with `<active-client>:`. `--all` widens to every client.
+today's heading inside `## Focus`, find every `- [ ]` line whose text contains
+the supplied substring (case-insensitive).
+
+**Scope is a client group, not a text prefix.** A day is divided into
+`#### **<Client>**` subheadings, and an item belongs to the group it sits
+under; the item text carries no client name. The day's section ends at the
+next heading of _2–3_ hashes — a `####` line is a group boundary inside the
+day, not the end of it.
+
+- Default: items under the active client's `#### **<client>**` group.
+- `--all`: every group under today's heading.
+
+Only where a day has no `####` groups at all does the older
+`- [ ] <Client>: …` text prefix apply as a fallback.
 
 Resolution:
 

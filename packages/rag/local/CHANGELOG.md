@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.3.2...rag-local@v0.4.0) (2026-08-22)
+
+
+### Features
+
+* **rag:** exclude scratch folders and guard the reconcile ([#43](https://github.com/lekman/ai-toolkit/issues/43)) ([c2521be](https://github.com/lekman/ai-toolkit/commit/c2521be8042c431c9d1b0cf2527c6c0c6e1dc377))
+
 ## [0.3.2](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.3.1...rag-local@v0.3.2) (2026-08-19)
 
 

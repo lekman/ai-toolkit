@@ -67,6 +67,7 @@ export class Indexer {
   ): Promise<ScanReport> {
     const files = await reader.listFiles();
     const seenPaths = new Set<string>();
+    const skippedNoChunks: string[] = [];
     const skippedUnreadable: string[] = [];
     let embedded = 0;
     let scannedFiles = 0;
@@ -93,7 +94,15 @@ export class Indexer {
         content,
         file.modifiedAt,
       );
-      if (records.length === 0) continue;
+      if (records.length === 0) {
+        // Readable, but nothing to index. Exclusions are checked above, so
+        // this branch now means exactly one thing and is worth naming:
+        // reaching it silently is what made two notes look indexed when they
+        // were not. Deliberately NOT added to seenPaths — a note that
+        // genuinely empties should have its old chunks reconciled away.
+        skippedNoChunks.push(file.relPath);
+        continue;
+      }
       scannedFiles += 1;
       seenPaths.add(file.relPath);
 
@@ -178,6 +187,7 @@ export class Indexer {
       ...(refusedRemoval ? { refusedRemoval } : {}),
       removedPaths,
       scannedFiles,
+      skippedNoChunks,
       skippedUnreadable,
       upsertedFiles,
     };

@@ -7,13 +7,14 @@ import type {
 import { Indexer, SearchHandlers } from "@lekman/rag-core";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { accessSync, constants, existsSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
 import type { CheckResult, RagConfig } from "../config";
-import type { IqProbes } from "./iq";
+import type { ClaudeMcpState, IqProbes } from "./iq";
 import type { ReportKind } from "./types";
 
 import { Config, ConfigStore } from "../config";
@@ -22,6 +23,24 @@ import { Oq, OQ_FIXTURE_DIR } from "./oq";
 import { Report } from "./report";
 
 const exec = promisify(execFile);
+
+/**
+ * Where `claude` is installed, beyond whatever PATH happens to carry.
+ *
+ * The probe used to trust PATH. Over non-interactive SSH and from launchd it
+ * does not include the user-local bin directory, so the exec failed and the
+ * check reported the server unregistered on a machine where it was registered
+ * and connected.
+ */
+const CLAUDE_BINARIES = [
+  "claude",
+  join(homedir(), ".local/bin/claude"),
+  "/opt/homebrew/bin/claude",
+  "/usr/local/bin/claude",
+];
+
+/** Where `claude mcp add --scope user` records the server. */
+const CLAUDE_USER_CONFIG = join(homedir(), ".claude.json");
 
 /** Gathers IQ probes and drives the OQ flows. Thin wrappers — logic in Iq/Oq. */
 export class QualificationRunner {
@@ -34,6 +53,43 @@ export class QualificationRunner {
       return Number.isNaN(kib) ? 0 : kib * 1024;
     } catch {
       return 0;
+    }
+  }
+
+  /**
+   * How far the local stdio MCP registration can be verified here.
+   *
+   * Running the CLI is the stronger evidence — it reports the server actually
+   * connected, not merely present in a file — so it stays the primary path.
+   * Reading the config is the degraded fallback for when no `claude` can be
+   * found, and it reports `configured` rather than a pass or a failure,
+   * because a config entry proves registration and not connectivity.
+   *
+   * The lookup paths are parameters so a test can drive every branch; the
+   * defaults are what production uses.
+   */
+  static async probeClaudeMcp(
+    binaries: readonly string[] = CLAUDE_BINARIES,
+    configPath: string = CLAUDE_USER_CONFIG,
+  ): Promise<ClaudeMcpState> {
+    for (const binary of binaries) {
+      const ran = await exec(binary, ["mcp", "get", "rag"]).then(
+        () => "connected" as const,
+        (error: NodeJS.ErrnoException) =>
+          // ENOENT is "no such binary" — keep looking. Any other failure means
+          // the CLI ran and rejected, which is a real answer about rag.
+          error.code === "ENOENT" ? null : ("absent" as const),
+      );
+      if (ran) return ran;
+    }
+    try {
+      const raw: unknown = JSON.parse(readFileSync(configPath, "utf8"));
+      const servers = (raw as { mcpServers?: Record<string, unknown> })
+        .mcpServers;
+      if (!servers) return "unknown";
+      return "rag" in servers ? "configured" : "absent";
+    } catch {
+      return "unknown";
     }
   }
 
@@ -80,10 +136,7 @@ export class QualificationRunner {
     };
 
     return {
-      claudeMcpRegistered: await exec("claude", ["mcp", "get", "rag"]).then(
-        () => true,
-        () => false,
-      ),
+      claudeMcp: await QualificationRunner.probeClaudeMcp(),
       configProblems: config
         ? Config.validate(config)
         : ["config.json not found"],

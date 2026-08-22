@@ -1,11 +1,21 @@
 import { describe, expect, test } from "bun:test";
+import { randomUUID } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import type { IqProbes } from "../src/qualification";
 
-import { decodeWaitStatus, Iq, Oq, Report } from "../src/qualification";
+import {
+  decodeWaitStatus,
+  Iq,
+  Oq,
+  QualificationRunner,
+  Report,
+} from "../src/qualification";
 
 const healthyProbes: IqProbes = {
-  claudeMcpRegistered: true,
+  claudeMcp: "connected",
   configProblems: [],
   launchdExit: { scan: 0, server: 0, watch: 0 },
   launchdLoaded: { scan: true, server: true, watch: true },
@@ -68,10 +78,42 @@ describe("Iq.evaluate", () => {
     expect(agents?.detail).toBe("scan: loaded, watch: loaded, server: loaded");
   });
 
+  test.each([
+    // state, passes?, what the operator must be able to tell them apart by
+    ["connected", true, "registered and connected"],
+    ["configured", true, "not runnable here"],
+    ["unknown", true, "could not verify"],
+    ["absent", false, "not registered"],
+  ] as const)(
+    "MCP state %s -> pass=%s, and says why",
+    (claudeMcp, passes, phrase) => {
+      const check = Iq.evaluate({ ...healthyProbes, claudeMcp }).find(
+        (result) => result.name === "MCP registration",
+      );
+      expect(check?.pass).toBe(passes);
+      expect(check?.detail).toContain(phrase);
+    },
+  );
+
+  test("an unverifiable probe never reads as a failure", () => {
+    // The regression this guards: `claude` is not on PATH over non-interactive
+    // SSH, the exec failed, and IQ reported the server unregistered on a
+    // machine where it was registered and connected. A false FAIL teaches the
+    // operator to ignore FAILs, which is worse than having no check.
+    const unknown = Iq.evaluate({ ...healthyProbes, claudeMcp: "unknown" });
+    const absent = Iq.evaluate({ ...healthyProbes, claudeMcp: "absent" });
+    expect(Report.allPass(unknown)).toBe(true);
+    expect(Report.allPass(absent)).toBe(false);
+    // ...but it must not pass *quietly* — the evidence has to say so.
+    expect(
+      unknown.find((r) => r.name === "MCP registration")?.detail,
+    ).not.toContain("registered and connected");
+  });
+
   test("each failing probe fails its check with a remediation", () => {
     const results = Iq.evaluate({
       ...healthyProbes,
-      claudeMcpRegistered: false,
+      claudeMcp: "absent",
       voyageKeyPresent: false,
       voyageStatus: null,
     });
@@ -133,5 +175,58 @@ describe("Report.render", () => {
     expect(markdown).toContain("**FAIL** (1/2 checks)");
     expect(markdown).toContain("| ✅ | good | ok |");
     expect(markdown).toContain("| ❌ | bad | broken — remediation: fix it |");
+  });
+});
+
+describe("QualificationRunner.probeClaudeMcp", () => {
+  const configWith = (body: string): string => {
+    const path = join(tmpdir(), `claude-${randomUUID()}.json`);
+    writeFileSync(path, body);
+    return path;
+  };
+
+  test("runs the CLI when one of the candidates resolves", async () => {
+    // `true` exits 0 for any arguments, standing in for a working `claude`.
+    const state = await QualificationRunner.probeClaudeMcp(
+      ["/nonexistent/claude", "/usr/bin/true"],
+      "/nonexistent/config.json",
+    );
+    expect(state).toBe("connected");
+  });
+
+  test("a CLI that runs and rejects is a real negative, not a missing binary", async () => {
+    // `false` exits 1: the CLI answered, and the answer was no.
+    const state = await QualificationRunner.probeClaudeMcp(
+      ["/usr/bin/false"],
+      configWith('{"mcpServers":{"rag":{}}}'),
+    );
+    expect(state).toBe("absent");
+  });
+
+  test("no runnable CLI falls back to the config and reports configured", async () => {
+    const state = await QualificationRunner.probeClaudeMcp(
+      ["/nonexistent/claude"],
+      configWith('{"mcpServers":{"rag":{"type":"stdio"}}}'),
+    );
+    expect(state).toBe("configured");
+  });
+
+  test("no runnable CLI and no rag entry is absent", async () => {
+    const state = await QualificationRunner.probeClaudeMcp(
+      ["/nonexistent/claude"],
+      configWith('{"mcpServers":{"other":{}}}'),
+    );
+    expect(state).toBe("absent");
+  });
+
+  test.each([
+    ["an unreadable config", "/nonexistent/config.json"],
+    ["a config with no mcpServers key", null],
+  ])("%s is unknown, never a failure", async (_label, path) => {
+    const state = await QualificationRunner.probeClaudeMcp(
+      ["/nonexistent/claude"],
+      path ?? configWith("{}"),
+    );
+    expect(state).toBe("unknown");
   });
 });

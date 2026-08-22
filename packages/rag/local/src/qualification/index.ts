@@ -1,5 +1,5 @@
 export { decodeWaitStatus, Iq } from "./iq";
-export type { IqProbes, WaitStatus } from "./iq";
+export type { ClaudeMcpState, IqProbes, WaitStatus } from "./iq";
 export { Oq, OQ_FIXTURE_DIR } from "./oq";
 export { QualificationRunner } from "./qualification.system";
 export { Report } from "./report";

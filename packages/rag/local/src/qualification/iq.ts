@@ -2,10 +2,36 @@ import { constants } from "node:os";
 
 import type { CheckResult } from "../config";
 
+/** How far the local stdio MCP registration could be verified. */
+export type ClaudeMcpState =
+  /** The config was readable and holds no rag entry. The only real negative. */
+  | "absent"
+  /** Present in the CLI config, but the CLI could not be run to confirm it. */
+  | "configured"
+  /** `claude mcp get rag` ran and reported the server connected. */
+  | "connected"
+  /** Neither the CLI nor its config could be read — no answer either way. */
+  | "unknown";
+
+const MCP_STATE_DETAIL: Record<ClaudeMcpState, string> = {
+  absent: "rag not registered (checked the CLI config)",
+  configured: "rag in the CLI config; `claude` not runnable here to confirm it",
+  connected: "claude mcp: rag registered and connected",
+  unknown: "could not verify — no runnable `claude` and no readable CLI config",
+};
+
 /** Probe outcomes gathered by the system layer, evaluated by Iq. */
 export interface IqProbes {
-  /** Whether `claude mcp get rag` succeeded. */
-  claudeMcpRegistered: boolean;
+  /**
+   * How the local stdio MCP registration verified.
+   *
+   * Deliberately not a boolean. The probe used to shell out to `claude`, and
+   * over non-interactive SSH or from launchd that binary is not on PATH — so
+   * the exec failed and the check reported "rag not registered", asserting a
+   * fact about the system when what actually happened is that the probe could
+   * not run. "Not registered" and "could not check" need different answers.
+   */
+  claudeMcp: ClaudeMcpState;
   /** Config validation problems (empty when valid). */
   configProblems: string[];
   /** Whether the storage dir exists and is writable. */
@@ -163,11 +189,13 @@ export class Iq {
           "Security > Full Disk Access, then `rag install` to rebootstrap.",
       },
       {
-        detail: probes.claudeMcpRegistered
-          ? "claude mcp: rag registered"
-          : "rag not registered",
+        detail: MCP_STATE_DETAIL[probes.claudeMcp],
         name: "MCP registration",
-        pass: probes.claudeMcpRegistered,
+        // Only `absent` is a real negative: the config was readable and rag
+        // was not in it. `unknown` means the probe could not reach an answer,
+        // which must not read as a failure — that is the false FAIL this
+        // check used to produce. It says so in the detail instead.
+        pass: probes.claudeMcp !== "absent",
         remediation:
           "run `rag install`, or `claude mcp add --scope user rag -- rag mcp`",
       },

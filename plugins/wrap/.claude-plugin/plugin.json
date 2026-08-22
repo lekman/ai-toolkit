@@ -1,5 +1,5 @@
 {
   "name": "wrap",
   "description": "End-of-day, end-of-session and agent-handover wrap skills: reconcile the Obsidian dashboard and prune git at day end; extract learnings for the next session; write a vault handover an agent with no context can act on",
-  "version": "0.5.2"
+  "version": "0.6.0"
 }

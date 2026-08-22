@@ -1,9 +1,13 @@
 # Obsidian
 
-The dashboard keeps only today expanded: today's section sits unprefixed under
-`## Focus`, while future days live inside a collapsed `> [!note]- Future`
-callout (every line `"> "`-prefixed) and the Initiatives body inside
-`> [!note]- All clients`. Skills that keep an Obsidian `Dashboard.md` in sync
+The dashboard holds three bands under `## Focus`: today unprefixed, exactly one
+day inside a collapsed `> [!note]- Tomorrow` callout, and every later day inside
+`> [!note]- Future` (every line `"> "`-prefixed), with the Initiatives body
+inside `> [!note]- All clients`. Tomorrow is its own band because planning
+tomorrow is a different act from planning the week, and it stays in the file
+even when empty. [`rules/dashboard-structure.md`](rules/dashboard-structure.md)
+is the canonical description; twelve skills reference it rather than each
+restating where a day lives. Skills that keep an Obsidian `Dashboard.md` in sync
 from Claude Code: add and tick tasks, reconcile a repo's `.tmp/TODO.md`, and
 load the note you are working on. Reading the day back is
 [`/planner:today`](../planner/skills/today/SKILL.md), which owns the plate view

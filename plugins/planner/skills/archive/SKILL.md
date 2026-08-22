@@ -38,18 +38,12 @@ volume is the thing this skill is trying to reduce.
 
 ## The Future block
 
-The dashboard keeps exactly one day expanded. Today's day section sits
-directly under `## Focus`, unprefixed — today _is_ the section outside the
-blocks; there is no "Now" heading. Every other day (and `### Unscheduled — no
-day assigned`) lives inside a collapsed callout that starts `> [!note]- Future`,
-in chronological order, and every line inside it carries a `"> "` prefix: day
-headings read `> ### Thursday 20 August`, checkboxes `> - [ ] …`, client
-intention callouts nest as `> > [!note]`, and a blank line inside the block is
-a lone `>` — an unprefixed blank line ends the callout and spills the days
-below it onto the page. The `## Initiatives` body sits in its own collapsed
-`> [!note]- All clients` callout under the same prefix rules. Reading or
-writing a non-today day therefore means tolerating — and, when writing,
-producing — the `"> "` prefix.
+The dashboard holds three bands under `## Focus`: today unprefixed, exactly
+one day in a collapsed `> [!note]- Tomorrow` callout, and every later day in
+a collapsed `> [!note]- Future` callout. See
+[the dashboard structure](../../../obsidian/rules/dashboard-structure.md) for the prefix discipline, what
+"tomorrow" resolves to, and the two-stage day shift. Reading a non-today day
+means stripping one `"> "` level; writing one means producing it.
 
 For this skill that means: day headings inside the block are `> ###`-prefixed
 and their checkboxes are `> - [x] …`. When moving lines into the work log,
@@ -62,11 +56,19 @@ lone-`>` blank lines consistent so the block does not split.
 
 Archiving is what turns the page. When this operation removes the day's
 **last** open section — zero open items across all clients, the all-or-nothing
-rule above — it also promotes the next day into focus: take the **earliest**
-day section inside the `> [!note]- Future` callout, cut it out, strip exactly
-one `"> "` level from every line (`> ### …` → `### …`, `> > [!note]` →
-`> [!note]`, lone `>` → blank line), and insert it above the `> [!note]- Future`
-line. The dashboard is then staged for the next morning.
+rule above — it promotes the next day into focus, in **two stages**:
+
+1. **Tomorrow → today.** Cut the day section inside `> [!note]- Tomorrow`,
+   strip exactly one `"> "` level from every line (`> ### …` → `### …`,
+   `> > [!note]` → `> [!note]`, lone `>` → blank line), and insert it above the
+   `> [!note]- Tomorrow` line.
+2. **Earliest Future day → Tomorrow.** Cut it out of `> [!note]- Future` and
+   re-insert it inside the Tomorrow callout at the same prefix depth — no
+   stripping, it stays one level deep.
+
+Both stages run, in that order, or the bands end up holding the wrong days. An
+empty Future leaves an empty Tomorrow callout, which is correct and is left in
+place. The dashboard is then staged for the next morning.
 
 - Only the run that archives the **final** client performs the shift; a run
   that leaves other clients' items open changes nothing.

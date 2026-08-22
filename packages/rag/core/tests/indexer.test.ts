@@ -19,6 +19,8 @@ const setup = () => {
   return { embeddings, reader, store };
 };
 
+type RemovalRefusalReason = "mass-removal" | "vault-empty" | undefined;
+
 describe("Indexer.scan", () => {
   test("indexes eligible files only; excluded paths produce zero chunks", async () => {
     const { embeddings, reader, store } = setup();
@@ -96,6 +98,63 @@ describe("Indexer.scan", () => {
     expect(await store.listPaths("obsidian")).not.toContain(
       "_Drafts/half-written.md",
     );
+  });
+
+  const refusalCases: [number, number, number, RemovalRefusalReason][] = [
+    // indexedPaths, wouldRemove, filesFound, expected reason
+    [626, 626, 0, "vault-empty"],
+    [626, 500, 7, "mass-removal"],
+    [626, 314, 400, "mass-removal"],
+    // exactly half is not "more than half" — the boundary reconciles
+    [100, 50, 60, undefined],
+    [100, 51, 60, "mass-removal"],
+    // below the floor a large share is normal, not a symptom
+    [19, 19, 3, undefined],
+    // an empty index cannot be destroyed, and a quiet scan is not a refusal
+    [0, 0, 0, undefined],
+    [626, 0, 626, undefined],
+    [626, 3, 623, undefined],
+  ];
+
+  test.each(refusalCases)(
+    "removalRefusal(%i indexed, %i to remove, %i found) -> %s",
+    (indexed, wouldRemove, found, reason) => {
+      expect(Indexer.removalRefusal(indexed, wouldRemove, found)?.reason).toBe(
+        reason,
+      );
+    },
+  );
+
+  test("a vault that yields no files does not destroy the index", async () => {
+    const { embeddings, reader, store } = setup();
+    await Indexer.scan(reader, store, embeddings);
+    const before = await store.listPaths("obsidian");
+    expect(before.length).toBeGreaterThan(0);
+
+    // The 2026-08-22 shape: the configured path still resolves, but the vault
+    // behind it is gone.
+    reader.files.clear();
+    const report = await Indexer.scan(reader, store, embeddings);
+
+    expect(report.refusedRemoval).toEqual({
+      indexedPaths: before.length,
+      reason: "vault-empty",
+      wouldRemove: before.length,
+    });
+    expect(report.removedPaths).toEqual([]);
+    // The whole point: the index survived.
+    expect(await store.listPaths("obsidian")).toEqual(before);
+  });
+
+  test("a single genuine deletion still reconciles", async () => {
+    const { embeddings, reader, store } = setup();
+    await Indexer.scan(reader, store, embeddings);
+    // Positive control. Without this, "nothing was deleted" would pass even
+    // if the guard had jammed the reconcile shut entirely.
+    reader.files.delete("Personal/Projects/Workshop.md");
+    const report = await Indexer.scan(reader, store, embeddings);
+    expect(report.refusedRemoval).toBeUndefined();
+    expect(report.removedPaths).toEqual(["Personal/Projects/Workshop.md"]);
   });
 
   test("a path that becomes excluded has its old chunks reconciled away", async () => {

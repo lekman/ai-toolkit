@@ -17,4 +17,22 @@ export interface ScanReport {
    * rewriting rows it already holds.
    */
   upsertedFiles: number;
+  /**
+   * Set when reconcile REFUSED to delete. Nothing was removed; the index is
+   * intact and stale rather than reconciled. Present only on refusal, so
+   * `report.refusedRemoval` is the whole check.
+   *
+   * A reconcile trusts the file list to describe the vault. When the vault
+   * path is wrong — repointed, unmounted, or being deleted underneath the
+   * scanner — the list is honestly empty and the reconcile faithfully
+   * destroys the index. Being stale is recoverable; being empty is not.
+   */
+  refusedRemoval?: {
+    /** Paths currently in the index. */
+    indexedPaths: number;
+    /** Why the removal was refused, for the log line and the operator. */
+    reason: "vault-empty" | "mass-removal";
+    /** How many paths the reconcile would have deleted. */
+    wouldRemove: number;
+  };
 }

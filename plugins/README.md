@@ -57,6 +57,10 @@ Then invoke a skill, for example `/git:commit`.
   to the [handover contract](wrap/HANDOVER.md): constraints before tasks, each
   task with its verification command, what is already done, and which earlier
   beliefs turned out wrong. See [wrap/README.md](wrap/README.md).
+- **planner**, [pull](planner/skills/pull/SKILL.md): tomorrow's next task moved
+  into today and started, for the moment today's list is clear and there is
+  time left. Delegates choosing and starting to `next`; it owns only the move,
+  and refuses while today still has open work.
 - **planner**, [next](planner/skills/next/SKILL.md): the next task for one
   client, chosen and started in one command with no discussion. The dashboard's
   hand-maintained order is the priority signal, so it takes the first open item,

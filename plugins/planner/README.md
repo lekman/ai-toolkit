@@ -49,6 +49,11 @@ first, retrieval and calendars as supplements only.
   `[Details]` plan ahead of it, and skipping anything tagged `🚧` as blocked. Claims the item before working, because several
   agents share one dashboard. Pass `confirm`, `ask` or `dry-run` — all the same
   thing — to be told the choice and the reasoning instead of it starting.
+- `/planner:pull`: when today's list is done and there is still working time,
+  take the next task out of the Tomorrow band, move it into today, and start
+  it. Same selection rules and argument contract as `/planner:next`, which it
+  calls rather than reimplements. Refuses while today still has unfinished
+  work, and never reaches into Future — spreading days is `/planner:triage`.
 - `/planner:plan`: create or update the current repo's master-plan note in
   the Obsidian vault. State (backlog tables, status balls) lives only in the
   vault; repos keep detail pages. Client and tracker (Jira / GitHub / Monday /

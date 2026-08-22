@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.4.0...rag-core@v0.4.1) (2026-08-22)
+
+
+### Fixes
+
+* **rag:** report files that read fine but yield no chunks ([#49](https://github.com/lekman/ai-toolkit/issues/49)) ([6c1d5c8](https://github.com/lekman/ai-toolkit/commit/6c1d5c8d39dc1d14e61d8d81a3f98f3a28803ca3))
+
 ## [0.4.0](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.3.2...rag-core@v0.4.0) (2026-08-22)
 
 

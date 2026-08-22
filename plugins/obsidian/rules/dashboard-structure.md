@@ -75,12 +75,19 @@ being asked.
 
 ## Markers
 
-| Marker        | Meaning                                       | Written by                |
-| ------------- | --------------------------------------------- | ------------------------- |
-| `🧾`          | administrative job — clears fast, taken first | `/obsidian:add --admin`   |
-| `🚧`          | blocked, waiting on someone else              | `/obsidian:add --blocked` |
-| `🔄`          | claimed by a running session                  | `/planner:next`           |
-| `🔴 🟡 🟢 ⚪` | defect **severity**, not priority             | the operator              |
+| Marker        | Meaning                                          | Written by                |
+| ------------- | ------------------------------------------------ | ------------------------- |
+| `🧾`          | administrative job — clears fast, taken first    | `/obsidian:add --admin`   |
+| `🚧`          | blocked, waiting on someone else                 | `/obsidian:add --blocked` |
+| `🔄`          | claimed by a running session                     | `/planner:next`           |
+| `📅 <date>`   | an externally fixed deadline, **not** a priority | `/obsidian:add --due`     |
+| `🔴 🟡 🟢 ⚪` | defect **severity**, not priority                | the operator              |
+
+A `📅` date says a deadline is externally fixed. It is **not** a priority
+signal: within a day, position still decides order, and only `/planner:triage`
+reads the date, to spread a week by delivery order. A date invented to express
+urgency makes the one marker that means "this genuinely cannot slip"
+worthless.
 
 State that changes what a command does is **tagged, never inferred**. A command
 run several times a day cannot re-read prose and decide differently than it did

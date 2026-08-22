@@ -13,6 +13,25 @@ your working directory), so no client name is ever written into a skill.
 Invoke as `/obsidian:dashboard`, `/obsidian:add`, `/obsidian:tick`,
 `/obsidian:wrapup`, `/obsidian:sync-todo`, `/obsidian:focus`.
 
+## Every Write Is Guarded and Snapshotted
+
+The vault has no version control, and several agents write to one dashboard —
+a local session, a session on another machine, and you in Obsidian. Writes are
+last-writer-wins with no merge and no warning, so a difference noticed
+afterwards cannot be attributed: yours, another session's, or an edit that was
+lost.
+
+[`rules/dashboard-write.md`](rules/dashboard-write.md) is the protocol every
+writing skill follows, and [`scripts/dashboard-guard.sh`](scripts/dashboard-guard.sh)
+is what they run before touching the file. It refuses when an iCloud conflict
+copy exists, copies the dashboard to `~/.claude/dashboard-snapshots/` — outside
+the vault, so the snapshot cannot sync or become a conflict copy itself — and
+prunes anything older than 14 days.
+
+The rule is written once and referenced by all nine writing skills. The same
+rule copied into nine files is nine rules that drift, which is how the client
+prefix outlived the vault that stopped using it.
+
 ## Privacy Model: Three Tiers, Only One Is Shareable
 
 This plugin is built so that client identities never leave your machine:

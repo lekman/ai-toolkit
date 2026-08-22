@@ -13,6 +13,8 @@
  *   rag mcp                                          stdio MCP server (used by Claude Code)
  */
 
+import type { ScanReport } from "@lekman/rag-core";
+
 import {
   Exclusions,
   findTailnetAddress,
@@ -47,6 +49,28 @@ const requireConfig = () => {
     process.exit(2);
   }
   return config;
+};
+
+/**
+ * Say out loud that a reconcile refused to delete.
+ *
+ * The report already carries `refusedRemoval`, but a field inside a JSON blob
+ * is exactly the shape of miss this guard exists to prevent: the run looks
+ * successful, and the index is quietly stale. stderr is the one channel the
+ * launchd logs and an interactive run both surface.
+ */
+const warnOnRefusal = (report: ScanReport): void => {
+  const refusal = report.refusedRemoval;
+  if (!refusal) return;
+  const detail =
+    refusal.reason === "vault-empty"
+      ? "the vault yielded no files at all"
+      : `it would have removed ${String(refusal.wouldRemove)} of ${String(refusal.indexedPaths)} indexed paths`;
+  console.error(
+    `REFUSED to reconcile: ${detail}.\n` +
+      "Nothing was deleted — the index is intact but now stale.\n" +
+      "Check that vaultPath still points at the vault, then scan again.",
+  );
 };
 
 const requireEmbeddings = (): VoyageEmbeddings => {
@@ -243,6 +267,7 @@ switch (command) {
       requireEmbeddings(),
     );
     console.log(JSON.stringify(report, null, 2));
+    warnOnRefusal(report);
     break;
   }
 
@@ -251,6 +276,7 @@ switch (command) {
     const stop = new WatchRunner(
       (report) => {
         console.log(`[${new Date().toISOString()}] ${JSON.stringify(report)}`);
+        warnOnRefusal(report);
       },
       3000,
       Exclusions.shouldTriggerScan,

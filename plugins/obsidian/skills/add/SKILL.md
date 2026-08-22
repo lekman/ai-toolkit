@@ -16,6 +16,11 @@ Same as the `dashboard` skill. Flags:
 
 - `--client X`: override the cwd-resolved client
 - `--day <date-string>`: append under a different day's heading (default: today). Date string uses the same format as the dashboard, e.g. `Sunday 27 April` or `Monday 28 April (Stockholm, on-site)`.
+- `--admin`: tag the item as an administrative job by prefixing the text with
+  `🧾`. [`/planner:next`](../../../planner/skills/next/SKILL.md) clears tagged
+  items ahead of project work, because they finish fast and a morning spent on
+  them is a morning not spent on work that needs a whole head. The tag is the
+  only signal for this: nothing infers "administrative" from the item text.
 
 ## Step 2: Refuse on iCloud Conflict
 

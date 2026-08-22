@@ -53,6 +53,12 @@ Then invoke a skill, for example `/git:commit`.
   to the [handover contract](wrap/HANDOVER.md): constraints before tasks, each
   task with its verification command, what is already done, and which earlier
   beliefs turned out wrong. See [wrap/README.md](wrap/README.md).
+- **planner**, [next](planner/skills/next/SKILL.md): the next task for one
+  client, chosen and started in one command with no discussion. The dashboard's
+  hand-maintained order is the priority signal, so it takes the first open item,
+  moving only `🧾` admin jobs and items carrying no `[Details]` plan ahead of it.
+  Claims the item before working, since several agents share one dashboard, and
+  refines an unapproved plan to executable rather than executing it.
 - **planner**, [today](planner/skills/today/SKILL.md): the day's open items
   across all clients from the dashboard, tracker-first (never calendars or a
   retrieval index first), with weekend fall-forward to Monday and clients

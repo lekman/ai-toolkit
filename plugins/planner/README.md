@@ -54,6 +54,13 @@ first, retrieval and calendars as supplements only.
   it. Same selection rules and argument contract as `/planner:next`, which it
   calls rather than reimplements. Refuses while today still has unfinished
   work, and never reaches into Future — spreading days is `/planner:triage`.
+  The day view reads Office 365 through the **Microsoft 365 connector** where the
+  session has one — over the session's own authenticated connection, so no client
+  secret, refresh token, or credential cache sits on disk. The local OAuth CLI
+  remains a fallback for headless and cron runs, where an interactively
+  authenticated connector may not be present. The connector is found by tool
+  name, never by server id: that id is a per-install UUID.
+
 - `/planner:plan`: create or update the current repo's master-plan note in
   the Obsidian vault. State (backlog tables, status balls) lives only in the
   vault; repos keep detail pages. Client and tracker (Jira / GitHub / Monday /

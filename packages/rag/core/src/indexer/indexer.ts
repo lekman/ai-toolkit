@@ -4,7 +4,7 @@ import type { ISourceReader } from "../obsidian";
 import type { IChunkStore } from "../store";
 import type { ScanReport } from "./types";
 
-import { OBSIDIAN_SOURCE, ObsidianSource } from "../obsidian";
+import { Exclusions, OBSIDIAN_SOURCE, ObsidianSource } from "../obsidian";
 
 /**
  * Hours of store version history kept after a scan. The index is a derived
@@ -55,6 +55,12 @@ export class Indexer {
     let upsertedFiles = 0;
 
     for (const file of files) {
+      // Exclusion first, before the read. toRecords also excludes, but it runs
+      // after readFile, so an excluded file that is *also* unreadable was
+      // reported in skippedUnreadable — noise that reads like a real miss.
+      // Deliberately not added to seenPaths: a path that becomes excluded must
+      // still have its old chunks reconciled away.
+      if (Exclusions.check(file.relPath) !== null) continue;
       const content = await reader.readFile(file.relPath);
       if (content === null) {
         // Unavailable content (e.g. an iCloud-evicted stub): skip, and keep

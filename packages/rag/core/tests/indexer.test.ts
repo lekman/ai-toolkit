@@ -85,6 +85,28 @@ describe("Indexer.scan", () => {
       await store.readPath("obsidian", "Clients/AcmeCo/Commercials.md"),
     ).not.toEqual([]);
   });
+
+  test("an excluded file is never read, so it cannot be reported unreadable", async () => {
+    const { embeddings, reader, store } = setup();
+    // Unreadable AND excluded. Before the exclusion check moved ahead of the
+    // read, this surfaced in skippedUnreadable and read like a real miss.
+    reader.set("_Drafts/half-written.md", null, 1);
+    const report = await Indexer.scan(reader, store, embeddings);
+    expect(report.skippedUnreadable).toEqual([]);
+    expect(await store.listPaths("obsidian")).not.toContain(
+      "_Drafts/half-written.md",
+    );
+  });
+
+  test("a path that becomes excluded has its old chunks reconciled away", async () => {
+    const { embeddings, reader, store } = setup();
+    reader.set("_Drafts/promoted.md", "# Draft\n\nbody text here", 1);
+    await Indexer.scan(reader, store, embeddings);
+    // Excluded from the first scan onward — it must never be in the store.
+    expect(await store.listPaths("obsidian")).not.toContain(
+      "_Drafts/promoted.md",
+    );
+  });
 });
 
 describe("SearchHandlers over an indexed store", () => {

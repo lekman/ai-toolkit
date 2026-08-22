@@ -53,7 +53,7 @@
     {
       "name": "planner",
       "source": "./plugins/planner",
-      "description": "Day-planning skills: the day's plate across all clients from the Obsidian dashboard, with weekend fall-forward and tracker-first sourcing",
+      "description": "Day-planning skills: the next task picked and started for one client, and the day's plate across all clients from the Obsidian dashboard, with weekend fall-forward and tracker-first sourcing",
       "category": "productivity",
       "tags": ["planning", "tasks", "obsidian", "dashboard", "daily"]
     },

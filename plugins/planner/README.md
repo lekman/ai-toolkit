@@ -1,8 +1,8 @@
 # Planner
 
-Planning over an Obsidian vault, at three time scales: the day (`/today`), the
-repo (`/planner:plan`, `/planner:sync`), and one goal (`/planner:goal`,
-`/planner:execute`). Where the [obsidian plugin](../obsidian/README.md) owns
+Planning over an Obsidian vault, at four time scales: the next task
+(`/planner:next`), the day (`/today`), the repo (`/planner:plan`,
+`/planner:sync`), and one goal (`/planner:goal`, `/planner:execute`). Where the [obsidian plugin](../obsidian/README.md) owns
 the mechanics of the dashboard (add, tick, wrap up), planner owns what goes on
 it and what "done" means.
 
@@ -11,6 +11,19 @@ All planning state lives in the vault, never in a repo: a master note per repo
 subpage per initiative (`<Initiatives>/<repo>/<kind>/<key>-<slug>.md`) for the
 scope, acceptance criteria and Test Plan. The dashboard links to the subpage;
 the repo holds code and shipped documentation only.
+
+## Why Next Does Not Rank Tasks
+
+The operator orders each client's items by hand, most important first, and that
+order _is_ the priority signal. A ranking pass would fight it: the same command
+would choose differently on two consecutive runs, for reasons that are not
+visible in the file. So `/planner:next` reads position as intent and re-orders
+for exactly two reasons — a `🧾` admin tag, and the absence of a `[Details]`
+link, which by the dashboard's own content rule means the title alone is the
+whole task.
+
+The colour markers some items carry (🔴 🟡 🟢 ⚪) are **defect severity, not
+priority**, and most items carry none at all. Nothing ranks by them.
 
 ## Why a Separate Skill
 
@@ -23,6 +36,12 @@ first, retrieval and calendars as supplements only.
 
 ## Commands
 
+- `/planner:next`: pick the next task for one client and start it, with no
+  discussion. The dashboard's own ordering is the priority signal, so it takes
+  the first open item, moving only `🧾` admin jobs and items with no
+  `[Details]` plan ahead of it. Claims the item before working, because several
+  agents share one dashboard. Pass `confirm`, `ask` or `dry-run` — all the same
+  thing — to be told the choice and the reasoning instead of it starting.
 - `/planner:plan`: create or update the current repo's master-plan note in
   the Obsidian vault. State (backlog tables, status balls) lives only in the
   vault; repos keep detail pages. Client and tracker (Jira / GitHub / Monday /

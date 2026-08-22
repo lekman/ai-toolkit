@@ -74,9 +74,14 @@ so in one line and stop. "All done" is a valid answer and needs no ceremony.
 
 ## Step 4: Choose
 
-Walk the items in order. Skip any item that is **blocked** — its text says it
-waits on someone else, or on a decision that is not the operator's to make
-right now. Note what was skipped; never silently pass over work.
+Walk the items in order. Skip any item tagged `🚧`, which the operator writes
+on work that waits on someone else or on a decision that is not theirs to make
+right now. Report what was skipped and why; never silently pass over work.
+
+Blocked is read from the tag only, for the same reason admin is (below): a
+command that runs several times a day cannot decide from prose whether "await
+the partner's schema" is still true, and a wrong read either burns the morning
+on something unstartable or skips work that is ready.
 
 Among the rest, two classes jump the queue, in this order:
 
@@ -90,9 +95,10 @@ Among the rest, two classes jump the queue, in this order:
    no plan. Take these in dashboard order.
 3. **Everything else**, in dashboard order. The first one wins.
 
-Admin is detected only by its tag. Do **not** infer "this looks administrative"
-from the item text: across a hundred-odd items that guess decides the operator's
-morning, and it will disagree with itself between sessions.
+Admin is detected only by its tag, and so is blocked. Do **not** infer "this
+looks administrative" or "this sounds blocked" from the item text: across a
+hundred-odd items that guess decides the operator's morning, and it will
+disagree with itself between sessions. An untagged item is available work.
 
 ## Step 5: Explain Mode Stops Here
 
@@ -171,5 +177,8 @@ report on the deliberation. Reasoning is what explain mode is for.
   colour markers.
 - **Never edit an item's prose** while claiming it. Add the claim marker; leave
   every word the operator wrote.
-- **Never pick a blocked item** to have something to do. Report the block.
+- **Never pick a `🚧` item** to have something to do. Report the block.
+- **Never add, move or remove a tag.** `🧾` and `🚧` are the operator's;
+  `/obsidian:add` writes them. This skill reads them and writes only the `🔄`
+  claim.
 - Touch only `## Focus`. Never `## Initiatives` or `#### Other active work`.

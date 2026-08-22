@@ -4,7 +4,7 @@ import type { ISourceReader } from "../obsidian";
 import type { IChunkStore } from "../store";
 import type { ScanReport } from "./types";
 
-import { OBSIDIAN_SOURCE, ObsidianSource } from "../obsidian";
+import { Exclusions, OBSIDIAN_SOURCE, ObsidianSource } from "../obsidian";
 
 /**
  * Hours of store version history kept after a scan. The index is a derived
@@ -16,6 +16,24 @@ import { OBSIDIAN_SOURCE, ObsidianSource } from "../obsidian";
  * below into 1.3 GB of retained table rewrites.
  */
 const VERSION_RETENTION_HOURS = 1;
+
+/**
+ * Reconcile refuses to delete when it would remove more than this share of an
+ * index that already holds at least MIN_PATHS_FOR_MASS_GUARD paths.
+ *
+ * A reconcile is only as trustworthy as the file list it is handed. On
+ * 2026-08-22 the configured vault path was left pointing at a directory that
+ * was being deleted; the watcher saw the notes vanish and correctly reconciled
+ * an index of 626 files down to 7 across a few minutes. Every individual step
+ * was legitimate. The aggregate was the whole index.
+ *
+ * Half is deliberately loose. Deleting a client folder is real work and must
+ * still reconcile; deleting half the vault in one scan is not something that
+ * happens by hand. The floor keeps a small or freshly built index — where one
+ * note is a large share — out of the guard entirely.
+ */
+const MAX_REMOVAL_SHARE = 0.5;
+const MIN_PATHS_FOR_MASS_GUARD = 20;
 
 /**
  * The ingestion pipeline: full-scan reconcile of a source into a store.
@@ -55,6 +73,12 @@ export class Indexer {
     let upsertedFiles = 0;
 
     for (const file of files) {
+      // Exclusion first, before the read. toRecords also excludes, but it runs
+      // after readFile, so an excluded file that is *also* unreadable was
+      // reported in skippedUnreadable — noise that reads like a real miss.
+      // Deliberately not added to seenPaths: a path that becomes excluded must
+      // still have its old chunks reconciled away.
+      if (Exclusions.check(file.relPath) !== null) continue;
       const content = await reader.readFile(file.relPath);
       if (content === null) {
         // Unavailable content (e.g. an iCloud-evicted stub): skip, and keep
@@ -129,7 +153,17 @@ export class Indexer {
     }
 
     const indexedPaths = await store.listPaths(OBSIDIAN_SOURCE);
-    const removedPaths = indexedPaths.filter((path) => !seenPaths.has(path));
+    const wouldRemove = indexedPaths.filter((path) => !seenPaths.has(path));
+    const refusedRemoval = Indexer.removalRefusal(
+      indexedPaths.length,
+      wouldRemove.length,
+      files.length,
+    );
+
+    // On refusal nothing is deleted. A stale index still answers queries and
+    // the next scan against a correct vault path reconciles it properly; a
+    // destroyed one has to be re-embedded from scratch.
+    const removedPaths = refusedRemoval ? [] : wouldRemove;
     for (const path of removedPaths) {
       await store.deleteByPath(OBSIDIAN_SOURCE, path);
     }
@@ -141,11 +175,38 @@ export class Indexer {
     return {
       chunkCount: await store.count(),
       embedded,
+      ...(refusedRemoval ? { refusedRemoval } : {}),
       removedPaths,
       scannedFiles,
       skippedUnreadable,
       upsertedFiles,
     };
+  }
+
+  /**
+   * Decide whether a reconcile's deletions are plausible, or a symptom of the
+   * scanner being pointed somewhere wrong. Pure — counts in, verdict out.
+   *
+   * `vault-empty` is the unambiguous case: the vault yielded no files at all
+   * while the index holds some. That is never a real vault; it is a wrong or
+   * unmounted path.
+   */
+  static removalRefusal(
+    indexedPaths: number,
+    wouldRemove: number,
+    filesFound: number,
+  ): ScanReport["refusedRemoval"] {
+    if (wouldRemove === 0) return undefined;
+    if (filesFound === 0 && indexedPaths > 0) {
+      return { indexedPaths, reason: "vault-empty", wouldRemove };
+    }
+    if (
+      indexedPaths >= MIN_PATHS_FOR_MASS_GUARD &&
+      wouldRemove > indexedPaths * MAX_REMOVAL_SHARE
+    ) {
+      return { indexedPaths, reason: "mass-removal", wouldRemove };
+    }
+    return undefined;
   }
 
   /** Retention cutoff for store compaction: `now` less the retention window. */

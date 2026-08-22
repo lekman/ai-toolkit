@@ -21,6 +21,9 @@ describe("Exclusions", () => {
     ["Clients/AcmeCo/Handover, Tue 11 Aug 2026 2.md", "conflict-copy"],
     [".obsidian/config.md", "system"],
     ["_Attachments/scan.md", "system"],
+    ["_Drafts/2026-08-14.md", "system"],
+    ["_Drafts/nested/half-written.md", "system"],
+    ["_OQ/OQ-2026-08-18T12-27-49.541Z.md", "system"],
     ["CLAUDE.md", "system"],
     ["Parked.md", "volatile"],
     ["Clients/AcmeCo/Initiatives/acme-app — Master Plan.md", "volatile"],
@@ -43,6 +46,10 @@ describe("Exclusions", () => {
     "Clients/AcmeCo/Handover — outbound delivery, Tue 11 Aug 2026.md",
     "Personal/Budget 2026.md",
     "Archive/Work Logs/2026.md",
+    // the scratch folders match on a whole path segment, so a note that
+    // merely mentions one in its name is still source material
+    "Clients/AcmeCo/_Drafts review.md",
+    "Management/_OQ process.md",
   ])("keeps %s", (path) => {
     expect(Exclusions.check(path)).toBeNull();
   });
@@ -56,6 +63,8 @@ describe("Exclusions.shouldTriggerScan", () => {
     ".DS_Store",
     "Templates/Meeting Notes Template.md",
     "_Attachments/scan.pdf",
+    "_Drafts/2026-08-14.md",
+    "_OQ/OQ-2026-08-18T12-27-49.541Z.md",
     "Clients/AcmeCo/Plan (conflict).md",
     // "" is the watched root itself: iCloud touches the root directory's
     // metadata after every file write, so this event fires for excluded

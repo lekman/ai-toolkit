@@ -1,9 +1,9 @@
 import type { ExclusionReason } from "./types";
 
 /**
- * Decides which vault paths never reach the index: system folders,
- * templates, volatile task state, iCloud conflict/backup copies, and the
- * phase-1 health deferral. Pure — path string in, verdict out.
+ * Decides which vault paths never reach the index: system folders, scratch
+ * folders, templates, volatile task state, sync conflict/backup copies, and
+ * the phase-1 health deferral. Pure — path string in, verdict out.
  */
 export class Exclusions {
   /**
@@ -21,7 +21,13 @@ export class Exclusions {
           s === ".obsidian" ||
           s === ".claude" ||
           s === ".tmp" ||
-          s === "_Attachments",
+          s === "_Attachments" ||
+          // Excluded from Obsidian Sync too, so these are single-machine
+          // scratch: drafts in progress and qualification run output. Neither
+          // is source material, and indexing them means a half-written note
+          // can outrank the finished one it becomes.
+          s === "_Drafts" ||
+          s === "_OQ",
       )
     )
       return "system";

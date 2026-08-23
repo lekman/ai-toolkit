@@ -23,10 +23,13 @@
  */
 
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -85,9 +88,26 @@ if (conflicts.length)
 
 const lines = readFileSync(dashboardPath, "utf8").split("\n");
 
-const isDayHeading = (l: string) =>
-  /^#{2,3} [A-Z][a-z]+day \d{1,2} [A-Z][a-z]+/.test(l);
-const isClientHeading = (l: string) => /^#### /.test(l);
+// A day inside the Tomorrow/Future callouts is `> ### …` and a group is
+// `> #### …`. The *processing* rules below still only touch the unprefixed
+// day, but boundary detection has to see the quoted ones — otherwise the
+// scan for "the next day heading" never matches, `end` keeps its focusEnd
+// default, and today's last group swallows both bands on the way to the
+// archive. That is issue #53, and it cost the whole Focus section once.
+const stripQuotes = (l: string) => l.replace(/^(?:> ?)+/, "");
+const isAnyDayHeading = (l: string) =>
+  /^#{2,3} [A-Z][a-z]+day \d{1,2} [A-Z][a-z]+/.test(stripQuotes(l));
+const isAnyClientHeading = (l: string) => /^#### /.test(stripQuotes(l));
+// `> [!note]- Tomorrow` opens a band; `> [!note] Intention:` does not. The
+// trailing `-` is the only thing separating them, so match on it exactly.
+const isBandStart = (l: string) => /^> \[!note\]- /.test(l);
+// A boundary is any later day, any later group, or the start of a band.
+const endsDay = (l: string) => isAnyDayHeading(l) || isBandStart(l);
+const endsGroup = (l: string) => isAnyClientHeading(l) || endsDay(l);
+
+const isDayHeading = (l: string) => !l.startsWith(">") && isAnyDayHeading(l);
+const isClientHeading = (l: string) =>
+  !l.startsWith(">") && isAnyClientHeading(l);
 const isItem = (l: string) => /^- \[[ x]\]/.test(l);
 const isTicked = (l: string) => /^- \[x\]/.test(l);
 const clientName = (l: string) =>
@@ -120,7 +140,7 @@ for (let i = focusIndex + 1; i < focusEnd; i++) {
   const title = lines[i].replace(/^#{2,3}\s*/, "").trim();
   let end = focusEnd;
   for (let j = i + 1; j < focusEnd; j++) {
-    if (isDayHeading(lines[j])) {
+    if (endsDay(lines[j])) {
       end = j;
       break;
     }
@@ -130,7 +150,7 @@ for (let i = focusIndex + 1; i < focusEnd; i++) {
     if (!isClientHeading(lines[j])) continue;
     let gEnd = end;
     for (let k = j + 1; k < end; k++) {
-      if (isClientHeading(lines[k])) {
+      if (endsGroup(lines[k])) {
         gEnd = k;
         break;
       }
@@ -254,6 +274,11 @@ for (const move of moves) {
   byMonth.set(key, [...(byMonth.get(key) ?? []), move]);
 }
 
+// One snapshot for the whole run, taken before the first write of either
+// file. `snapshotDashboard` is a hoisted function declaration, defined with
+// its rationale further down next to the write itself.
+const snapshot = dryRun ? null : snapshotDashboard();
+
 const written: string[] = [];
 
 for (const [month, monthMoves] of byMonth) {
@@ -362,6 +387,44 @@ for (const [month, monthMoves] of byMonth) {
   written.push(path);
 }
 
+// --- write protocol: snapshot before touching anything -------------------
+// The vault is not version-controlled and several agents write one dashboard,
+// so without a snapshot there is no way to tell afterwards whether a
+// difference was this run, another session, or a lost edit. That matters more
+// here than anywhere else: this is the operation whose job is to *remove*
+// content, and a wrong archive looks exactly like a correct one afterwards.
+// Implemented inline rather than shelling out to obsidian's dashboard-guard.sh
+// — installed plugins live under their own versioned directories, so a path to
+// a sibling plugin would pin an obsidian version and rot on its next release.
+function snapshotDashboard(): string {
+  const snapDir =
+    process.env.DASHBOARD_SNAPSHOT_DIR ??
+    join(homedir(), ".claude", "dashboard-snapshots");
+  const keepDays = Number(process.env.DASHBOARD_SNAPSHOT_DAYS ?? "14");
+  const base = dashboardPath.split("/").pop()!.replace(/\.md$/, "");
+  mkdirSync(snapDir, { recursive: true });
+  const d = new Date();
+  const p2 = (n: number) => String(n).padStart(2, "0");
+  const stamp =
+    `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}` +
+    `-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
+  const snap = join(snapDir, `${base}-${stamp}.md`);
+  copyFileSync(dashboardPath, snap);
+  // Keep the directory bounded; a snapshot is only useful while the edit that
+  // produced it is still in question.
+  const cutoff = Date.now() - keepDays * 86400000;
+  for (const f of readdirSync(snapDir)) {
+    if (!f.startsWith(`${base}-`) || !f.endsWith(".md")) continue;
+    const full = join(snapDir, f);
+    try {
+      if (statSync(full).mtimeMs < cutoff) unlinkSync(full);
+    } catch {
+      // A snapshot that cannot be pruned is not worth failing a run over.
+    }
+  }
+  return snap;
+}
+
 // --- remove from the dashboard, bottom-up so indices stay valid ----------
 if (!dryRun) {
   const sorted = [...deletions].sort((a, b) => b[0] - a[0]);
@@ -382,6 +445,7 @@ if (verbose || dryRun) {
   for (const day of emptiedDays)
     process.stdout.write(`  day heading removed: ${day}\n`);
   for (const path of written) process.stdout.write(`  archive: ${path}\n`);
+  if (snapshot) process.stdout.write(`  snapshot: ${snapshot}\n`);
 } else {
   process.stdout.write("Done\n");
 }

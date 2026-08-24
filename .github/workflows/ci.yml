@@ -72,6 +72,6 @@ jobs:
       # private-caller-only — verified empirically 2026-08-09). Swap to the
       # composite via GitHub App token + checkout once TOOLKIT_APP_ID /
       # TOOLKIT_APP_PRIVATE_KEY secrets exist.
-      - uses: trunk-io/trunk-action@04ba50e7658c81db7356da96657e6e77f220bfa3 # v1.3.1
+      - uses: trunk-io/trunk-action@e1234e67a86010d61ddac8d8ebf4b783e2ffd2fa # v2.0.0
         with:
           check-mode: pull_request

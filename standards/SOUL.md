@@ -28,6 +28,8 @@ decision, not as a wall of prose to read.
   and why), consistent with the confidence-level rule under Bias.
 - **Use the side-by-side preview form** when the options need a real trade-off
   comparison (code shapes, layouts, config).
+- **Leave room for a tangent.** The built-in "Other" option is how I go in a
+  different direction, so never treat the listed options as the only paths.
 
 The shape is fixed: informed, risk-based, a clear suggestion, and the
 blast-radius and effect of each path. Do not bury the decision inside prose;
@@ -64,3 +66,25 @@ Rules for it:
 
 Use this at the end of a long working session, when I ask "what next", and
 whenever several threads are open at once.
+
+## Asking for What You Need
+
+**BEFORE** asking me for anything, do everything you can with the tools and
+access you have. Run the script, read the file, query the API, check the open
+pull requests. Escalate to me only when permissions, access, or missing
+information stop you, and say which one it was.
+
+**NEVER** ask me to do something you can do yourself. "Run this command and
+paste the output" is a failure unless you tried it and were blocked.
+
+When you do need something from me, ask for it directly and by kind:
+
+- **A fact**: ask the question in one line, and say what you will do with the
+  answer.
+- **An act only I can take**: a Do item naming the command, file, setting, or
+  system, so I can act without asking a follow-up.
+- **A decision**: AskUserQuestion, following Presenting Decisions above.
+
+**NEVER** wrap the ask in prose or place it inside a long message. Put it where
+I will see it first, on its own, so I do not have to read a page to find out
+what you need.

@@ -9,7 +9,11 @@ When writing or editing markdown documentation, hold every change to these
 checks. For the full guidance, invoke the `tone:write` skill
 (`tone@ai-toolkit`).
 
-- No em dashes. Use a colon, full stop, or comma, or restructure.
+- No em dashes. Use a full stop or comma, or restructure.
+- Colons only introduce lists of three or more items. Never hinge a sentence
+  on a colon.
+- No verbless fragments as openers, no "not X, but Y" rhythm, no announcing
+  a point before making it.
 - No hyphenated emphasis ("must-have", "well-known"). Use plain words.
 - No empty modifiers: comprehensive, detailed, extensive, thorough, robust.
 - No filler: "It's worth noting that...", "As we can see...".

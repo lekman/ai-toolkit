@@ -41,8 +41,15 @@ skill governs what the words do once they are on the page.
 - **Filler phrases.** Never open with or pad using: "It's worth noting
   that...", "As we can see...", "In today's fast-paced world...", or any
   sentence that restates the heading above it.
-- **Em dashes.** Never use the em dash character. Replace with a colon, a
-  full stop, a comma, or restructure the sentence.
+- **Em dashes.** Never use the em dash character. Replace with a full stop,
+  a comma, or restructure the sentence.
+- **Colon-hinged sentences.** A colon only introduces a list of three or more
+  items. Never let the left side of a colon label what the right side does.
+  Rewrite as two sentences, or join with because, so, but, or and.
+- **Announcing.** Never name a point before making it ("the key insight
+  is"), and never open a sentence or paragraph with a verbless fragment ("One
+  caution."). Fold the label into the sentence that does the work. Do not use
+  "not X, but Y" as a rhythm.
 - **Hyphenated emphasis.** No "must-have" or "well-known pattern". Rewrite so
   plain words carry the weight.
 
@@ -82,6 +89,7 @@ These rules exist because markdown is often the source for Word and PDF:
 Before presenting a document, verify:
 
 - [ ] No em dashes, no hyphenated emphasis, no empty modifiers, no filler
+- [ ] No colon-hinged sentences, no verbless fragments, no announcing
 - [ ] UK English throughout
 - [ ] Headings in title case, at most three levels deep
 - [ ] No horizontal rules outside front matter

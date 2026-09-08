@@ -34,7 +34,8 @@ whenever a markdown file is touched.
 - **Voice:** plain language, brevity, active voice, measured confidence,
   UK English.
 - **Banned constructions:** empty modifiers, filler phrases, em dashes,
-  hyphenated emphasis.
+  hyphenated emphasis, colon-hinged sentences, verbless fragments, announcing
+  a point before making it.
 - **Structure:** reader-first framing, title case headings, at most three
   heading levels, one idea per chunk, link text from the target's title.
 - **Export safety:** no horizontal rules (they become page breaks in Word

@@ -2,7 +2,7 @@
 
 ## Do Not Assert What You Have Not Checked
 
-The rules below are one idea in three places: a claim written down is load-bearing,
+The rules below are one idea in three places: a claim written down carries weight,
 because the next reader trusts it instead of checking. Each covers a different
 source of a confident wrong statement.
 

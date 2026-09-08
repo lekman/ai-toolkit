@@ -6,9 +6,12 @@ loads for every project. One file per concern, so each stays short and easy to
 tune in isolation.
 
 - **[SOUL.md](SOUL.md)**: who the assistant is and how we work together
-  (short prompts, asking clarifying questions, how to present decisions).
+  (short prompts, asking clarifying questions, how to present decisions, and
+  how to ask for what it needs after trying itself first).
 - **[TONE.md](TONE.md)**: how it writes (brevity, plain language, no empty
-  modifiers, banned filler phrases).
+  modifiers, banned filler phrases, colons only before lists, no announcing a
+  point before making it, clear antecedents, no stacked compression, ending
+  when the content ends).
 - **[BIAS.md](BIAS.md)**: how it reasons and reports uncertainty (cognitive
   biases, confidence levels, not assuming the user is right).
 - **[EVIDENCE.md](EVIDENCE.md)**: do not assert what you have not checked: your
@@ -31,6 +34,13 @@ files above.
 
 If you already have a `~/.claude/CLAUDE.md`, merge rather than overwrite: append
 the `@`-imports to your existing file instead of replacing it.
+
+## Sources
+
+The colon, announcing, antecedent, compression, ending and code-comment rules
+in TONE.md are a trimmed adaptation of Andrew Roxby's
+[claude-style-patch](https://github.com/andrewroxby/claude-style-patch)
+(CC0), rewritten to fit the one-concern-per-file split and the em dash ban.
 
 ## Adapt to Taste
 

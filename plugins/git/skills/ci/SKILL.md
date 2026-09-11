@@ -119,10 +119,16 @@ finding comes back reworded.
    - Declined: why it does not apply, with the evidence you checked.
    - Deferred: where it is tracked. Do not resolve a deferred thread you
      have not tracked.
-     Before any reply names a commit, prove the commit landed: read `HEAD`
-     before and after `git commit`, and treat an unchanged `HEAD` as a hook
-     refusal. A reply written from the intended SHA after a refused commit
-     names a commit that does not exist; it happened twice in one day.
+     Stage by name, never `git add -A` after a clean-up. Before the commit,
+     read `git status --short` and stop on any `D` the change did not intend:
+     on 11 Sep 2026 a clean-up of an ignored directory ran on a branch where
+     that directory was tracked, `git add -A` staged the deletion of a whole
+     application, and only the reviewer noticed.
+
+   Before any reply names a commit, prove the commit landed: read `HEAD`
+   before and after `git commit`, and treat an unchanged `HEAD` as a hook
+   refusal. A reply written from the intended SHA after a refused commit
+   names a commit that does not exist; it happened twice in one day.
 
 4. **Push once.** The whole round in that push. `threads.sh reply` prints
    each reply's own id; keep them until the push lands, because the list

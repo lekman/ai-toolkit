@@ -119,9 +119,11 @@ finding comes back reworded.
    - Declined: why it does not apply, with the evidence you checked.
    - Deferred: where it is tracked. Do not resolve a deferred thread you
      have not tracked.
-4. **Push once.** The whole round in that push. If the push is still
-   rejected, fix, amend, and edit each reply so it names the commit that
-   lands (`gh api -X PATCH repos/<owner>/<repo>/pulls/comments/<reply-id>`).
+4. **Push once.** The whole round in that push. `threads.sh reply` prints
+   each reply's own id; keep them until the push lands, because the list
+   hides resolved threads afterwards. If the push is still rejected, fix,
+   amend, and rewrite each reply with `threads.sh amend <reply-id> "..."`
+   so it names the commit that lands.
 
 ```sh
 ${CLAUDE_PLUGIN_ROOT}/skills/ci/threads.sh list <N>

@@ -208,6 +208,8 @@ QUALITY=${GREEN_QUALITY_CMD:-}
 if [ -z "$QUALITY" ]; then
 	if [ -f Taskfile.yml ] && grep -qE '^\s+quality:' Taskfile.yml; then
 		QUALITY="task quality"
+		# Where a security sweep exists it is part of the pre-push hook too.
+		grep -qE '^\s+security:' Taskfile.yml && QUALITY="task quality && task security"
 	elif [ -f package.json ] && grep -q '"lint"' package.json; then
 		QUALITY="bun run lint"
 	fi
@@ -215,7 +217,7 @@ fi
 if [ -z "$QUALITY" ]; then
 	say "5 local quality" "SKIP  (no Taskfile quality task or lint script found; set GREEN_QUALITY_CMD)"
 elif [ "$LOCAL" = "1" ]; then
-	if $QUALITY >/tmp/green-quality.log 2>&1; then
+	if bash -c "$QUALITY" >/tmp/green-quality.log 2>&1; then
 		say "5 local quality" "PASS  ($QUALITY)"
 	else
 		say "5 local quality" "FAIL  ($QUALITY; see /tmp/green-quality.log)"

@@ -119,6 +119,11 @@ finding comes back reworded.
    - Declined: why it does not apply, with the evidence you checked.
    - Deferred: where it is tracked. Do not resolve a deferred thread you
      have not tracked.
+     Before any reply names a commit, prove the commit landed: read `HEAD`
+     before and after `git commit`, and treat an unchanged `HEAD` as a hook
+     refusal. A reply written from the intended SHA after a refused commit
+     names a commit that does not exist; it happened twice in one day.
+
 4. **Push once.** The whole round in that push. `threads.sh reply` prints
    each reply's own id; keep them until the push lands, because the list
    hides resolved threads afterwards; `threads.sh replies` lists your own
@@ -177,6 +182,13 @@ needs work is a false record.
   reviews on a red build.
 - A push is rejected: the remote moved, most often because a post-merge job
   updated the branch. Pull with a merge, never force-push.
+- A workspace check fails after switching branches: an ignored
+  `node_modules` left behind in a package directory the current branch does
+  not have makes a workspace glob match a directory with no manifest. Remove
+  the leftover directory; it is not in git.
+- The typecheck refuses a commit on a branch that adds a workspace: the
+  packages were never installed here. Run the install with the frozen
+  lockfile first.
 
 ## Related
 

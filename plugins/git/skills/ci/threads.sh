@@ -26,7 +26,9 @@ list)
 	while :; do
 		PAGE=$(gh api graphql -f query='query($o:String!,$r:String!,$n:Int!,$c:String){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100,after:$c){pageInfo{hasNextPage endCursor} nodes{id isResolved isOutdated path line originalLine comments(first:1){nodes{databaseId author{login} body}}}}}}}' \
 			-f o="$OWNER" -f r="$NAME" -F n="$N" ${CURSOR:+-f c="$CURSOR"})
-		printf '%s' "$PAGE" | jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved|not) | "\(.id)\t\(.comments.nodes[0].databaseId)\t\(.path):\(.line // .originalLine // "file")\(if .isOutdated then " (outdated)" else "" end)\t\(.comments.nodes[0].author.login // "hidden")\t\((.comments.nodes[0].body // "") | gsub("[[:space:]]+";" ") | .[0:140])"'
+		# A thread whose first comment is hidden prints "-" for the comment id:
+		# a thread for the browser, not one to reply to from this list.
+		printf '%s' "$PAGE" | jq -r '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved|not) | (.comments.nodes[0] // {}) as $c | "\(.id)\t\($c.databaseId // "-")\t\(.path):\(.line // .originalLine // "file")\(if .isOutdated then " (outdated)" else "" end)\t\($c.author.login // "hidden")\t\(($c.body // "") | gsub("[[:space:]]+";" ") | .[0:140])"'
 		MORE=$(printf '%s' "$PAGE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
 		CURSOR=$(printf '%s' "$PAGE" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor // ""')
 		[ "$MORE" = "true" ] || break

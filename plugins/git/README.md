@@ -1,6 +1,6 @@
 # Git
 
-Git workflow: three skills you invoke, and a hook that runs whether you
+Git workflow: four skills you invoke, and a hook that runs whether you
 remember it or not.
 
 - **`/git:commit`**: [skills/commit/SKILL.md](skills/commit/SKILL.md). Groups
@@ -12,6 +12,11 @@ remember it or not.
 - **`/git:purge`**: [skills/purge/SKILL.md](skills/purge/SKILL.md).
   Fast-forwards the default branch, deletes local and remote branches whose work
   is already merged, and turns on delete-branch-on-merge so it stops recurring.
+- **`/git:ci`**: [skills/ci/SKILL.md](skills/ci/SKILL.md). Drives a pull
+  request to green: six conditions checked by one script (threads, the AI
+  reviewer's verdict on the head commit, checks, local quality, mergeable),
+  review threads answered with the commit and resolved before the push, and
+  a merge when all of it holds. Knows Claude Review, Copilot and CodeRabbit.
 - **The stack guard**: [hooks/stack-guard.sh](hooks/stack-guard.sh). Stops a
   second pull request against the default branch while one of yours is still
   open, and points at `gh stack`.

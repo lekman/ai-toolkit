@@ -11,7 +11,7 @@
     {
       "name": "git",
       "source": "./plugins/git",
-      "description": "Git workflow: grouped conventional commits with QA and hook compliance, template-driven pull requests, merged-branch purge across local and remote, and a hook that redirects a second PR against the default branch to a stack",
+      "description": "Git workflow: grouped conventional commits with QA and hook compliance, template-driven pull requests, merged-branch purge across local and remote, a pull request driven to green through reviewer threads and checks, and a hook that redirects a second PR against the default branch to a stack",
       "category": "development",
       "tags": [
         "git",
@@ -20,6 +20,7 @@
         "pull-request",
         "stacked-prs",
         "branch-cleanup",
+        "code-review",
         "workflow"
       ]
     },

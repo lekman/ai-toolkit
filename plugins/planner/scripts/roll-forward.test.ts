@@ -206,6 +206,37 @@ test("an empty Future leaves an empty Tomorrow callout, which is correct", () =>
   expect(r.text).toContain("### Thursday 17 September");
 });
 
+/* --------------------------------------------------------------- shift only */
+
+test("--shift-only turns the page without rolling anyone's open items", () => {
+  // The state an archive leaves behind: no today, work still open tomorrow.
+  const archived = FIXTURE.replace(
+    /### Wednesday 16 September[\s\S]*?(?=> \[!note\]- Tomorrow)/,
+    "",
+  );
+  const r = run(SCRIPT, archived, ["--verbose"]);
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
+  expect(r.out).not.toContain("rolled —");
+  expect(r.text).toContain("- [ ] Already planned for tomorrow");
+});
+
+test("--shift-only leaves today's open items alone", () => {
+  const r = run(SCRIPT, FIXTURE, ["--shift-only", "--verbose"]);
+  // Today still has content, so there is nothing to promote and nothing rolls.
+  expect(r.out.trim()).toBe("Nothing to shift");
+  expect(r.text).toBe(FIXTURE);
+});
+
+test("archive then --shift-only turns the page in two runs", () => {
+  const first = run(SCRIPT, FIXTURE);
+  exec(ARCHIVE, first.path);
+  const r = exec(SCRIPT, first.path, ["--shift-only", "--verbose"]);
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
+  expect(r.out).toContain("new tomorrow: Friday 18 September");
+  const focus = r.text.slice(r.text.indexOf("## Focus"), r.text.indexOf("## Initiatives"));
+  expect(focus.split("\n").filter((x) => /^### /.test(x))).toHaveLength(1);
+});
+
 /* ------------------------------------------------------------ safety rails */
 
 test("says so and writes nothing when there is nothing to do", () => {

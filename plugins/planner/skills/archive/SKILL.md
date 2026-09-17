@@ -68,6 +68,11 @@ is empty**, performs the two-stage shift described in
 Running it before the archive rolls the open work; running it after the archive
 turns the page. Both runs are safe and idempotent.
 
+`--shift-only` turns the page without touching anyone's open items, which is
+what belongs straight after an archive: the day is already gone, so there is
+nothing to roll, and rolling another client's still-open work would surprise
+whoever pressed archive.
+
 An error is the exception: a missing dashboard, an unparseable day heading, or
 an iCloud conflict copy stops the run and says so. Never edit a dashboard that
 has a conflict copy beside it: two versions disagree and the write picks a

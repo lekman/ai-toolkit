@@ -23,6 +23,7 @@
  *
  * Usage:
  *   bun roll-forward.ts               # apply, print "Done" or "Nothing to roll"
+ *   bun roll-forward.ts --shift-only  # turn the page, roll nothing
  *   bun roll-forward.ts --dry-run     # report what would move, change nothing
  *   bun roll-forward.ts --verbose     # per-client detail and what shifted
  */
@@ -48,6 +49,10 @@ interface Config {
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const verbose = args.includes("--verbose");
+// --shift-only turns the page without touching anyone's open items. It is what
+// runs straight after an archive: the day is already gone, so there is nothing
+// to roll, and rolling another client's still-open work would be a surprise.
+const shiftOnly = args.includes("--shift-only");
 
 function fail(message: string): never {
   process.stderr.write(`roll-forward: ${message}\n`);
@@ -449,12 +454,14 @@ function snapshotDashboard(): string {
 }
 
 const original = readFileSync(dashboardPath, "utf8").split("\n");
-const { lines: afterRoll, rolled } = rollOpenItems(original);
+const { lines: afterRoll, rolled } = shiftOnly
+  ? { lines: original, rolled: [] as Rolled[] }
+  : rollOpenItems(original);
 const { lines: shifted, shift } = shiftDays(afterRoll);
 const final = tidyBands(shifted);
 
 if (rolled.length === 0 && !shift.promoted) {
-  process.stdout.write("Nothing to roll\n");
+  process.stdout.write(shiftOnly ? "Nothing to shift\n" : "Nothing to roll\n");
   process.exit(0);
 }
 

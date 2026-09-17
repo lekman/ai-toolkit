@@ -66,8 +66,11 @@ try {
   fail(`cannot read ${configPath}: ${(e as Error).message}`);
 }
 
-const vault = config.vault;
-const dashboardPath = join(vault, config.dashboard);
+// DASHBOARD_PATH points the run at a fixture instead of the vault, so the
+// archive lands beside it. The tests need it; nothing else sets it.
+const dashboardPath =
+  process.env.DASHBOARD_PATH ?? join(config.vault, config.dashboard);
+const vault = process.env.DASHBOARD_PATH ? dirname(dashboardPath) : config.vault;
 if (!existsSync(dashboardPath)) fail(`no dashboard at ${dashboardPath}`);
 
 // An iCloud conflict copy means two versions disagree; never edit blind.

@@ -54,27 +54,19 @@ lone-`>` blank lines consistent so the block does not split.
 
 ### The day shift
 
-Archiving is what turns the page. When this operation removes the day's
-**last** open section — zero open items across all clients, the all-or-nothing
-rule above — it promotes the next day into focus, in **two stages**:
+Archiving does **not** turn the page. It removes ticked items, empty client
+groups and the day heading they leave behind; it never promotes a day between
+the bands. That is `roll-forward.ts`:
 
-1. **Tomorrow → today.** Cut the day section inside `> [!note]- Tomorrow`,
-   strip exactly one `"> "` level from every line (`> ### …` → `### …`,
-   `> > [!note]` → `> [!note]`, lone `>` → blank line), and insert it above the
-   `> [!note]- Tomorrow` line.
-2. **Earliest Future day → Tomorrow.** Cut it out of `> [!note]- Future` and
-   re-insert it inside the Tomorrow callout at the same prefix depth — no
-   stripping, it stays one level deep.
+```bash
+bun "<skill-base-dir>/../../scripts/roll-forward.ts"
+```
 
-Both stages run, in that order, or the bands end up holding the wrong days. An
-empty Future leaves an empty Tomorrow callout, which is correct and is left in
-place. The dashboard is then staged for the next morning.
-
-- Only the run that archives the **final** client performs the shift; a run
-  that leaves other clients' items open changes nothing.
-- An empty Future block means nothing to promote — report that plainly.
-- `/planner:today` Step 2b remains the fallback for a day that was never
-  shifted (for example after hand edits).
+It rolls today's open items into Tomorrow and then, **only when today's section
+is empty**, performs the two-stage shift described in
+[the dashboard structure](../../../obsidian/rules/dashboard-structure.md).
+Running it before the archive rolls the open work; running it after the archive
+turns the page. Both runs are safe and idempotent.
 
 An error is the exception: a missing dashboard, an unparseable day heading, or
 an iCloud conflict copy stops the run and says so. Never edit a dashboard that
@@ -93,8 +85,8 @@ Three levels, each following from the last:
 2. **A client group with no checkbox items left** moves entirely: heading,
    intention callout, handover links, topical paragraphs. An empty group is
    noise on a worklist, and its prose belongs with the work it describes.
-3. **A day with no client groups left** loses its heading too — and triggers
-   the day shift below.
+3. **A day with no client groups left** loses its heading too. Turning the page
+   is a separate run — see the day shift above.
 
 A group keeps its place when anything is still open: only the ticked lines
 leave, and the prose around them is untouched.

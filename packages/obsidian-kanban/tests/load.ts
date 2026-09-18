@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -81,7 +81,12 @@ export function loadPlugin(childProcess?: unknown) {
     "module.exports = DashboardKanbanPlugin;",
     `module.exports = { DashboardKanbanPlugin, ${EXPORTS.join(", ")} };`,
   );
-  const path = join(tmpdir(), `dk-main-${process.pid}-${seq++}.cjs`);
+  // mkdtemp, not a name built from the pid: the temp dir is shared and
+  // writable by anyone on the machine, and this file is require'd, so a
+  // predictable path is a symlink away from executing someone else's code.
+  // mkdtemp returns a fresh directory only this process can write.
+  const dir = mkdtempSync(join(tmpdir(), "dk-"));
+  const path = join(dir, `main-${seq++}.cjs`);
   writeFileSync(path, exposed, "utf8");
   return require_(path);
 }

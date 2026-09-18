@@ -70,8 +70,9 @@ try {
 // archive lands beside it. The tests need it; nothing else sets it.
 const dashboardPath =
   process.env.DASHBOARD_PATH ?? join(config.vault, config.dashboard);
-const vault = process.env.DASHBOARD_PATH ? dirname(dashboardPath) : config.vault;
-if (!existsSync(dashboardPath)) fail(`no dashboard at ${dashboardPath}`);
+const vault = process.env.DASHBOARD_PATH
+  ? dirname(dashboardPath)
+  : config.vault;
 
 // An iCloud conflict copy means two versions disagree; never edit blind.
 const conflicts = (() => {
@@ -89,7 +90,20 @@ const conflicts = (() => {
 if (conflicts.length)
   fail(`iCloud conflict copies present: ${conflicts.join(", ")}`);
 
-const lines = readFileSync(dashboardPath, "utf8").split("\n");
+// Read once and keep the exact bytes. Existence is not checked first: between
+// the check and the read the file can go, and the read reports that anyway.
+let before: string;
+try {
+  before = readFileSync(dashboardPath, "utf8");
+} catch (e) {
+  const err = e as NodeJS.ErrnoException;
+  fail(
+    err.code === "ENOENT"
+      ? `no dashboard at ${dashboardPath}`
+      : `cannot read ${dashboardPath}: ${err.message}`,
+  );
+}
+const lines = before.split("\n");
 
 // A day inside the Tomorrow/Future callouts is `> ### …` and a group is
 // `> #### …`. The *processing* rules below still only touch the unprefixed
@@ -434,6 +448,20 @@ if (!dryRun) {
   const out = [...lines];
   for (const [from, to] of sorted) out.splice(from, to - from);
 
+  // Several agents write this file. Compare against the bytes this run read
+  // before overwriting them; a difference means someone else got there first,
+  // and this is the operation whose job is to remove content.
+  let now: string;
+  try {
+    now = readFileSync(dashboardPath, "utf8");
+  } catch (e) {
+    fail(`cannot re-read ${dashboardPath}: ${(e as Error).message}`);
+  }
+  if (now !== before) {
+    fail(
+      `${dashboardPath} changed while this run was working. Nothing written; run it again.`,
+    );
+  }
   writeFileSync(dashboardPath, collapseBlanks(out).join("\n"), "utf8");
 }
 

@@ -30,7 +30,6 @@
 
 import {
   copyFileSync,
-  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -72,7 +71,6 @@ try {
 const dashboardPath =
   process.env.DASHBOARD_PATH ?? join(config.vault, config.dashboard);
 const vault = dirname(dashboardPath);
-if (!existsSync(dashboardPath)) fail(`no dashboard at ${dashboardPath}`);
 
 // An iCloud conflict copy means two versions disagree; never edit blind.
 const conflicts = (() => {
@@ -100,10 +98,14 @@ const isBandStart = (l: string) => /^> \[!note\]- /.test(l);
 const isItem = (l: string) => /^- \[[ x]\]/.test(strip(l));
 const isOpen = (l: string) => /^- \[ \]/.test(strip(l));
 const clientName = (l: string) =>
-  strip(l).replace(/^####\s*/, "").replace(/\*\*/g, "").trim();
+  strip(l)
+    .replace(/^####\s*/, "")
+    .replace(/\*\*/g, "")
+    .trim();
 
 /** Drop the claim marker, and the double space it leaves behind. */
-const unclaim = (l: string) => l.replace(/🔄\s*/u, "").replace(/\]\s{2,}/, "] ");
+const unclaim = (l: string) =>
+  l.replace(/🔄\s*/u, "").replace(/\]\s{2,}/, "] ");
 
 function focusBounds(lines: string[]): [number, number] {
   const start = lines.findIndex((l) => /^## Focus\s*$/.test(l));
@@ -146,7 +148,10 @@ function layout(lines: string[]): Layout {
   let todayEnd = focusEnd;
   if (todayIndex >= 0) {
     for (let i = todayIndex + 1; i < focusEnd; i++) {
-      if (isBandStart(lines[i]) || (!lines[i].startsWith(">") && isAnyDayHeading(lines[i]))) {
+      if (
+        isBandStart(lines[i]) ||
+        (!lines[i].startsWith(">") && isAnyDayHeading(lines[i]))
+      ) {
         todayEnd = i;
         break;
       }
@@ -154,7 +159,8 @@ function layout(lines: string[]): Layout {
   }
 
   const tomorrowIndex = lines.findIndex(
-    (l, i) => i > focusStart && i < focusEnd && /^> \[!note\]- Tomorrow/.test(l),
+    (l, i) =>
+      i > focusStart && i < focusEnd && /^> \[!note\]- Tomorrow/.test(l),
   );
   const futureIndex = lines.findIndex(
     (l, i) => i > focusStart && i < focusEnd && /^> \[!note\]- Future/.test(l),
@@ -166,7 +172,8 @@ function layout(lines: string[]): Layout {
     todayIndex,
     todayEnd,
     tomorrowIndex,
-    tomorrowEnd: tomorrowIndex >= 0 ? bandEnd(lines, tomorrowIndex, focusEnd) : -1,
+    tomorrowEnd:
+      tomorrowIndex >= 0 ? bandEnd(lines, tomorrowIndex, focusEnd) : -1,
     futureIndex,
     futureEnd: futureIndex >= 0 ? bandEnd(lines, futureIndex, focusEnd) : -1,
   };
@@ -274,7 +281,8 @@ function rollOpenItems(input: string[]): { lines: string[]; rolled: Rolled[] } {
     } else {
       // Append after the group's last item, keeping the operator's order.
       let at = groupStart + 1;
-      for (let i = groupStart + 1; i < groupEnd; i++) if (isItem(lines[i])) at = i + 1;
+      for (let i = groupStart + 1; i < groupEnd; i++)
+        if (isItem(lines[i])) at = i + 1;
       lines.splice(at, 0, ...body);
     }
   }
@@ -303,7 +311,11 @@ function pruneEmptiedGroups(lines: string[]): void {
     const start = starts[s];
     let end = l.todayEnd;
     for (let i = start + 1; i < l.todayEnd; i++) {
-      if (isBandStart(lines[i]) || isAnyDayHeading(lines[i]) || isClientHeading(lines[i])) {
+      if (
+        isBandStart(lines[i]) ||
+        isAnyDayHeading(lines[i]) ||
+        isClientHeading(lines[i])
+      ) {
         end = i;
         break;
       }
@@ -322,7 +334,8 @@ function pruneEmptiedGroups(lines: string[]): void {
   const after = layout(lines);
   if (after.todayIndex < 0) return;
   for (let i = after.todayEnd - 1; i > after.todayIndex; i--) {
-    if (lines[i].trim() === "" && lines[i - 1].trim() === "") lines.splice(i, 1);
+    if (lines[i].trim() === "" && lines[i - 1].trim() === "")
+      lines.splice(i, 1);
   }
 }
 
@@ -346,7 +359,9 @@ function shiftDays(input: string[]): { lines: string[]; shift: Shift } {
     let held = "";
     for (let i = l.todayIndex + 1; i < l.todayEnd; i++) {
       if (lines[i].trim() === "") continue;
-      held = isItem(lines[i]) ? "today still has items" : "today still has content";
+      held = isItem(lines[i])
+        ? "today still has items"
+        : "today still has content";
       break;
     }
     if (held) return { lines, shift: { reason: held } };
@@ -354,7 +369,8 @@ function shiftDays(input: string[]): { lines: string[]; shift: Shift } {
     lines.splice(l.todayIndex, l.todayEnd - l.todayIndex);
     l = layout(lines);
   }
-  if (l.tomorrowIndex < 0) return { lines, shift: { reason: "no Tomorrow band" } };
+  if (l.tomorrowIndex < 0)
+    return { lines, shift: { reason: "no Tomorrow band" } };
 
   // Stage 1: Tomorrow → today.
   let dayStart = -1;
@@ -368,8 +384,12 @@ function shiftDays(input: string[]): { lines: string[]; shift: Shift } {
 
   let dayEnd = l.tomorrowEnd;
   while (dayEnd > dayStart && lines[dayEnd - 1].trim() === ">") dayEnd--;
-  const promoted = strip(lines[dayStart]).replace(/^#{2,3}\s*/, "").trim();
-  const section = lines.slice(dayStart, dayEnd).map((x) => x.replace(/^> ?/, ""));
+  const promoted = strip(lines[dayStart])
+    .replace(/^#{2,3}\s*/, "")
+    .trim();
+  const section = lines
+    .slice(dayStart, dayEnd)
+    .map((x) => x.replace(/^> ?/, ""));
   lines.splice(dayStart, dayEnd - dayStart);
 
   l = layout(lines);
@@ -395,7 +415,9 @@ function shiftDays(input: string[]): { lines: string[]; shift: Shift } {
         }
       }
       while (fEnd > fStart && lines[fEnd - 1].trim() === ">") fEnd--;
-      shift.newTomorrow = strip(lines[fStart]).replace(/^#{2,3}\s*/, "").trim();
+      shift.newTomorrow = strip(lines[fStart])
+        .replace(/^#{2,3}\s*/, "")
+        .trim();
       const moved = lines.slice(fStart, fEnd);
       lines.splice(fStart, fEnd - fStart);
       l = layout(lines);
@@ -453,7 +475,20 @@ function snapshotDashboard(): string {
   return snap;
 }
 
-const original = readFileSync(dashboardPath, "utf8").split("\n");
+// Read once and keep the exact bytes. Existence is not checked first: between
+// the check and the read the file can go, and the read reports that anyway.
+let before: string;
+try {
+  before = readFileSync(dashboardPath, "utf8");
+} catch (e) {
+  const err = e as NodeJS.ErrnoException;
+  fail(
+    err.code === "ENOENT"
+      ? `no dashboard at ${dashboardPath}`
+      : `cannot read ${dashboardPath}: ${err.message}`,
+  );
+}
+const original = before.split("\n");
 const { lines: afterRoll, rolled } = shiftOnly
   ? { lines: original, rolled: [] as Rolled[] }
   : rollOpenItems(original);
@@ -467,6 +502,21 @@ if (rolled.length === 0 && !shift.promoted) {
 
 let snapshot = "";
 if (!dryRun) {
+  // Several agents write this file — a session here, a session on another
+  // machine, and the operator in Obsidian. Compare against the bytes this run
+  // read before overwriting them; a difference means someone else got there
+  // first and their edit would be lost silently.
+  let now: string;
+  try {
+    now = readFileSync(dashboardPath, "utf8");
+  } catch (e) {
+    fail(`cannot re-read ${dashboardPath}: ${(e as Error).message}`);
+  }
+  if (now !== before) {
+    fail(
+      `${dashboardPath} changed while this run was working. Nothing written; run it again.`,
+    );
+  }
   snapshot = snapshotDashboard();
   writeFileSync(dashboardPath, final.join("\n"), "utf8");
 }
@@ -477,8 +527,10 @@ if (verbose || dryRun) {
   for (const r of rolled) counts.set(r.client, (counts.get(r.client) ?? 0) + 1);
   for (const [client, n] of counts)
     process.stdout.write(`  rolled — ${client}: ${n} item(s)\n`);
-  if (shift.promoted) process.stdout.write(`  promoted to today: ${shift.promoted}\n`);
-  if (shift.newTomorrow) process.stdout.write(`  new tomorrow: ${shift.newTomorrow}\n`);
+  if (shift.promoted)
+    process.stdout.write(`  promoted to today: ${shift.promoted}\n`);
+  if (shift.newTomorrow)
+    process.stdout.write(`  new tomorrow: ${shift.newTomorrow}\n`);
   if (shift.reason) process.stdout.write(`  no shift: ${shift.reason}\n`);
   if (snapshot) process.stdout.write(`  snapshot: ${snapshot}\n`);
 } else {

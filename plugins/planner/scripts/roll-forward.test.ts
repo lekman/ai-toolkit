@@ -30,11 +30,18 @@ function exec(script: string, path: string, flags: string[] = []): Run {
       DASHBOARD_SNAPSHOT_DIR: join(path, "..", "snapshots"),
     },
   });
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    // A run that failed before writing may have left no file at all.
+    text = "";
+  }
   return {
     out: proc.stdout.toString(),
     err: proc.stderr.toString(),
     code: proc.exitCode ?? 0,
-    text: readFileSync(path, "utf8"),
+    text,
     path,
   };
 }
@@ -112,7 +119,9 @@ test("drops the claim marker but keeps the others", () => {
 test("appends after tomorrow's existing items, preserving order", () => {
   const r = run(SCRIPT, FIXTURE);
   const lines = r.text.split("\n");
-  const planned = lines.findIndex((l) => l.includes("Already planned for tomorrow"));
+  const planned = lines.findIndex((l) =>
+    l.includes("Already planned for tomorrow"),
+  );
   const rolled = lines.findIndex((l) => l.includes("Claimed open thing"));
   expect(planned).toBeGreaterThan(-1);
   expect(rolled).toBeGreaterThan(planned);
@@ -125,8 +134,14 @@ test("creates a client group that tomorrow does not have", () => {
 
 test("removes a group the roll emptied", () => {
   const r = run(SCRIPT, FIXTURE);
-  const focus = r.text.slice(r.text.indexOf("## Focus"), r.text.indexOf("## Initiatives"));
-  const today = focus.slice(focus.indexOf("### Wednesday"), focus.indexOf("> [!note]- Tomorrow"));
+  const focus = r.text.slice(
+    r.text.indexOf("## Focus"),
+    r.text.indexOf("## Initiatives"),
+  );
+  const today = focus.slice(
+    focus.indexOf("### Wednesday"),
+    focus.indexOf("> [!note]- Tomorrow"),
+  );
   expect(today).not.toContain("#### **Globex**");
 });
 
@@ -182,7 +197,10 @@ test("leaves exactly one unprefixed day heading", () => {
   const first = run(SCRIPT, FIXTURE);
   exec(ARCHIVE, first.path);
   const r = exec(SCRIPT, first.path);
-  const focus = r.text.slice(r.text.indexOf("## Focus"), r.text.indexOf("## Initiatives"));
+  const focus = r.text.slice(
+    r.text.indexOf("## Focus"),
+    r.text.indexOf("## Initiatives"),
+  );
   const unprefixed = focus.split("\n").filter((l) => /^### /.test(l));
   expect(unprefixed).toHaveLength(1);
 });
@@ -233,7 +251,10 @@ test("archive then --shift-only turns the page in two runs", () => {
   const r = exec(SCRIPT, first.path, ["--shift-only", "--verbose"]);
   expect(r.out).toContain("promoted to today: Thursday 17 September");
   expect(r.out).toContain("new tomorrow: Friday 18 September");
-  const focus = r.text.slice(r.text.indexOf("## Focus"), r.text.indexOf("## Initiatives"));
+  const focus = r.text.slice(
+    r.text.indexOf("## Focus"),
+    r.text.indexOf("## Initiatives"),
+  );
   expect(focus.split("\n").filter((x) => /^### /.test(x))).toHaveLength(1);
 });
 
@@ -276,6 +297,15 @@ test("refuses to write when an iCloud conflict copy is present", () => {
   expect(r.code).toBe(1);
   expect(r.err).toContain("conflict");
   expect(r.text).toBe(FIXTURE);
+});
+
+test("says which file is missing rather than failing on the read", () => {
+  // Existence is no longer checked before the read, so the read's own ENOENT
+  // has to carry the message.
+  const dir = mkdtempSync(join(tmpdir(), "roll-"));
+  const r = exec(SCRIPT, join(dir, "Gone.md"));
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("no dashboard at");
 });
 
 test("fails loudly when there is no Focus section", () => {

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.4.1...rag-local@v0.4.2) (2026-09-18)
+
+
+### Fixes
+
+* close the two remaining file-system races ([#73](https://github.com/lekman/ai-toolkit/issues/73)) ([4c41cc4](https://github.com/lekman/ai-toolkit/commit/4c41cc468cfb4290073c79def3d583c31b659b99))
+
 ## [0.4.1](https://github.com/lekman/ai-toolkit/compare/rag-local@v0.4.0...rag-local@v0.4.1) (2026-08-22)
 
 

@@ -136,6 +136,37 @@ test("an unreadable work log stops the run instead of being read as absent", () 
   expect(r.dashboard).toBe(FIXTURE);
 });
 
+test("turns the page even when bun is not on PATH", () => {
+  // Obsidian inherits no login shell's PATH, so a mise shim is not found there
+  // — the plugin carries a resolveBun() probe for exactly that reason. Spawning
+  // the shift by bare name failed *after* the dashboard write, which archived
+  // the day and left the file with no day in focus at all.
+  const dir = mkdtempSync(join(tmpdir(), "archive-"));
+  const path = join(dir, "Dashboard.md");
+  // Everything ticked, so the day empties and the shift has something to do.
+  writeFileSync(path, FIXTURE.replace("- [ ] Unfinished thing\n", ""), "utf8");
+  const proc = Bun.spawnSync([process.execPath, SCRIPT, "--verbose"], {
+    env: {
+      HOME: process.env.HOME ?? "",
+      PATH: "/usr/bin:/bin:/usr/sbin:/sbin",
+      DASHBOARD_PATH: path,
+      DASHBOARD_SNAPSHOT_DIR: join(dir, "snapshots"),
+    },
+  });
+  expect(proc.exitCode).toBe(0);
+  expect(proc.stdout.toString()).toContain("promoted to today");
+
+  // Exactly one unprefixed day heading, and it is the promoted one.
+  const after = readFileSync(path, "utf8");
+  const focus = after.slice(
+    after.indexOf("## Focus"),
+    after.indexOf("## Initiatives"),
+  );
+  expect(focus.split("\n").filter((l) => /^### /.test(l))).toEqual([
+    "### Thursday 17 September",
+  ]);
+});
+
 test("says which dashboard is missing rather than failing on the read", () => {
   const dir = mkdtempSync(join(tmpdir(), "archive-"));
   const proc = Bun.spawnSync(["bun", SCRIPT], {

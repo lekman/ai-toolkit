@@ -10,6 +10,9 @@
  *      intention callout and prose — because an empty group is noise.
  *   3. A day left with no client groups loses its heading too.
  *
+ * It then runs `roll-forward.ts --shift-only`, so a finished day is replaced by
+ * the next one rather than leaving the dashboard with no day in focus.
+ *
  * Dashboard shape:  `### <Day>` → `#### **<Client>**` → items
  * Archive shape:    `#### <Day>` → `**<Client>**` → items, newest day first
  *
@@ -465,6 +468,40 @@ function snapshotDashboard(): string {
   return snap;
 }
 
+// A day cleared of its work but still carrying its heading reads as a broken
+// dashboard, so the archive turns the page itself rather than leaving it to a
+// second command. `--shift-only` never moves another client's still-open work,
+// and the shift's own guard decides whether today is actually finished.
+function turnThePage(): string {
+  const script = join(import.meta.dir, "roll-forward.ts");
+  // process.execPath, not "bun": the interpreter already running this file is
+  // the one that can run the next one. A bare name resolves against PATH, and
+  // the caller that most needs this is Obsidian, which inherits no login
+  // shell's PATH and so finds no mise shim — the plugin carries a resolveBun()
+  // probe for exactly that reason. Spawning by name failed there *after* the
+  // dashboard write, leaving the day archived and the page unturned.
+  let proc;
+  try {
+    proc = Bun.spawnSync(
+      [process.execPath, script, "--shift-only", "--verbose"],
+      { env: process.env },
+    );
+  } catch (e) {
+    // spawnSync throws rather than returning a non-zero exit when the binary
+    // cannot be run at all, so the report below needs this to reach it.
+    return `shift failed: ${(e as Error).message}`;
+  }
+  const out = proc.stdout.toString().trim();
+  const err = proc.stderr.toString().trim();
+  if (proc.exitCode !== 0) return `shift failed: ${err || out || "no output"}`;
+  // The shift prints its own DRY RUN/APPLIED banner; only the detail is wanted.
+  return out
+    .split("\n")
+    .filter((l) => l.trim() && !/^(DRY RUN|APPLIED)$/.test(l.trim()))
+    .map((l) => l.trim())
+    .join("; ");
+}
+
 // --- remove from the dashboard, bottom-up so indices stay valid ----------
 if (!dryRun) {
   const sorted = [...deletions].sort((a, b) => b[0] - a[0]);
@@ -488,6 +525,10 @@ if (!dryRun) {
   writeFileSync(dashboardPath, collapseBlanks(out).join("\n"), "utf8");
 }
 
+// In a dry run the file still holds everything this run would remove, so asking
+// the shift now would answer about the wrong file. Say what will follow instead.
+const shifted = dryRun ? "" : turnThePage();
+
 if (verbose || dryRun) {
   process.stdout.write(`${dryRun ? "DRY RUN" : "APPLIED"}\n`);
   for (const move of moves) {
@@ -500,6 +541,11 @@ if (verbose || dryRun) {
     process.stdout.write(`  day heading removed: ${day}\n`);
   for (const path of written) process.stdout.write(`  archive: ${path}\n`);
   if (snapshot) process.stdout.write(`  snapshot: ${snapshot}\n`);
+  process.stdout.write(
+    dryRun
+      ? "  then turns the page if the day ends with nothing left to tick\n"
+      : `  ${shifted}\n`,
+  );
 } else {
-  process.stdout.write("Done\n");
+  process.stdout.write(shifted ? `Done; ${shifted}\n` : "Done\n");
 }

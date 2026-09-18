@@ -38,16 +38,13 @@ test("Roll is one run of roll-forward with no flags", () => {
   expect(ACTIONS.roll[0].flags).toEqual([]);
 });
 
-test("Archive clears the day and then turns the page", () => {
-  // Archiving without shifting leaves no unprefixed day heading at all, which
-  // reads as a broken dashboard.
+test("Archive is one step, because the script turns the page itself", () => {
+  // archive-done.ts runs the shift, so chaining it here too would shift twice.
   const { ACTIONS } = loadPlugin();
   expect(ACTIONS.archive.map((s: { script: string }) => s.script)).toEqual([
     "archive",
-    "roll",
   ]);
   expect(ACTIONS.archive[0].flags).toEqual([]);
-  expect(ACTIONS.archive[1].flags).toEqual(["--shift-only"]);
 });
 
 test("the scripts it points at exist in this repo", () => {

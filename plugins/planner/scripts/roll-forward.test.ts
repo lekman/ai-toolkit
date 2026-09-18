@@ -173,10 +173,9 @@ test("refuses to shift while today still has content", () => {
   expect(r.text).toContain("### Wednesday 16 September");
 });
 
-test("shifts once the day is archived, and never promotes Unscheduled", () => {
+test("the archive turns the page itself, and never promotes Unscheduled", () => {
   const first = run(SCRIPT, FIXTURE);
-  exec(ARCHIVE, first.path);
-  const r = exec(SCRIPT, first.path, ["--verbose"]);
+  const r = exec(ARCHIVE, first.path, ["--verbose"]);
   expect(r.out).toContain("promoted to today: Thursday 17 September");
   expect(r.out).toContain("new tomorrow: Friday 18 September");
   expect(r.text).toContain("### Thursday 17 September");
@@ -218,8 +217,7 @@ test("an empty Future leaves an empty Tomorrow callout, which is correct", () =>
     "> [!note]- Future\n\n## Initiatives",
   );
   const first = run(SCRIPT, noFuture);
-  exec(ARCHIVE, first.path);
-  const r = exec(SCRIPT, first.path);
+  const r = exec(ARCHIVE, first.path);
   expect(r.text).toContain("> [!note]- Tomorrow");
   expect(r.text).toContain("### Thursday 17 September");
 });
@@ -241,16 +239,16 @@ test("--shift-only turns the page without rolling anyone's open items", () => {
 test("--shift-only leaves today's open items alone", () => {
   const r = run(SCRIPT, FIXTURE, ["--shift-only", "--verbose"]);
   // Today still has content, so there is nothing to promote and nothing rolls.
-  expect(r.out.trim()).toBe("Nothing to shift");
+  expect(r.out.trim()).toBe("Nothing to shift: today still has content");
   expect(r.text).toBe(FIXTURE);
 });
 
-test("archive then --shift-only turns the page in two runs", () => {
+test("a --shift-only after an archive has nothing left to do", () => {
+  // The archive already turned the page, and the day it promoted is not empty.
   const first = run(SCRIPT, FIXTURE);
   exec(ARCHIVE, first.path);
   const r = exec(SCRIPT, first.path, ["--shift-only", "--verbose"]);
-  expect(r.out).toContain("promoted to today: Thursday 17 September");
-  expect(r.out).toContain("new tomorrow: Friday 18 September");
+  expect(r.out.trim()).toBe("Nothing to shift: today still has content");
   const focus = r.text.slice(
     r.text.indexOf("## Focus"),
     r.text.indexOf("## Initiatives"),
@@ -263,14 +261,14 @@ test("archive then --shift-only turns the page in two runs", () => {
 test("says so and writes nothing when there is nothing to do", () => {
   const empty = `# Dashboard\n\n## Focus\n\n> [!note]- Tomorrow\n\n> [!note]- Future\n\n## Initiatives\n`;
   const r = run(SCRIPT, empty);
-  expect(r.out.trim()).toBe("Nothing to roll");
+  expect(r.out.trim()).toBe("Nothing to roll: Tomorrow is empty");
   expect(r.text).toBe(empty);
 });
 
 test("is idempotent: a second run with nothing open does nothing", () => {
   const first = run(SCRIPT, FIXTURE);
   const second = exec(SCRIPT, first.path);
-  expect(second.out.trim()).toBe("Nothing to roll");
+  expect(second.out.trim()).toBe("Nothing to roll: today still has content");
   expect(second.text).toBe(first.text);
 });
 
@@ -312,4 +310,77 @@ test("fails loudly when there is no Focus section", () => {
   const r = run(SCRIPT, "# Dashboard\n\n## Initiatives\n\nNothing here.\n");
   expect(r.code).toBe(1);
   expect(r.err).toContain("Focus");
+});
+
+/* ------------------------------------------- intentions are day-scoped prose */
+
+/** Today holds one client, its intention, and open items — nothing ticked. */
+const INTENTION_ONLY = `# Dashboard
+
+## Focus
+
+### Wednesday 16 September
+
+#### **Acme**
+
+> [!note] Intention: three things and nothing else.
+
+- [ ] First open thing
+- [ ] Second open thing
+
+> [!note]- Tomorrow
+>
+> ### Thursday 17 September
+>
+> #### **Acme**
+>
+> - [ ] Already planned for tomorrow
+
+> [!note]- Future
+>
+> ### Friday 18 September
+>
+> #### **Umbrella**
+>
+> - [ ] Friday thing
+
+## Initiatives
+
+Untouched.
+`;
+
+test("a group left holding only its intention is removed with the items", () => {
+  const r = run(SCRIPT, INTENTION_ONLY, ["--verbose"]);
+  expect(r.code).toBe(0);
+  expect(r.text).not.toContain("Intention: three things and nothing else.");
+  expect(r.text).not.toContain("#### **Acme**\n\n> [!note]");
+});
+
+test("clearing the intention lets the same run turn the page", () => {
+  const r = run(SCRIPT, INTENTION_ONLY, ["--verbose"]);
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
+  expect(r.out).toContain("new tomorrow: Friday 18 September");
+  expect(r.text).toContain("### Thursday 17 September");
+  expect(r.text).not.toContain("### Wednesday 16 September");
+});
+
+test("an end-of-day overview is a record, and still holds the day open", () => {
+  const overview = INTENTION_ONLY.replace(
+    "> [!note] Intention: three things and nothing else.",
+    "> [!note] Two of the three landed. **Watch:** the third needs Magnus.",
+  );
+  const r = run(SCRIPT, overview, ["--verbose"]);
+  expect(r.text).toContain("**Watch:** the third needs Magnus.");
+  expect(r.out).toContain("no shift: today still has content");
+  expect(r.text).toContain("### Wednesday 16 September");
+});
+
+test("a multi-line intention is removed whole, continuation lines included", () => {
+  const wrapped = INTENTION_ONLY.replace(
+    "> [!note] Intention: three things and nothing else.",
+    "> [!note] Intention: three things and nothing else.\n> The rest moved to Thursday.",
+  );
+  const r = run(SCRIPT, wrapped, ["--verbose"]);
+  expect(r.text).not.toContain("The rest moved to Thursday.");
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
 });

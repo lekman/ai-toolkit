@@ -76,3 +76,30 @@ test("stops at the end of Focus", () => {
     p.items.every((i: { text: string }) => !i.text.includes("Untouched")),
   ).toBe(true);
 });
+
+/* ---------------------------------------- status and details leave the prose */
+
+const { itemStatus, itemDetails, itemLead: lead } = loadPlugin();
+
+const SHAPED =
+  "[ADX-1](https://example.invalid/1) 🔴 **Ship the thing.** " +
+  "Some prose about it · [Details](Clients/Acme/Some%20Page.md)";
+
+test("the status marker is read from the lead, not the prose", () => {
+  expect(itemStatus(SHAPED)).toBe("🔴");
+  expect(itemStatus("**No marker here.** prose with 🔴 inside it")).toBe("");
+});
+
+test("the details target comes back percent-encoded, as written", () => {
+  expect(itemDetails(SHAPED)).toBe("Clients/Acme/Some%20Page.md");
+  expect(itemDetails("**Nothing linked.** prose")).toBe("");
+});
+
+test("the lead keeps the ticket link and loses the marker", () => {
+  expect(lead(SHAPED)).toBe("[ADX-1](https://example.invalid/1)");
+});
+
+test("the body loses the details link that now sits in the corner", () => {
+  const { itemBody } = loadPlugin();
+  expect(itemBody(SHAPED)).toBe("Some prose about it");
+});

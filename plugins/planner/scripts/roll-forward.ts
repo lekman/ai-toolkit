@@ -95,6 +95,11 @@ const isDatedHeading = (l: string) =>
 const isAnyDayHeading = (l: string) => /^#{2,3} \S/.test(strip(l));
 const isClientHeading = (l: string) => /^#### /.test(strip(l));
 const isBandStart = (l: string) => /^> \[!note\]- /.test(l);
+// A client block opens with a callout. `Intention:` states what the day was
+// for; anything else — an end-of-day overview, a handover link — is a record
+// of what happened. Only the first is residue once the items have gone.
+const isIntention = (l: string) => /^>\s*\[!note\]\s+Intention:/i.test(l);
+const isCalloutStart = (l: string) => /^>\s*\[![a-z]+\]/i.test(l);
 const isItem = (l: string) => /^- \[[ x]\]/.test(strip(l));
 const isOpen = (l: string) => /^- \[ \]/.test(strip(l));
 const clientName = (l: string) =>
@@ -320,14 +325,22 @@ function pruneEmptiedGroups(lines: string[]): void {
         break;
       }
     }
-    let onlyBlanks = true;
+    let onlyResidue = true;
+    let inIntention = false;
     for (let i = start + 1; i < end; i++) {
-      if (lines[i].trim() !== "") {
-        onlyBlanks = false;
-        break;
+      const trimmed = lines[i].trim();
+      if (trimmed === "" || trimmed === ">") continue;
+      if (isIntention(lines[i])) {
+        inIntention = true;
+        continue;
       }
+      // Continuation lines of the intention, but not the start of a new callout.
+      if (inIntention && lines[i].startsWith(">") && !isCalloutStart(lines[i]))
+        continue;
+      onlyResidue = false;
+      break;
     }
-    if (onlyBlanks) lines.splice(start, end - start);
+    if (onlyResidue) lines.splice(start, end - start);
   }
 
   // Splicing leaves runs of blank lines behind; the day should read as it did.
@@ -496,7 +509,12 @@ const { lines: shifted, shift } = shiftDays(afterRoll);
 const final = tidyBands(shifted);
 
 if (rolled.length === 0 && !shift.promoted) {
-  process.stdout.write(shiftOnly ? "Nothing to shift\n" : "Nothing to roll\n");
+  // shiftDays() knows why it declined; saying only "Nothing to shift" leaves the
+  // operator to find the leftover group by hand.
+  const base = shiftOnly ? "Nothing to shift" : "Nothing to roll";
+  process.stdout.write(
+    shift.reason ? `${base}: ${shift.reason}\n` : `${base}\n`,
+  );
   process.exit(0);
 }
 

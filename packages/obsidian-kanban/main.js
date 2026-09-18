@@ -53,14 +53,10 @@ const SCRIPTS = {
   roll: "plugins/planner/scripts/roll-forward.ts",
 };
 
-// Archive clears the finished day and then turns the page, because a dashboard
-// left with no unprefixed day heading reads as broken. The second step is
-// --shift-only so it never moves another client's still-open work.
+// One step each. archive-done.ts turns the page itself, so the board no longer
+// chains the shift here — doing both would shift twice.
 const ACTIONS = {
-  archive: [
-    { script: "archive", flags: [] },
-    { script: "roll", flags: ["--shift-only"] },
-  ],
+  archive: [{ script: "archive", flags: [] }],
   roll: [{ script: "roll", flags: [] }],
 };
 
@@ -188,6 +184,8 @@ function parseDashboard(text) {
   const lines = text.split("\n");
   const items = [];
   const days = { today: [], tomorrow: [], future: [], unscheduled: [] };
+  // The intention callout opening a client block, keyed `column|client`.
+  const intentions = {};
 
   let inFocus = false;
   let band = "today";
@@ -195,6 +193,7 @@ function parseDashboard(text) {
   let column = null;
   let client = null;
   let run = null;
+  let intent = null;
   let order = 0;
 
   for (let i = 0; i < lines.length; i++) {
@@ -212,6 +211,7 @@ function parseDashboard(text) {
       day = null;
       client = null;
       run = null;
+      intent = null;
       continue;
     }
     if (/^>\s*\[!note\]-\s*Future/.test(raw)) {
@@ -219,6 +219,7 @@ function parseDashboard(text) {
       day = null;
       client = null;
       run = null;
+      intent = null;
       continue;
     }
 
@@ -234,6 +235,7 @@ function parseDashboard(text) {
         day = null;
         client = null;
         run = null;
+        intent = null;
         continue;
       } else {
         band = "today";
@@ -247,6 +249,7 @@ function parseDashboard(text) {
       day = dayMatch[1];
       client = null;
       run = null;
+      intent = null;
       if (band === "today") column = "today";
       else if (band === "tomorrow") column = "tomorrow";
       else column = /unscheduled/i.test(day) ? "unscheduled" : "future";
@@ -260,7 +263,27 @@ function parseDashboard(text) {
     if (clientMatch) {
       client = clientMatch[1].replace(/^\*\*|\*\*$/g, "").trim();
       run = null;
+      intent = null;
       continue;
+    }
+
+    // `> [!note] Intention: …` opens a client block and says what the day is
+    // for. Keep the first per client per column; a later callout in the same
+    // block is a different kind of note.
+    const intentMatch = line.match(/^>\s*\[!note\]\s+Intention:\s*(.*)$/i);
+    if (intentMatch && column && client) {
+      intent = column + "|" + client;
+      if (!(intent in intentions)) intentions[intent] = intentMatch[1].trim();
+      continue;
+    }
+    // Continuation lines of that callout, but not the start of another one.
+    if (intent && /^>/.test(line)) {
+      if (!/^>\s*\[!/.test(line)) {
+        const more = line.replace(/^>\s?/, "").trim();
+        if (more) intentions[intent] = (intentions[intent] + " " + more).trim();
+        continue;
+      }
+      intent = null;
     }
 
     // A bold-only paragraph is a run header: it gives the items below it meaning.
@@ -288,7 +311,7 @@ function parseDashboard(text) {
     }
   }
 
-  return { lines, items, days };
+  return { lines, items, days, intentions };
 }
 
 function itemTitle(text) {
@@ -301,16 +324,53 @@ function itemTitle(text) {
 function itemBody(text) {
   const bold = text.match(/\*\*(.+?)\*\*/);
   if (!bold) return "";
-  return text
-    .slice(text.indexOf(bold[0]) + bold[0].length)
-    .replace(/^\s*[.·:]\s*/, "")
-    .trim();
+  return (
+    text
+      .slice(text.indexOf(bold[0]) + bold[0].length)
+      .replace(/^\s*[.·:]\s*/, "")
+      // The Details link is a button in the card's corner, not prose.
+      .replace(/\s*·?\s*\[Details\]\([^)]*\)/i, "")
+      .trim()
+  );
+}
+
+// The markers the dashboard uses for status, in the item shape
+// `- [ ] [KEY](url) 🔴 **Title.** prose · [Details](path)`.
+const STATUS_MARKERS = [
+  "🔴",
+  "🟡",
+  "🟢",
+  "⚪",
+  "🚧",
+  "🧾",
+  "💰",
+  "📅",
+  "⚠️",
+  "✅",
+  "🔄",
+];
+
+/** The status marker, or "" — read from the lead, never from the prose. */
+function itemStatus(text) {
+  const bold = text.match(/\*\*(.+?)\*\*/);
+  const lead = bold ? text.slice(0, text.indexOf(bold[0])) : text;
+  for (const m of STATUS_MARKERS) if (lead.includes(m)) return m;
+  return "";
+}
+
+/** The `[Details](path)` target, or "" — the link text is always "Details". */
+function itemDetails(text) {
+  const m = text.match(/\[Details\]\(([^)]+)\)/i);
+  return m ? m[1].trim() : "";
 }
 
 function itemLead(text) {
-  // Everything before the first bold run: the ticket link and any markers.
+  // Everything before the first bold run — the ticket link. The status marker
+  // is shown in the card's corner instead, so it is taken out here.
   const bold = text.match(/\*\*(.+?)\*\*/);
-  return bold ? text.slice(0, text.indexOf(bold[0])).trim() : "";
+  let lead = bold ? text.slice(0, text.indexOf(bold[0])) : "";
+  for (const m of STATUS_MARKERS) lead = lead.split(m).join("");
+  return lead.trim();
 }
 
 /* ------------------------------------------------------------------ writing */
@@ -506,6 +566,8 @@ class KanbanView extends ItemView {
     super(leaf);
     this.plugin = plugin;
     this.expanded = new Set();
+    // Bumped on every render; only the newest may touch the DOM. See render().
+    this.renderGen = 0;
   }
 
   getViewType() {
@@ -523,15 +585,21 @@ class KanbanView extends ItemView {
   }
   async onClose() {}
 
+  // Reading the file is a yield point, and a single move triggers two refreshes:
+  // move() asks for one and the vault's modify event asks for another. Clearing
+  // the DOM before that await let both clear it and then both append, drawing
+  // the board twice. So the clear happens after the read, and a render that has
+  // been overtaken stops without touching anything.
   async render() {
+    const gen = ++this.renderGen;
     const root = this.contentEl;
-    root.empty();
-    root.addClass("dk-root");
 
     const file = this.app.vault.getAbstractFileByPath(
       this.plugin.settings.dashboardPath,
     );
     if (!file) {
+      root.empty();
+      root.addClass("dk-root");
       root.createDiv({
         cls: "dk-empty",
         text: "Dashboard not found: " + this.plugin.settings.dashboardPath,
@@ -539,6 +607,10 @@ class KanbanView extends ItemView {
       return;
     }
     const text = await this.app.vault.read(file);
+    if (gen !== this.renderGen) return;
+
+    root.empty();
+    root.addClass("dk-root");
     const parsed = parseDashboard(text);
     this.parsed = parsed;
 
@@ -597,6 +669,16 @@ class KanbanView extends ItemView {
       ).length;
       label.createSpan({ cls: "dk-rowhead-count", text: String(open) });
       label.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+
+      // The intention says what the day is for, so it belongs beside the client
+      // rather than inside a column. A collapsed row is a count, not a briefing.
+      if (!isCollapsed) {
+        const intent = this.intentionFor(parsed, columns, client);
+        if (intent) {
+          const el = label.createDiv({ cls: "dk-rowhead-intent" });
+          this.renderMd(el, intent);
+        }
+      }
       label.addEventListener("click", () => this.toggleClient(client));
 
       for (const col of columns) {
@@ -735,6 +817,15 @@ class KanbanView extends ItemView {
     this.plugin.refreshViews();
   }
 
+  // Prefer the leftmost visible column, so Focus and Today both show today's.
+  intentionFor(parsed, columns, client) {
+    for (const col of columns) {
+      const found = parsed.intentions[col.key + "|" + client];
+      if (found) return found;
+    }
+    return "";
+  }
+
   clientRows(items, columns) {
     const seen = [];
     const configured = this.plugin.settings.clientOrder || [];
@@ -794,6 +885,24 @@ class KanbanView extends ItemView {
 
     const title = head.createDiv({ cls: "dk-title" });
     this.renderMd(title, itemTitle(it.text));
+
+    // Status and the way into the detail page live in the card's corner. The
+    // marker read as noise inside the prose, and the link was not clickable
+    // there: the body swallows clicks to expand, and an internal link rendered
+    // into a custom view is not wired to the workspace on its own.
+    const meta = head.createDiv({ cls: "dk-card-meta" });
+    const status = itemStatus(it.text);
+    if (status) meta.createSpan({ cls: "dk-status", text: status });
+    const details = itemDetails(it.text);
+    if (details) {
+      const link = meta.createEl("a", { cls: "dk-details", text: "\u2197" });
+      link.setAttribute("aria-label", "Open details in a new tab");
+      link.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.openDetails(details);
+      });
+    }
 
     const lead = itemLead(it.text);
     if (lead) {
@@ -931,6 +1040,27 @@ class KanbanView extends ItemView {
     );
     if (ok) new Notice("Moved to " + column + " · " + client);
     this.plugin.refreshViews();
+  }
+
+  // `[Details](path)` is vault-relative with percent-encoded spaces, so the
+  // stored text is not what openLinkText wants. A new tab is the point: the
+  // board stays where it was.
+  openDetails(target) {
+    if (/^https?:\/\//i.test(target)) {
+      window.open(target, "_blank");
+      return;
+    }
+    let path = target;
+    try {
+      path = decodeURIComponent(target);
+    } catch {
+      // A malformed escape is better opened verbatim than not at all.
+    }
+    this.app.workspace.openLinkText(
+      path,
+      this.plugin.settings.dashboardPath,
+      "tab",
+    );
   }
 
   async reveal(it) {

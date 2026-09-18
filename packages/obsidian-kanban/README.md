@@ -57,6 +57,19 @@ columns, so a card can be pushed out of the current view.
 
 Done items are hidden by default. "Show done" in the toolbar brings them back.
 
+## Cards
+
+The title leads, with the ticket link under it. The card's top right corner
+holds the status marker and, when the item has a `[Details](path)` link, an
+arrow that opens that page in a new tab. Both are taken out of the prose: the
+marker read as noise there, and the link was not clickable, because the body
+swallows clicks to expand and an internal link rendered into a custom view is
+not wired to the workspace on its own.
+
+A client's `Intention:` callout is shown in the left column under the client
+name, taken from the leftmost visible column. A collapsed row hides it — a
+collapsed row is a count, not a briefing.
+
 ## Client rows
 
 Clicking a client name on the left collapses that row, and clicking again
@@ -74,18 +87,20 @@ submenu; older versions get flat `Move to <client>` entries.
 Two toolbar buttons, which do **not** write the dashboard themselves. They run
 the ai-toolkit scripts:
 
-| Button  | Runs                                                   | What it does                                                                                                                                                                                |
-| ------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Roll    | `roll-forward.ts`                                      | Moves today's open items into Tomorrow, dropping the `🔄` claim marker. Then, only when today's section is empty, promotes Tomorrow to today and the earliest dated Future day to Tomorrow. |
-| Archive | `archive-done.ts`, then `roll-forward.ts --shift-only` | Moves ticked items into `Archive/Work Logs/<year>/<Month>.md`, drops emptied client groups and the day heading, then turns the page.                                                        |
+| Button  | Runs              | What it does                                                                                                                                                                                                                                          |
+| ------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Roll    | `roll-forward.ts` | Moves today's open items into Tomorrow, dropping the `🔄` claim marker, and takes each emptied group's `Intention:` callout with them. Then, once today's section is empty, promotes Tomorrow to today and the earliest dated Future day to Tomorrow. |
+| Archive | `archive-done.ts` | Moves ticked items into `Archive/Work Logs/<year>/<Month>.md`, drops emptied client groups and the day heading, then turns the page itself.                                                                                                           |
 
-Archive turns the page itself because clearing the day without promoting the
-next one leaves the file with no unprefixed day heading, which reads as a
-broken dashboard. Its second step is `--shift-only`, so it never moves another
-client's still-open work.
+An intention says what the day was _for_, so it goes when that day's items go.
+An end-of-day overview — the callout ending in `Watch:` — is a record of what
+happened, and still holds the day open until the archive files it.
 
-So the order does not matter: Roll then Archive, or Archive alone, both end
-with the next day in focus.
+Both buttons are one script each. `archive-done.ts` runs the shift itself, so
+the order does not matter: Roll then Archive, or Archive alone, both end with
+the next day in focus. Neither promotes while something unexpected is left
+under today, and the script now says what that something is rather than
+reporting a bare "Nothing to shift".
 
 Those scripts own the write protocol, including the iCloud conflict-copy guard
 this plugin does not have. Repeating their logic here would give one dashboard

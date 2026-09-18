@@ -474,10 +474,9 @@ function snapshotDashboard(): string {
 // and the shift's own guard decides whether today is actually finished.
 function turnThePage(): string {
   const script = join(import.meta.dir, "roll-forward.ts");
-  const proc = Bun.spawnSync(
-    ["bun", script, "--shift-only", "--verbose"],
-    { env: process.env },
-  );
+  const proc = Bun.spawnSync(["bun", script, "--shift-only", "--verbose"], {
+    env: process.env,
+  });
   const out = proc.stdout.toString().trim();
   const err = proc.stderr.toString().trim();
   if (proc.exitCode !== 0) return `shift failed: ${err || out || "no output"}`;

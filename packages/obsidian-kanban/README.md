@@ -87,10 +87,10 @@ submenu; older versions get flat `Move to <client>` entries.
 Two toolbar buttons, which do **not** write the dashboard themselves. They run
 the ai-toolkit scripts:
 
-| Button  | Runs              | What it does                                                                                                                                                                                                                                       |
-| ------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Button  | Runs              | What it does                                                                                                                                                                                                                                          |
+| ------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Roll    | `roll-forward.ts` | Moves today's open items into Tomorrow, dropping the `🔄` claim marker, and takes each emptied group's `Intention:` callout with them. Then, once today's section is empty, promotes Tomorrow to today and the earliest dated Future day to Tomorrow. |
-| Archive | `archive-done.ts` | Moves ticked items into `Archive/Work Logs/<year>/<Month>.md`, drops emptied client groups and the day heading, then turns the page itself.                                                                                                        |
+| Archive | `archive-done.ts` | Moves ticked items into `Archive/Work Logs/<year>/<Month>.md`, drops emptied client groups and the day heading, then turns the page itself.                                                                                                           |
 
 An intention says what the day was _for_, so it goes when that day's items go.
 An end-of-day overview — the callout ending in `Watch:` — is a record of what

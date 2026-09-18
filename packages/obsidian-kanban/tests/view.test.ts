@@ -110,8 +110,9 @@ test("continuation lines join the intention rather than starting an item", () =>
     "three things and nothing else. The rest waits.",
   );
   // The callout must not have swallowed the items below it.
-  expect(p.items.filter((i: { client: string }) => i.client === "Acme").length)
-    .toBeGreaterThan(0);
+  expect(
+    p.items.filter((i: { client: string }) => i.client === "Acme").length,
+  ).toBeGreaterThan(0);
 });
 
 test("the row head shows the leftmost visible column's intention", () => {

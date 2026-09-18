@@ -324,12 +324,14 @@ function itemTitle(text) {
 function itemBody(text) {
   const bold = text.match(/\*\*(.+?)\*\*/);
   if (!bold) return "";
-  return text
-    .slice(text.indexOf(bold[0]) + bold[0].length)
-    .replace(/^\s*[.·:]\s*/, "")
-    // The Details link is a button in the card's corner, not prose.
-    .replace(/\s*·?\s*\[Details\]\([^)]*\)/i, "")
-    .trim();
+  return (
+    text
+      .slice(text.indexOf(bold[0]) + bold[0].length)
+      .replace(/^\s*[.·:]\s*/, "")
+      // The Details link is a button in the card's corner, not prose.
+      .replace(/\s*·?\s*\[Details\]\([^)]*\)/i, "")
+      .trim()
+  );
 }
 
 // The markers the dashboard uses for status, in the item shape

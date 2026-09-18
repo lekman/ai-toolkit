@@ -115,6 +115,16 @@ Archiving is all-or-nothing per day, across all clients:
   Tomorrow callout, which is correct and stays in the file.
   `/planner:today` Step 2b stays the fallback.
 
+`roll-forward.ts` does the roll and the shift in one run, and is the better
+choice when you are closing the whole day rather than one client:
+
+```bash
+bun "<skill-base-dir>/../../../planner/scripts/roll-forward.ts"
+```
+
+It is **all clients**, which this skill deliberately is not. Use it when every
+client is done for the day; do the per-client roll above when only yours is.
+
 ### Where the archive lives
 
 One file per month, under a year folder:

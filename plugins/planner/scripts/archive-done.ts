@@ -474,9 +474,23 @@ function snapshotDashboard(): string {
 // and the shift's own guard decides whether today is actually finished.
 function turnThePage(): string {
   const script = join(import.meta.dir, "roll-forward.ts");
-  const proc = Bun.spawnSync(["bun", script, "--shift-only", "--verbose"], {
-    env: process.env,
-  });
+  // process.execPath, not "bun": the interpreter already running this file is
+  // the one that can run the next one. A bare name resolves against PATH, and
+  // the caller that most needs this is Obsidian, which inherits no login
+  // shell's PATH and so finds no mise shim — the plugin carries a resolveBun()
+  // probe for exactly that reason. Spawning by name failed there *after* the
+  // dashboard write, leaving the day archived and the page unturned.
+  let proc;
+  try {
+    proc = Bun.spawnSync(
+      [process.execPath, script, "--shift-only", "--verbose"],
+      { env: process.env },
+    );
+  } catch (e) {
+    // spawnSync throws rather than returning a non-zero exit when the binary
+    // cannot be run at all, so the report below needs this to reach it.
+    return `shift failed: ${(e as Error).message}`;
+  }
   const out = proc.stdout.toString().trim();
   const err = proc.stderr.toString().trim();
   if (proc.exitCode !== 0) return `shift failed: ${err || out || "no output"}`;

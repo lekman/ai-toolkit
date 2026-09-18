@@ -24,7 +24,6 @@
 
 import {
   copyFileSync,
-  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -301,10 +300,19 @@ const written: string[] = [];
 for (const [month, monthMoves] of byMonth) {
   const path = join(vault, "Archive", "Work Logs", String(year), `${month}.md`);
   let archive: string[];
+  // What the file held when this run read it, or null when it was not there.
+  // Checking existence and then acting on the answer is the race: another
+  // session can create the log in between, and the template below would then
+  // overwrite everything it had just written.
+  let logBefore: string | null;
 
-  if (existsSync(path)) {
-    archive = readFileSync(path, "utf8").split("\n");
-  } else {
+  try {
+    logBefore = readFileSync(path, "utf8");
+    archive = logBefore.split("\n");
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException;
+    if (err.code !== "ENOENT") fail(`cannot read ${path}: ${err.message}`);
+    logBefore = null;
     // The work log spans every client, so it belongs to the vault owner —
     // `default_client`, read from config rather than hardcoded.
     archive = [
@@ -398,6 +406,21 @@ for (const [month, monthMoves] of byMonth) {
   }
 
   if (!dryRun) {
+    // Same compare-and-swap as the dashboard: a log that moved since it was
+    // read belongs to someone else's run, and this write would erase it.
+    let logNow: string | null;
+    try {
+      logNow = readFileSync(path, "utf8");
+    } catch (e) {
+      const err = e as NodeJS.ErrnoException;
+      if (err.code !== "ENOENT") fail(`cannot re-read ${path}: ${err.message}`);
+      logNow = null;
+    }
+    if (logNow !== logBefore) {
+      fail(
+        `${path} changed while this run was working. Nothing written; run it again.`,
+      );
+    }
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, collapseBlanks(archive).join("\n"), "utf8");
   }

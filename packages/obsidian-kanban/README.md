@@ -44,11 +44,11 @@ items are shown as run headers, so the priority grouping survives.
 
 The toolbar has a **View** picker, which chooses the columns:
 
-| View | Columns |
-|---|---|
-| Focus | Today, Tomorrow |
-| Today (default) | Today |
-| All | Today, Tomorrow, Future, Unscheduled |
+| View            | Columns                              |
+| --------------- | ------------------------------------ |
+| Focus           | Today, Tomorrow                      |
+| Today (default) | Today                                |
+| All             | Today, Tomorrow, Future, Unscheduled |
 
 The choice is saved, so the board opens in the same view next time. Client rows
 and the open count follow the view: a client whose only items are Unscheduled
@@ -74,10 +74,10 @@ submenu; older versions get flat "Move to <client>" entries.
 Two toolbar buttons, which do **not** write the dashboard themselves. They run
 the ai-toolkit scripts:
 
-| Button | Runs | What it does |
-|---|---|---|
-| Roll | `roll-forward.ts` | Moves today's open items into Tomorrow, dropping the `🔄` claim marker. Then, only when today's section is empty, promotes Tomorrow to today and the earliest dated Future day to Tomorrow. |
-| Archive | `archive-done.ts`, then `roll-forward.ts --shift-only` | Moves ticked items into `Archive/Work Logs/<year>/<Month>.md`, drops emptied client groups and the day heading, then turns the page. |
+| Button  | Runs                                                   | What it does                                                                                                                                                                                |
+| ------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Roll    | `roll-forward.ts`                                      | Moves today's open items into Tomorrow, dropping the `🔄` claim marker. Then, only when today's section is empty, promotes Tomorrow to today and the earliest dated Future day to Tomorrow. |
+| Archive | `archive-done.ts`, then `roll-forward.ts --shift-only` | Moves ticked items into `Archive/Work Logs/<year>/<Month>.md`, drops emptied client groups and the day heading, then turns the page.                                                        |
 
 Archive turns the page itself because clearing the day without promoting the
 next one leaves the file with no unprefixed day heading, which reads as a

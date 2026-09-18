@@ -16,22 +16,30 @@ test("attributes items to the client group above them", () => {
   const p = parseDashboard(FIXTURE);
   const acme = p.items.filter((i: { client: string }) => i.client === "Acme");
   expect(acme).toHaveLength(4);
-  expect(p.items.filter((i: { client: string }) => i.client === "Globex")).toHaveLength(1);
+  expect(
+    p.items.filter((i: { client: string }) => i.client === "Globex"),
+  ).toHaveLength(1);
 });
 
 test("an intention callout is prose, not an item", () => {
   const p = parseDashboard(FIXTURE);
-  expect(p.items.every((i: { text: string }) => !i.text.includes("Intention"))).toBe(true);
+  expect(
+    p.items.every((i: { text: string }) => !i.text.includes("Intention")),
+  ).toBe(true);
 });
 
 test("records the ticked state", () => {
   const p = parseDashboard(FIXTURE);
-  expect(p.items.filter((i: { checked: boolean }) => i.checked)).toHaveLength(1);
+  expect(p.items.filter((i: { checked: boolean }) => i.checked)).toHaveLength(
+    1,
+  );
 });
 
 test("strips exactly one quote level inside a callout", () => {
   const p = parseDashboard(FIXTURE);
-  const item = p.items.find((i: { text: string }) => i.text.includes("Already planned"));
+  const item = p.items.find((i: { text: string }) =>
+    i.text.includes("Already planned"),
+  );
   expect(item.column).toBe("tomorrow");
   expect(item.depth).toBe(1);
   expect(item.text.startsWith(">")).toBe(false);
@@ -40,13 +48,20 @@ test("strips exactly one quote level inside a callout", () => {
 test("an item with no client heading above it is not attributed to one", () => {
   const orphan = FIXTURE.replace("#### **Globex**\n\n", "");
   const p = parseDashboard(orphan);
-  expect(p.items.some((i: { client: string }) => i.client === NO_CLIENT)).toBe(false);
+  expect(p.items.some((i: { client: string }) => i.client === NO_CLIENT)).toBe(
+    false,
+  );
   // It belongs to the group it now sits under, not to a new one.
-  expect(p.items.find((i: { text: string }) => i.text.includes("Globex open thing")).client).toBe("Acme");
+  expect(
+    p.items.find((i: { text: string }) => i.text.includes("Globex open thing"))
+      .client,
+  ).toBe("Acme");
 });
 
 test("takes the title from the bold run and the body from the rest", () => {
-  expect(itemTitle("**First open thing** · with a body")).toBe("First open thing");
+  expect(itemTitle("**First open thing** · with a body")).toBe(
+    "First open thing",
+  );
   expect(itemBody("**First open thing** · with a body")).toBe("with a body");
 });
 
@@ -57,5 +72,7 @@ test("falls back to the plain text when there is no bold run", () => {
 
 test("stops at the end of Focus", () => {
   const p = parseDashboard(FIXTURE);
-  expect(p.items.every((i: { text: string }) => !i.text.includes("Untouched"))).toBe(true);
+  expect(
+    p.items.every((i: { text: string }) => !i.text.includes("Untouched")),
+  ).toBe(true);
 });

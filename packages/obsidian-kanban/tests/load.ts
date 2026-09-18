@@ -62,9 +62,14 @@ function refuseToSpawn() {
 }
 
 const original = Module.prototype.require;
-Module.prototype.require = function (this: unknown, id: string, ...rest: unknown[]) {
+Module.prototype.require = function (
+  this: unknown,
+  id: string,
+  ...rest: unknown[]
+) {
   if (id === "obsidian") return obsidianStub();
-  if (id === "child_process" || id === "node:child_process") return childProcessStub;
+  if (id === "child_process" || id === "node:child_process")
+    return childProcessStub;
   return original.call(this, id, ...rest);
 };
 

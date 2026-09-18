@@ -2,7 +2,13 @@ import { expect, test } from "bun:test";
 
 import { FIXTURE, loadPlugin } from "./load";
 
-const { parseDashboard, locateInsertPoint, KanbanView, DEFAULT_SETTINGS, NO_CLIENT } = loadPlugin();
+const {
+  parseDashboard,
+  locateInsertPoint,
+  KanbanView,
+  DEFAULT_SETTINGS,
+  NO_CLIENT,
+} = loadPlugin();
 
 /* ----------------------------------------------------------------- moving */
 
@@ -15,7 +21,11 @@ function move(text: string, fileLine: number, column: string, client: string) {
   if (!spot) return null;
   const block = [];
   if (spot.createGroup) {
-    block.push(spot.prefix.trimEnd(), `${spot.prefix}#### **${client}**`, spot.prefix.trimEnd());
+    block.push(
+      spot.prefix.trimEnd(),
+      `${spot.prefix}#### **${client}**`,
+      spot.prefix.trimEnd(),
+    );
   }
   block.push(spot.prefix + body);
   lines.splice(spot.index, 0, ...block);
@@ -31,9 +41,13 @@ const open = (column: string, client?: string) =>
 
 test("a card moves between columns and keeps every other item", () => {
   const item = open("today", "Acme");
-  const after = parseDashboard(move(FIXTURE, item.fileLine, "tomorrow", "Acme"));
+  const after = parseDashboard(
+    move(FIXTURE, item.fileLine, "tomorrow", "Acme"),
+  );
   expect(after.items).toHaveLength(parsed.items.length);
-  expect(after.items.find((i: { text: string }) => i.text === item.text).column).toBe("tomorrow");
+  expect(
+    after.items.find((i: { text: string }) => i.text === item.text).column,
+  ).toBe("tomorrow");
 });
 
 test("a card moves to another client in the same column", () => {
@@ -54,7 +68,9 @@ test("moving to a client with no group in that day creates the group", () => {
 
 test("a move into a callout gains the quote prefix, and out of one loses it", () => {
   const item = open("today", "Acme");
-  expect(move(FIXTURE, item.fileLine, "tomorrow", "Acme")).toContain(`> ${item.raw.trim()}`);
+  expect(move(FIXTURE, item.fileLine, "tomorrow", "Acme")).toContain(
+    `> ${item.raw.trim()}`,
+  );
   const inCallout = open("tomorrow", "Acme");
   const out = move(FIXTURE, inCallout.fileLine, "today", "Acme");
   expect(out).toContain("\n- [ ] Already planned for tomorrow");
@@ -69,9 +85,13 @@ test("the callouts survive a move that creates a group", () => {
 });
 
 test("a move into a column with no day is refused rather than guessed at", () => {
-  const noFuture = FIXTURE.replace(/> ### Friday 18 September[\s\S]*?(?=> ### Unscheduled)/, "");
+  const noFuture = FIXTURE.replace(
+    /> ### Friday 18 September[\s\S]*?(?=> ### Unscheduled)/,
+    "",
+  );
   const item = parseDashboard(noFuture).items.find(
-    (i: { column: string; checked: boolean }) => i.column === "today" && !i.checked,
+    (i: { column: string; checked: boolean }) =>
+      i.column === "today" && !i.checked,
   );
   expect(locateInsertPoint(noFuture.split("\n"), "future", "Acme")).toBeNull();
   expect(move(noFuture, item.fileLine, "future", "Acme")).toBeNull();
@@ -80,7 +100,10 @@ test("a move into a column with no day is refused rather than guessed at", () =>
 /* -------------------------------------------------------- client choices */
 
 const choices = (clientOrder: string[] = []) =>
-  KanbanView.prototype.clientChoices.call({ parsed, plugin: { settings: { clientOrder } } });
+  KanbanView.prototype.clientChoices.call({
+    parsed,
+    plugin: { settings: { clientOrder } },
+  });
 
 test("every client in the file is offered as a move target", () => {
   for (const name of ["Acme", "Globex", "Umbrella", "Initech"]) {

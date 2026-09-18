@@ -20,7 +20,11 @@ function withSpawnStub() {
       cb: (e: null, out: string, err: string) => void,
     ) => {
       calls.push({ bin, argv, opts });
-      cb(null, "DRY RUN\n  rolled — Acme: 2 item(s)\n  snapshot: /tmp/x.md", "");
+      cb(
+        null,
+        "DRY RUN\n  rolled — Acme: 2 item(s)\n  snapshot: /tmp/x.md",
+        "",
+      );
     },
   });
   return { calls, ...plugin };
@@ -28,7 +32,9 @@ function withSpawnStub() {
 
 test("Roll is one run of roll-forward with no flags", () => {
   const { ACTIONS } = loadPlugin();
-  expect(ACTIONS.roll.map((s: { script: string }) => s.script)).toEqual(["roll"]);
+  expect(ACTIONS.roll.map((s: { script: string }) => s.script)).toEqual([
+    "roll",
+  ]);
   expect(ACTIONS.roll[0].flags).toEqual([]);
 });
 
@@ -36,7 +42,10 @@ test("Archive clears the day and then turns the page", () => {
   // Archiving without shifting leaves no unprefixed day heading at all, which
   // reads as a broken dashboard.
   const { ACTIONS } = loadPlugin();
-  expect(ACTIONS.archive.map((s: { script: string }) => s.script)).toEqual(["archive", "roll"]);
+  expect(ACTIONS.archive.map((s: { script: string }) => s.script)).toEqual([
+    "archive",
+    "roll",
+  ]);
   expect(ACTIONS.archive[0].flags).toEqual([]);
   expect(ACTIONS.archive[1].flags).toEqual(["--shift-only"]);
 });
@@ -62,29 +71,43 @@ test("the bun search returns a path, never an empty string", () => {
 });
 
 test("spawns bun with the script, then the flags, from the toolkit folder", async () => {
-  const { calls, runScript, defaultToolkitDir, SCRIPTS, resolveBun } = withSpawnStub();
+  const { calls, runScript, defaultToolkitDir, SCRIPTS, resolveBun } =
+    withSpawnStub();
   const plugin = { settings: { toolkitDir: "", bunPath: "" } };
   const r = await runScript(plugin, "roll", ["--dry-run"]);
   expect(r.ok).toBe(true);
   expect(calls).toHaveLength(1);
   expect(calls[0].bin).toBe(resolveBun({}));
-  expect(calls[0].argv).toEqual([join(defaultToolkitDir(), SCRIPTS.roll), "--dry-run"]);
+  expect(calls[0].argv).toEqual([
+    join(defaultToolkitDir(), SCRIPTS.roll),
+    "--dry-run",
+  ]);
   expect(calls[0].opts.cwd).toBe(defaultToolkitDir());
   expect(typeof calls[0].opts.timeout).toBe("number");
 });
 
 test("a configured toolkit folder is honoured", async () => {
   const { calls, runScript, SCRIPTS } = withSpawnStub();
-  await runScript({ settings: { toolkitDir: "/tmp/elsewhere", bunPath: "" } }, "archive");
+  await runScript(
+    { settings: { toolkitDir: "/tmp/elsewhere", bunPath: "" } },
+    "archive",
+  );
   expect(calls[0].argv).toEqual([join("/tmp/elsewhere", SCRIPTS.archive)]);
 });
 
 test("a failed spawn is reported, not swallowed", async () => {
   const plugin = loadPlugin({
-    execFile: (_b: string, _a: string[], _o: unknown, cb: (e: Error, out: string, err: string) => void) =>
-      cb(new Error("bun not found"), "", "bun not found"),
+    execFile: (
+      _b: string,
+      _a: string[],
+      _o: unknown,
+      cb: (e: Error, out: string, err: string) => void,
+    ) => cb(new Error("bun not found"), "", "bun not found"),
   });
-  const r = await plugin.runScript({ settings: { toolkitDir: "", bunPath: "" } }, "roll");
+  const r = await plugin.runScript(
+    { settings: { toolkitDir: "", bunPath: "" } },
+    "roll",
+  );
   expect(r.ok).toBe(false);
   expect(r.err).toContain("bun not found");
 });

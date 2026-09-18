@@ -2,8 +2,15 @@ import { expect, test } from "bun:test";
 
 import { FIXTURE, loadPlugin } from "./load";
 
-const { VIEWS, COLUMNS, viewColumns, normalizeView, DEFAULT_SETTINGS, parseDashboard, KanbanView } =
-  loadPlugin();
+const {
+  VIEWS,
+  COLUMNS,
+  viewColumns,
+  normalizeView,
+  DEFAULT_SETTINGS,
+  parseDashboard,
+  KanbanView,
+} = loadPlugin();
 
 const keys = (k?: string) => viewColumns(k).map((c: { key: string }) => c.key);
 
@@ -26,7 +33,11 @@ test("a view key the build no longer knows falls back to the default", () => {
 });
 
 test("the picker offers exactly Focus, Today and All", () => {
-  expect(VIEWS.map((v: { label: string }) => v.label)).toEqual(["Focus", "Today", "All"]);
+  expect(VIEWS.map((v: { label: string }) => v.label)).toEqual([
+    "Focus",
+    "Today",
+    "All",
+  ]);
 });
 
 const rows = (viewKey: string, clientOrder: string[] = []) => {
@@ -36,7 +47,11 @@ const rows = (viewKey: string, clientOrder: string[] = []) => {
     cols.some((c: { key: string }) => c.key === it.column),
   );
   return {
-    clients: KanbanView.prototype.clientRows.call({ plugin: { settings: { clientOrder } } }, visible, cols),
+    clients: KanbanView.prototype.clientRows.call(
+      { plugin: { settings: { clientOrder } } },
+      visible,
+      cols,
+    ),
     count: visible.length,
   };
 };
@@ -58,7 +73,10 @@ test("All covers every parsed item", () => {
 });
 
 test("configured clients lead the rows, the rest follow file order", () => {
-  expect(rows("all", ["Initech", "Umbrella"]).clients.slice(0, 2)).toEqual(["Initech", "Umbrella"]);
+  expect(rows("all", ["Initech", "Umbrella"]).clients.slice(0, 2)).toEqual([
+    "Initech",
+    "Umbrella",
+  ]);
 });
 
 test("a configured client with no items in view is not given an empty row", () => {

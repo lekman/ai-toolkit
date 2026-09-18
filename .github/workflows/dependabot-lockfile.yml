@@ -1,0 +1,110 @@
+# Dependabot cannot write a Bun lockfile.
+#
+# It edits package.json and stops there, so `bun install --frozen-lockfile` in
+# CI rejects every dependency pull request it opens. Both open ones were stuck
+# on exactly this, one of them for ten days, and the fix each time was a human
+# running `bun install` and pushing the result.
+#
+# This job does that instead. It resolves the lockfile, and pushes it to the
+# pull request only when it actually changed.
+#
+# Two details that decide whether this works at all:
+#
+#   * The push must come from the GitHub App, not GITHUB_TOKEN. GitHub
+#     deliberately does not start workflow runs for pushes made with
+#     GITHUB_TOKEN, so the corrected branch would sit with the same red checks
+#     it had before and auto-merge would never fire.
+#   * Hence pull_request_target rather than pull_request. A workflow triggered
+#     by a Dependabot pull request is given Dependabot secrets, and APP_ID and
+#     APP_PRIVATE_KEY are not among them; pull_request_target evaluates in the
+#     base repository's context, where they are.
+#
+# pull_request_target with a checkout of the pull request's own head is the
+# combination that leaks tokens when the checked-out code runs. Nothing here
+# runs it: `--ignore-scripts` stops install lifecycle hooks, and no lint, test
+# or build step follows. Resolving a lockfile reads manifests and the registry;
+# it does not execute the packages.
+
+name: Dependabot Lockfile
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-lockfile-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lockfile:
+    name: Resolve the lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Both conditions, not either. The branch prefix is what Dependabot
+    # controls; the author is what proves it was Dependabot that opened it.
+    if: >-
+      startsWith(github.head_ref, 'dependabot/') &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    steps:
+      # No continue-on-error. Without the App token the push would land as
+      # GITHUB_TOKEN, no checks would re-run, and the job would report success
+      # while leaving the pull request exactly as stuck as before.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # pull_request_target defaults to the base branch, which is the one
+          # place the lockfile is already correct.
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.14
+
+      - name: Resolve the lockfile
+        run: bun install --ignore-scripts
+
+      - name: Push it if it changed
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- bun.lock; then
+            echo "lockfile already matches package.json; nothing to push"
+            exit 0
+          fi
+
+          # Only the lockfile. A dependency bump that somehow dirtied anything
+          # else is not something to commit unread.
+          if ! git diff --quiet -- . ':(exclude)bun.lock'; then
+            echo "::error::bun install changed files other than bun.lock; refusing to commit"
+            git diff --stat -- . ':(exclude)bun.lock'
+            exit 1
+          fi
+
+          # The numeric id is the bot account's, not the App's, and it is what
+          # makes the commit attribute to the App rather than to nobody.
+          bot_id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+
+          git add bun.lock
+          git commit \
+            -m "build: update the lockfile for #${PR_NUMBER}" \
+            -m "Dependabot edits package.json but cannot write a Bun lockfile, so bun install --frozen-lockfile rejects the branch without this."
+          git push
+          echo "pushed a lockfile update; CI re-runs against the new commit"

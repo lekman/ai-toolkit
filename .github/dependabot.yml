@@ -1,3 +1,6 @@
+# Dependabot edits package.json and cannot write a Bun lockfile, so every pull
+# request it opens here needs one added before CI's frozen install will accept
+# it. .github/workflows/dependabot-lockfile.yml does that automatically.
 version: 2
 updates:
   - package-ecosystem: "npm"

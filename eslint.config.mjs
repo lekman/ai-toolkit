@@ -30,6 +30,7 @@ export default [
         console: "readonly",
         module: "writable",
         require: "readonly",
+        window: "readonly",
       },
     },
     rules: {

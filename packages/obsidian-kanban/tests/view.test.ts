@@ -82,3 +82,43 @@ test("configured clients lead the rows, the rest follow file order", () => {
 test("a configured client with no items in view is not given an empty row", () => {
   expect(rows("today", ["Umbrella"]).clients).not.toContain("Umbrella");
 });
+
+/* ------------------------------------------- the intention sits in the row head */
+
+test("an intention callout is captured per client, per column", () => {
+  const p = parseDashboard(FIXTURE);
+  expect(p.intentions["today|Acme"]).toBe("three things and nothing else.");
+  expect(p.intentions["today|Globex"]).toBeUndefined();
+});
+
+test("a nested intention inside Tomorrow is captured at its own depth", () => {
+  const nested = FIXTURE.replace(
+    "> #### **Acme**\n>\n> - [ ] Already planned for tomorrow",
+    "> #### **Acme**\n>\n> > [!note] Intention: finish what Wednesday started.\n>\n> - [ ] Already planned for tomorrow",
+  );
+  const p = parseDashboard(nested);
+  expect(p.intentions["tomorrow|Acme"]).toBe("finish what Wednesday started.");
+});
+
+test("continuation lines join the intention rather than starting an item", () => {
+  const wrapped = FIXTURE.replace(
+    "> [!note] Intention: three things and nothing else.",
+    "> [!note] Intention: three things and nothing else.\n> The rest waits.",
+  );
+  const p = parseDashboard(wrapped);
+  expect(p.intentions["today|Acme"]).toBe(
+    "three things and nothing else. The rest waits.",
+  );
+  // The callout must not have swallowed the items below it.
+  expect(p.items.filter((i: { client: string }) => i.client === "Acme").length)
+    .toBeGreaterThan(0);
+});
+
+test("the row head shows the leftmost visible column's intention", () => {
+  const p = parseDashboard(FIXTURE);
+  const pick = (view: string, client: string) =>
+    KanbanView.prototype.intentionFor.call(null, p, viewColumns(view), client);
+  expect(pick("today", "Acme")).toBe("three things and nothing else.");
+  expect(pick("focus", "Acme")).toBe("three things and nothing else.");
+  expect(pick("all", "Globex")).toBe("");
+});

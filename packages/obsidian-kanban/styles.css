@@ -95,6 +95,7 @@
 
 .dk-rowhead {
   position: sticky;
+  flex-wrap: wrap;
   left: 0;
   display: flex;
   align-items: baseline;
@@ -125,6 +126,24 @@
   background: var(--background-modifier-hover);
   border-radius: 8px;
   padding: 0 6px;
+}
+
+/* The intention sits under the client name, so the row head wraps. */
+.dk-rowhead-intent {
+  flex-basis: 100%;
+  margin-left: 15px;
+  padding-right: 4px;
+  font-weight: 400;
+  font-size: var(--font-ui-smaller);
+  line-height: 1.35;
+  color: var(--text-muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+}
+.dk-rowhead-intent p {
+  margin: 0;
 }
 
 .dk-cell-collapsed {
@@ -207,6 +226,34 @@
   font-size: var(--font-ui-small);
   line-height: 1.35;
   font-weight: 500;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Status and the details arrow, pinned to the card's top right corner. */
+.dk-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+}
+.dk-status {
+  font-size: 12px;
+  line-height: 1;
+}
+.dk-details {
+  color: var(--text-faint);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dk-details:hover {
+  color: var(--text-accent);
+  background: var(--background-modifier-hover);
 }
 .dk-title p,
 .dk-lead p,

@@ -23,7 +23,7 @@
     },
     "packages/claude-bedrock": {
       "name": "@lekman/claude-bedrock",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "bin": {
         "claude-bedrock": "./dist/cli.js",
       },
@@ -36,7 +36,7 @@
     },
     "packages/claude-docker": {
       "name": "@lekman/claude-docker",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "bin": {
         "claude-docker": "./dist/cli.js",
       },
@@ -50,7 +50,7 @@
     },
     "packages/claude-foundry": {
       "name": "@lekman/claude-foundry",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "claude-foundry": "./dist/cli.js",
       },
@@ -63,7 +63,7 @@
     },
     "packages/claude-local": {
       "name": "@lekman/claude-local",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "bin": {
         "claude-local": "./dist/cli.js",
       },
@@ -75,9 +75,13 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/obsidian-kanban": {
+      "name": "obsidian-kanban",
+      "version": "0.4.0",
+    },
     "packages/rag/core": {
       "name": "@lekman/rag-core",
-      "version": "0.1.0",
+      "version": "0.4.1",
       "bin": {
         "rag-indexer": "./dist/bin/rag-indexer.js",
         "rag-mcp": "./dist/bin/rag-mcp.js",
@@ -95,7 +99,7 @@
     },
     "packages/rag/local": {
       "name": "@lekman/rag-local",
-      "version": "0.1.0",
+      "version": "0.4.1",
       "bin": {
         "rag": "./dist/cli.js",
       },
@@ -882,6 +886,8 @@
     "object-deep-merge": ["object-deep-merge@2.0.1", "", {}, "sha512-aKttDKcU3pyZqKcCkDhsMn70WmZFG2JGDQLP9EcLyTSIFQRCPWLAmBZRLJnrVUrhPG1jETEEbfdgbNtJf1LyMg=="],
 
     "object-inspect": ["object-inspect@1.13.4", "", {}, "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew=="],
+
+    "obsidian-kanban": ["obsidian-kanban@workspace:packages/obsidian-kanban"],
 
     "on-finished": ["on-finished@2.4.1", "", { "dependencies": { "ee-first": "1.1.1" } }, "sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg=="],
 

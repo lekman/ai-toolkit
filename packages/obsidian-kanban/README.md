@@ -67,7 +67,7 @@ saved with the settings.
 Right-clicking a card offers **Move to client**, listing every client in the
 file plus any set in Client order. Moving to a client with no group in that day
 creates the `#### **Client**` heading. Obsidian 1.5 and later shows this as a
-submenu; older versions get flat "Move to <client>" entries.
+submenu; older versions get flat `Move to <client>` entries.
 
 ## Archive and Roll
 

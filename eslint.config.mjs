@@ -20,6 +20,23 @@ export default [
     },
   },
   {
+    // The Obsidian plugin is CommonJS that Obsidian's own runtime loads, not
+    // repo TypeScript. It requires the `obsidian` module the host injects and
+    // has no build step, so the ESM and import rules do not apply to it.
+    files: ["packages/obsidian-kanban/main.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        console: "readonly",
+        module: "writable",
+        require: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
     files: ["**/*.ts", "**/*.mts", "**/*.mjs"],
     plugins: { jsdoc, perfectionist },
     rules: {

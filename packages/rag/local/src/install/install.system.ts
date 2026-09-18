@@ -1,12 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import {
-  appendFile,
-  chmod,
-  copyFile,
-  mkdir,
-  writeFile,
-} from "node:fs/promises";
+import { chmod, copyFile, mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -43,9 +37,18 @@ export class Installer {
     await ConfigStore.save(config);
     await mkdir(join(storageDir, "logs"), { recursive: true });
     const envPath = join(storageDir, "env");
-    if (!existsSync(envPath)) {
-      await writeFile(envPath, "", { mode: 0o600 });
-      await appendFile(envPath, "# VOYAGE_API_KEY=paste-your-key-here\n");
+    // "wx" fails when the file is already there, so the seed cannot truncate
+    // an env that another process wrote between a check and this write — that
+    // file holds the Voyage key. Creating it and writing the comment in one
+    // call also means it is never briefly present and empty.
+    try {
+      await writeFile(envPath, "# VOYAGE_API_KEY=paste-your-key-here\n", {
+        mode: 0o600,
+        flag: "wx",
+      });
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      // Already seeded. Whatever is in it is the operator's.
     }
     return config;
   }

@@ -1,7 +1,7 @@
 {
   "name": "obsidian-kanban",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Obsidian plugin: Dashboard.md as a board, one row per client",
   "scripts": {
     "install-plugin": "bun run scripts/install.ts",

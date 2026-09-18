@@ -122,3 +122,99 @@ test("the row head shows the leftmost visible column's intention", () => {
   expect(pick("focus", "Acme")).toBe("three things and nothing else.");
   expect(pick("all", "Globex")).toBe("");
 });
+
+/* ------------------------------------------------- overlapping refreshes */
+
+/** Enough of an Obsidian element for render() to build a whole board into. */
+interface FakeEl {
+  cls: string;
+  tag: string;
+  children: FakeEl[];
+  empties: number;
+  empty(): void;
+  createDiv(o?: { cls?: string }): FakeEl;
+  createSpan(o?: { cls?: string }): FakeEl;
+  createEl(tag: string, o?: { cls?: string }): FakeEl;
+  // render() also sets draggable, checked, value and the like.
+  [key: string]: unknown;
+}
+
+function fakeEl(): FakeEl {
+  const el = {
+    cls: "",
+    tag: "",
+    children: [] as FakeEl[],
+    empties: 0,
+    style: {} as Record<string, string>,
+    dataset: {} as Record<string, string>,
+    empty() {
+      el.empties++;
+      el.children.length = 0;
+    },
+    addClass() {},
+    removeClass() {},
+    hasClass: () => false,
+    toggleClass() {},
+    setAttribute() {},
+    addEventListener() {},
+    createDiv: (o: { cls?: string } = {}) => make("div", o),
+    createSpan: (o: { cls?: string } = {}) => make("span", o),
+    createEl: (tag: string, o: { cls?: string } = {}) => make(tag, o),
+  } as FakeEl;
+  function make(tag: string, o: { cls?: string }): FakeEl {
+    const child = fakeEl();
+    child.tag = tag;
+    child.cls = o.cls ?? "";
+    el.children.push(child);
+    return child;
+  }
+  return el;
+}
+
+interface FakeView {
+  contentEl: FakeEl;
+  expanded: Set<number>;
+  renderGen: number;
+  renderMd: () => void;
+  plugin: { settings: Record<string, unknown> };
+  app: {
+    vault: {
+      getAbstractFileByPath: () => object;
+      read: () => Promise<string>;
+    };
+  };
+  render: () => Promise<void>;
+}
+
+test("two overlapping refreshes draw the board once, not twice", async () => {
+  const root = fakeEl();
+  const reads: ((v: string) => void)[] = [];
+  const view = Object.create(KanbanView.prototype) as FakeView;
+  view.contentEl = root;
+  view.expanded = new Set();
+  view.renderGen = 0;
+  view.renderMd = () => {};
+  view.plugin = {
+    settings: { ...DEFAULT_SETTINGS, dashboardPath: "Dashboard.md" },
+  };
+  view.app = {
+    vault: {
+      getAbstractFileByPath: () => ({}),
+      read: () => new Promise<string>((res) => reads.push(res)),
+    },
+  };
+
+  // A move asks for a refresh, and the vault's modify event asks for another.
+  const first = view.render();
+  const second = view.render();
+  expect(reads).toHaveLength(2);
+  reads[0](FIXTURE);
+  reads[1](FIXTURE);
+  await first;
+  await second;
+
+  // The overtaken render must not clear the DOM, nor append a second board.
+  expect(root.empties).toBe(1);
+  expect(root.children.filter((c) => c.cls === "dk-board")).toHaveLength(1);
+  expect(root.children.filter((c) => c.cls === "dk-toolbar")).toHaveLength(1);
+});

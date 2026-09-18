@@ -564,6 +564,8 @@ class KanbanView extends ItemView {
     super(leaf);
     this.plugin = plugin;
     this.expanded = new Set();
+    // Bumped on every render; only the newest may touch the DOM. See render().
+    this.renderGen = 0;
   }
 
   getViewType() {
@@ -581,15 +583,21 @@ class KanbanView extends ItemView {
   }
   async onClose() {}
 
+  // Reading the file is a yield point, and a single move triggers two refreshes:
+  // move() asks for one and the vault's modify event asks for another. Clearing
+  // the DOM before that await let both clear it and then both append, drawing
+  // the board twice. So the clear happens after the read, and a render that has
+  // been overtaken stops without touching anything.
   async render() {
+    const gen = ++this.renderGen;
     const root = this.contentEl;
-    root.empty();
-    root.addClass("dk-root");
 
     const file = this.app.vault.getAbstractFileByPath(
       this.plugin.settings.dashboardPath,
     );
     if (!file) {
+      root.empty();
+      root.addClass("dk-root");
       root.createDiv({
         cls: "dk-empty",
         text: "Dashboard not found: " + this.plugin.settings.dashboardPath,
@@ -597,6 +605,10 @@ class KanbanView extends ItemView {
       return;
     }
     const text = await this.app.vault.read(file);
+    if (gen !== this.renderGen) return;
+
+    root.empty();
+    root.addClass("dk-root");
     const parsed = parseDashboard(text);
     this.parsed = parsed;
 

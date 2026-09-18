@@ -1,7 +1,7 @@
 {
   "id": "dashboard-kanban",
   "name": "Dashboard Kanban",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "minAppVersion": "1.4.0",
   "description": "Kanban view of Dashboard.md: rows are clients, columns are Today, Tomorrow, Future and Unscheduled.",
   "author": "Tobias Lekman",

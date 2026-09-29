@@ -103,9 +103,9 @@ Append a row to the ledger, creating the file with its header if missing.
 ```markdown
 # Commander ledger
 
-| Id | Agent | Task | Sent | Status | Updated | Result |
-|---|---|---|---|---|---|---|
-| H-0929-1 | Acme | Release 2.4 to staging | 2026-09-29 10:12 | sent | 2026-09-29 10:12 | |
+| Id       | Agent | Task                   | Sent             | Status | Updated          | Result |
+| -------- | ----- | ---------------------- | ---------------- | ------ | ---------------- | ------ |
+| H-0929-1 | Acme  | Release 2.4 to staging | 2026-09-29 10:12 | sent   | 2026-09-29 10:12 |        |
 ```
 
 Statuses: `queued`, `sent`, `done`, `blocked`, `decision`, `orphaned`,

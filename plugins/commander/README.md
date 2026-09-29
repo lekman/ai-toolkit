@@ -12,11 +12,11 @@ lists the live sessions by name; `SendMessage` delivers to a name. A session's
 name is its address, so the roster, the session names and the handoff
 messages must all use the same exact names.
 
-| Where the worker runs | Reachable | Commander learns it finished |
-|---|---|---|
-| Same machine as the commander | Yes | Idle notice (`notify_when_idle`) and the worker's reply |
-| Another machine, with Remote Control | Yes | Only the worker's reply |
-| Cloud session | Receives only | Cannot reply today; read its transcript |
+| Where the worker runs                | Reachable     | Commander learns it finished                            |
+| ------------------------------------ | ------------- | ------------------------------------------------------- |
+| Same machine as the commander        | Yes           | Idle notice (`notify_when_idle`) and the worker's reply |
+| Another machine, with Remote Control | Yes           | Only the worker's reply                                 |
+| Cloud session                        | Receives only | Cannot reply today; read its transcript                 |
 
 A worker in a different permission mode from the commander holds incoming
 messages for its operator's approval. Run workers in the mode you want them to
@@ -49,6 +49,7 @@ delegate, watch, and do not do the work.
 
    To keep an existing conversation as the commander instead, give it the
    name `Commander` with `/rename` and resume it with `claude --resume`.
+
 4. Start each worker with the name from the roster:
 
    ```bash

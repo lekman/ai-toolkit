@@ -35,7 +35,13 @@
       "machine": "macbook",
       "always_on": false,
       "cwd": "~",
-      "owns": ["timesheets", "billing", "invoices", "expenses", "administration"]
+      "owns": [
+        "timesheets",
+        "billing",
+        "invoices",
+        "expenses",
+        "administration"
+      ]
     }
   ]
 }

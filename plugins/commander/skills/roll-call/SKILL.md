@@ -30,11 +30,11 @@ name is its message address, so a near match (`globex-local` against
 
 Classify every roster agent:
 
-| State | Meaning |
-|---|---|
-| **busy** | Listed, status running |
-| **idle** | Listed, status idle |
-| **missing** | Not listed. For `always_on: true`, this is a fault |
+| State        | Meaning                                                   |
+| ------------ | --------------------------------------------------------- |
+| **busy**     | Listed, status running                                    |
+| **idle**     | Listed, status idle                                       |
+| **missing**  | Not listed. For `always_on: true`, this is a fault        |
 | **unnamed?** | Not listed, but an unnamed session on the same machine is |
 
 List peer sessions that are not in the roster in one line at the end, so the
@@ -58,10 +58,10 @@ For each open ledger row (status `sent` or `working`):
 One table, then open items. Keep it to one screen.
 
 ```markdown
-| Agent | State | Open handoffs | Oldest |
-|---|---|---|---|
-| Acme | busy | H-0929-1 release 2.4 to staging | 2 h |
-| Globex Local | missing | — | — |
+| Agent        | State   | Open handoffs                   | Oldest |
+| ------------ | ------- | ------------------------------- | ------ |
+| Acme         | busy    | H-0929-1 release 2.4 to staging | 2 h    |
+| Globex Local | missing | —                               | —      |
 ```
 
 Then, only if non-empty:

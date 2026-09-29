@@ -66,6 +66,15 @@ first, retrieval and calendars as supplements only.
   planning skill that **always proposes and never writes unconfirmed** — every
   other skill reads item order as the operator's priority signal, and this one
   changes it.
+- `/planner:morning`: the unattended counterpart to triage, built for a
+  scheduled routine. It rolls the board to today, then places each client's
+  open items across the week against the hours in `capacity`
+  (`~/.claude/obsidian.json`), using `⏱` estimates where items carry them. It
+  only moves items, and `scripts/check-moves.ts` proves that against a
+  snapshot before the run ends; a failed check restores the snapshot. Its
+  ranking (dates, then unblocking, then `🔴`/`🟡`) decides only which items
+  move when a day overflows. It never reorders the items that stay. Every move
+  goes to `Planner/Log — <date>.md` in the vault.
 - `/planner:plan`: create or update the current repo's master-plan note in
   the Obsidian vault. State (backlog tables, status balls) lives only in the
   vault; repos keep detail pages. Client and tracker (Jira / GitHub / Monday /

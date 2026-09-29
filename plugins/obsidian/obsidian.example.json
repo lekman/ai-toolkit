@@ -11,16 +11,49 @@
     "Acme": {
       "plans": "Clients/Acme/Initiatives",
       "tracker": "jira",
-      "jira": { "host": "your-org.atlassian.net", "project": "ACME" }
+      "jira": {
+        "host": "your-org.atlassian.net",
+        "project": "ACME"
+      }
     },
     "Globex": {
       "plans": "Clients/Globex/Initiatives",
       "tracker": "monday",
-      "monday": { "account": "your-org", "board": "1234567890" }
+      "monday": {
+        "account": "your-org",
+        "board": "1234567890"
+      }
     }
   },
   "regulatory": {
     "Acme": ["GxP"],
     "Globex": ["GxP"]
+  },
+  "capacity": {
+    "default_item_hours": 1,
+    "clients": {
+      "Acme": {
+        "mon": 8,
+        "tue": 8,
+        "wed": 8,
+        "thu": 8,
+        "fri": 8,
+        "sat": 0,
+        "sun": 0
+      },
+      "Globex": {
+        "mon": 0,
+        "tue": 0,
+        "wed": 0,
+        "thu": 0,
+        "fri": 0,
+        "sat": null,
+        "sun": null,
+        "weekday_exception": {
+          "max_hours": 1,
+          "for": "productivity or cash flow / billing"
+        }
+      }
+    }
   }
 }

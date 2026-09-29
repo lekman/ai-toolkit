@@ -1,0 +1,41 @@
+{
+  "commander": "Commander",
+  "machine": "server",
+  "ledger": "~/.claude/commander/ledger.md",
+  "out_of_scope_clients": ["Initech"],
+  "agents": [
+    {
+      "name": "Acme",
+      "client": "Acme",
+      "machine": "server",
+      "always_on": true,
+      "cwd": "~/Repo/acme",
+      "owns": ["all Acme engineering", "deployments", "releases"],
+      "serial": ["deployments", "releases"]
+    },
+    {
+      "name": "Globex",
+      "client": "Globex",
+      "machine": "server",
+      "always_on": true,
+      "cwd": "~/Repo/globex",
+      "owns": ["all Globex engineering"]
+    },
+    {
+      "name": "Globex Local",
+      "client": "Globex",
+      "machine": "macbook",
+      "always_on": false,
+      "cwd": "~/Repo/globex",
+      "owns": ["UI changes the operator wants to model and see locally"]
+    },
+    {
+      "name": "Admin",
+      "client": "Own business",
+      "machine": "macbook",
+      "always_on": false,
+      "cwd": "~",
+      "owns": ["timesheets", "billing", "invoices", "expenses", "administration"]
+    }
+  ]
+}

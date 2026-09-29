@@ -69,6 +69,13 @@
       "name": "mail",
       "source": "./plugins/mail",
       "description": "Junk-mail triage for Microsoft 365: read-only inventory, keep/delete table, then rescue-to-Inbox and recoverable delete only after approval."
+    },
+    {
+      "name": "commander",
+      "source": "./plugins/commander",
+      "description": "Commander session skills: roll-call of named worker sessions against a roster, dispatch of self-contained handoffs with a reply contract and a ledger, and recommendations to open parallel sessions when work queues",
+      "category": "workflow",
+      "tags": ["agents", "orchestration", "sessions", "handoff", "workflow"]
     }
   ]
 }

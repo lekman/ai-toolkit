@@ -13,6 +13,7 @@ path, or a spec.
 /plugin install planner@ai-toolkit
 /plugin install obsidian@ai-toolkit
 /plugin install wrap@ai-toolkit
+/plugin install commander@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -47,6 +48,14 @@ Then invoke a skill, for example `/git:commit`.
   working directory and read/write a `Dashboard.md`, without hardcoding any
   client name. Client identities live only in a local, uncommitted config.
 
+- **commander**, [roll-call](commander/skills/roll-call/SKILL.md) /
+  [dispatch](commander/skills/dispatch/SKILL.md) /
+  [scale](commander/skills/scale/SKILL.md): run one long-lived session that
+  plans and delegates instead of doing the work. It checks which named worker
+  sessions are up against a local roster, sends each task to its owner with an
+  id and a reply contract, tracks open handoffs in a ledger, and recommends
+  another session when work queues behind a busy one. See
+  [commander/README.md](commander/README.md).
 - **wrap**, [day](wrap/skills/day/SKILL.md) /
   [session](wrap/skills/session/SKILL.md) /
   [handover](wrap/skills/handover/SKILL.md): close the working day (dashboard

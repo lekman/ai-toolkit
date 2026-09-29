@@ -69,7 +69,8 @@ first, retrieval and calendars as supplements only.
 - `/planner:morning`: the unattended counterpart to triage, built for a
   scheduled routine. It rolls the board to today, then places each client's
   open items across the week against the hours in `capacity`
-  (`~/.claude/obsidian.json`), using `⏱` estimates where items carry them. It
+  (`~/.claude/obsidian.json`), using `⏱` estimates where items carry them.
+  Unscheduled only receives overflow, and is never pulled from. It
   only moves items, and `scripts/check-moves.ts` proves that against a
   snapshot before the run ends; a failed check restores the snapshot. Its
   ranking (dates, then unblocking, then `🔴`/`🟡`) decides only which items

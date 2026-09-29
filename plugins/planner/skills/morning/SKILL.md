@@ -97,8 +97,10 @@ Read only `## Focus`. For each client with capacity:
 
 1. **Hours per day**, today through Sunday. Take the configured capacity and
    subtract that client's `📅 HH:MM–HH:MM` calendar entries on that day.
-2. **Candidates** are the client's open items on those days and in
-   Unscheduled. Leave these where they are and count none of their hours:
+2. **Candidates** are the client's open items on those days. Unscheduled
+   items are never candidates: the operator holds them back on purpose, and
+   only the operator gives them a day. Also leave these where they are and
+   count none of their hours:
    - `🚧` blocked
    - `🔄` claimed
    - `📅` calendar entries
@@ -112,7 +114,6 @@ Read only `## Focus`. For each client with capacity:
    minimise:
    - An item keeps its day while that day has hours for it, in rank order.
    - What overflows moves to the next day with room.
-   - Unscheduled items fill leftover hours, in rank order.
    - What fits nowhere through Sunday goes to Unscheduled.
    - Never move an item past its `📅` date or onto a past day.
    - A `weekday_exception` lets a small item onto a zero-hour weekday.

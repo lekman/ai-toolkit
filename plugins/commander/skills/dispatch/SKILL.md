@@ -57,11 +57,73 @@ cd <cwd> && claude --remote-control "<name>"
 `--remote-control` makes the session reachable from other machines. The name
 must match the roster exactly, because the name is the message address.
 
-## Step 3: Write the Brief
+## Step 3: Check the Day Plan
+
+The first message a worker gets each day asks it to confirm the day plan. No
+task goes to that worker until the operator has agreed the plan, because a
+task sent against a stale plan can be done, moot or in the wrong order.
+
+Find today's plan-check row for the agent in the ledger. Its `Id` starts with
+`H-<MMDD>-` for today and its `Task` starts with `Day-plan check`. The ledger
+is the only state, so a fresh commander reaches the same answer.
+
+- **No plan-check row** → send the plan check first (Step 3a), then record the
+  requested task as `queued` with `Result` set to `waits on <plan-check id>`.
+- **Plan-check row not `done`** → the operator has not agreed the plan yet.
+  Record the task as `queued`, `waits on <plan-check id>`. Do not send it.
+- **Plan-check row `done`** → continue to Step 4.
+
+If the operator says to send without the check (an urgent task, say), send it
+and write `plan check skipped` in its `Result`. Only the operator can skip it.
+
+### Step 3a: Plan-Check Brief
+
+Take the next id for the plan check and the one after it for the queued task.
+The brief is read-only. The worker reports and the operator decides.
+
+```text
+Handoff H-0929-1 from Commander: day-plan check before today's work
+
+Goal: an agreed day plan for <client> before any task starts.
+Context: first message to you today. Read today's dashboard items for <client>
+  with /planner:today. Change nothing and start nothing.
+Answer three questions:
+  1. Which of today's items are done, moot or wrong?
+  2. Is the priority order right? If not, give the order you propose.
+  3. Should anything from Tomorrow, Future or Unscheduled come into today?
+Constraints: read only. Tasks are held until the operator agrees the plan.
+Done when: you have answered all three.
+
+Report back with SendMessage to "Commander". First line:
+  H-0929-1 DECISION: <n> changes proposed | no changes
+Then one line per proposed change. Do not send transcripts or logs.
+```
+
+Record it with `Task` set to `Day-plan check: today's items, order, pull-ins
+from later days`. The reply arrives as `decision`. Show it to the operator.
+
+### Step 3b: Release the Queue
+
+When the operator agrees the plan, with or without changes:
+
+1. Apply the agreed changes to the dashboard from this session, as
+   `/commander:plan-check` Step 7 describes. Workers do not edit the
+   dashboard, because several sessions writing it at once overwrite each
+   other.
+2. Set the plan-check row to `done`, with the agreed changes in `Result`.
+3. Take the agent's rows that `wait on` it, in id order. Check each against
+   the agreed plan. Ask the operator about a task that the plan made moot, and
+   set it to `cancelled` if they drop it.
+4. Send each remaining task through Steps 4 to 6 under its existing id. Start
+   the first brief's `Context` with `Day plan agreed and applied: <one line>`,
+   so the worker starts from the current dashboard.
+
+## Step 4: Write the Brief
 
 Allocate the next id: `H-<MMDD>-<n>`, where `n` counts today's rows in the
-ledger. The first line of the message is the only part the worker's operator
-sees without expanding it, so it carries the id and the task.
+ledger. A queued task keeps the id it was given when it was queued. The first
+line of the message is the only part the worker's operator sees without
+expanding it, so it carries the id and the task.
 
 ```text
 Handoff H-0929-1 from Commander: <task in one line>
@@ -84,7 +146,7 @@ Send DECISION when the choice is the operator's; do not guess.
 - Do not include secrets. A worker that needs a credential gets it through its
   own login, not from this message.
 
-## Step 4: Send
+## Step 5: Send
 
 Call `SendMessage` with `to` set to the exact roster name.
 
@@ -96,9 +158,11 @@ Call `SendMessage` with `to` set to the exact roster name.
   it. A worker in a different permission mode holds the message for its
   operator's approval.
 
-## Step 5: Record
+## Step 6: Record
 
-Append a row to the ledger, creating the file with its header if missing.
+Append a row to the ledger, creating the file with its header if missing. A
+queued task that is now sent updates its own row (`Sent`, `Status`, `Updated`)
+instead of adding one.
 
 ```markdown
 # Commander ledger

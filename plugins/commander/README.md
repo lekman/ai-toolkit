@@ -28,7 +28,12 @@ act in without you.
   the roster, and which handoffs are still open.
 - [dispatch](skills/dispatch/SKILL.md): send one task to its owner as a
   self-contained brief with an id and a reply contract, and record it in the
-  ledger.
+  ledger. The first dispatch to a worker each day sends a day-plan check
+  instead, and holds the task until the operator agrees the plan.
+- [plan-check](skills/plan-check/SKILL.md): send the day-plan check to every
+  client on today's dashboard in one command. A later run reviews the replies,
+  asks the operator to agree each plan, applies the agreed changes and
+  releases the waiting tasks.
 - [scale](skills/scale/SKILL.md): recommend another session, with its start
   command, when queued work could run in parallel. It never starts one.
 
@@ -62,6 +67,26 @@ delegate, watch, and do not do the work.
   they own, and which work is serial.
 - `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
   instead of its own memory, so a fresh commander can pick up from it.
+
+## Day-Plan Check
+
+The first message to a worker each day asks it to check the day plan before
+any work starts. The worker reads its dashboard items and answers three
+questions:
+
+1. Which of today's items are done, moot or wrong?
+2. Is the priority order right?
+3. Should anything from Tomorrow, Future or Unscheduled come into today?
+
+It replies with `DECISION`, and the operator agrees the plan. Until then, the
+tasks for that worker wait in the ledger as `queued`, each marked
+`waits on <plan-check id>`. After the operator agrees, the commander applies
+the agreed changes to the dashboard itself, then sends the tasks in id order.
+
+The morning routine is two commands. `/planner:today` shows the plan, and
+`/commander:plan-check` sends the check to every client on it. Run
+`/commander:plan-check` again when the replies are in. The ledger is the only record of whether today's check happened,
+so a fresh commander asks once, not twice.
 
 ## Reply Contract
 

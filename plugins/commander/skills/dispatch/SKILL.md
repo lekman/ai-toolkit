@@ -106,13 +106,17 @@ from later days`. The reply arrives as `decision`. Show it to the operator.
 
 When the operator agrees the plan, with or without changes:
 
-1. Set the plan-check row to `done`, with the agreed changes in `Result`.
-2. Take the agent's rows that `wait on` it, in id order. Check each against
+1. Apply the agreed changes to the dashboard from this session, as
+   `/commander:plan-check` Step 7 describes. Workers do not edit the
+   dashboard, because several sessions writing it at once overwrite each
+   other.
+2. Set the plan-check row to `done`, with the agreed changes in `Result`.
+3. Take the agent's rows that `wait on` it, in id order. Check each against
    the agreed plan. Ask the operator about a task that the plan made moot, and
    set it to `cancelled` if they drop it.
-3. Send each remaining task through Steps 4 to 6 under its existing id. Start
-   the first brief's `Context` with `Day plan agreed: <one line>`, so the worker
-   applies the changes before it starts.
+4. Send each remaining task through Steps 4 to 6 under its existing id. Start
+   the first brief's `Context` with `Day plan agreed and applied: <one line>`,
+   so the worker starts from the current dashboard.
 
 ## Step 4: Write the Brief
 

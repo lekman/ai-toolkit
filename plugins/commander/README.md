@@ -86,12 +86,19 @@ prints `No nudges`.
 - **Why 10 minutes.** `ListAgents` says whether a worker is idle now, not for
   how long. The skill records when it first saw a worker idle, so idle time is
   known only to within one interval. A nudge therefore lands 10 to 20 minutes
-  after a worker stops. A shorter interval nudges sooner but costs a tick in
-  the commander's context each time.
-- **Only while the session is open.** The loop lives in the commander
-  session's memory. It fires between turns, waits while the commander is busy,
-  and is gone when the session exits. After a restart or a resume, start it
-  again. `CronList` shows whether it is still scheduled. A recurring loop also
+  after a worker stops. The scheduler delays each fire by an offset
+  ([Jitter](https://code.claude.com/docs/en/scheduled-tasks#jitter)), but the
+  offset comes from the task ID and is the same on every fire, so ticks stay
+  10 minutes apart. A shorter interval nudges sooner but costs a tick in the
+  commander's context each time.
+- **Only while the session is open.** The loop fires between turns, waits
+  while the commander is busy, and stops when the session exits. The docs say
+  `claude --resume` or `--continue` restores it unless its seven days have
+  passed
+  ([Limitations](https://code.claude.com/docs/en/scheduled-tasks#limitations)),
+  but the `CronCreate` tool in some versions describes its jobs as
+  session-only. After a resume, check with `CronList` and start the loop again
+  if it is missing. A fresh conversation never has it. A recurring loop also
   expires after seven days, so start it again at least once a week.
 - **Stopping it.** Ask the commander to cancel the nudge loop, or list the
   scheduled tasks with `CronList` and remove it with `CronDelete <id>`. `Esc`

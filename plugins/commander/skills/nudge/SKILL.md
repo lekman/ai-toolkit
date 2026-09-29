@@ -98,17 +98,20 @@ Otherwise pick the first nudge that applies:
    - its day-plan check for today is `done` (see `/commander:dispatch`
      Step 3);
    - its client has open items under today's heading on the dashboard, read
-     as `/commander:plan-check` Step 1 does;
-   - the first open item, the one `/planner:next` would take, is not serial
-     work. Serial work is anything in the agent's `serial` list in the
-     roster, such as a deployment or a release. Serial work goes out only
-     through `/commander:dispatch`, so `/planner:next` must not start it.
+     as `/commander:plan-check` Step 1 does.
 
-   Send:
+   Send the message below. `/planner:next` chooses its own item (it skips
+   blocked items and takes admin and quick wins first), so the commander
+   cannot predict the pick. The guard for serial work therefore goes in the
+   message, where the worker sees what was picked. For an agent with no
+   `serial` list, leave out the last sentence.
 
    ```text
-   Commander nudge: you are idle with agreed work for <client> today. Run /planner:next.
+   Commander nudge: you are idle with agreed work for <client> today. Run /planner:next. If it picks serial work (<the agent's serial list>), do not start it: send Commander '<client> DECISION: /planner:next picked <item>' and stop.
    ```
+
+   Serial work goes out only through `/commander:dispatch`, so a worker must
+   not start it from a nudge.
 
 3. **Nothing applies** → no nudge. An idle agent with no work is fine.
 

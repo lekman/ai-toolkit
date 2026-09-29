@@ -88,23 +88,16 @@ prints `No nudges`.
   known only to within one interval. A nudge therefore lands 10 to 20 minutes
   after a worker stops. A shorter interval nudges sooner but costs a tick in
   the commander's context each time.
-- **Only while the session is open.** The loop belongs to the commander
-  session. It fires between turns, waits while the commander is busy, and
-  stops when the session exits. `claude --resume` restores it. A recurring
-  loop also expires after seven days, so start it again at least once a week.
+- **Only while the session is open.** The loop lives in the commander
+  session's memory. It fires between turns, waits while the commander is busy,
+  and is gone when the session exits. After a restart or a resume, start it
+  again. `CronList` shows whether it is still scheduled. A recurring loop also
+  expires after seven days, so start it again at least once a week.
 - **Stopping it.** Ask the commander to cancel the nudge loop, or list the
   scheduled tasks with `CronList` and remove it with `CronDelete <id>`. `Esc`
-  does not stop a loop with a fixed interval.
-
-## Files
-
-- `~/.claude/commander.json`: the roster. Who exists, where they run, what
-  they own, and which work is serial.
-- `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
-  instead of its own memory, so a fresh commander can pick up from it.
-- `~/.claude/commander/idle.json`: when `/commander:nudge` first saw each
-  worker idle, and when it last nudged it. Safe to delete; the next tick
-  starts again.
+  does not stop a loop with a fixed interval; it only stops a loop that picks
+  its own interval
+  ([Stop a loop](https://code.claude.com/docs/en/scheduled-tasks#stop-a-loop)).
 
 ## Day-Plan Check
 
@@ -121,13 +114,21 @@ tasks for that worker wait in the ledger as `queued`, each marked
 `waits on <plan-check id>`. After the operator agrees, the commander applies
 the agreed changes to the dashboard itself, then sends the tasks in id order.
 
-The morning routine is two commands. `/planner:today` shows the plan, and
-`/commander:plan-check` sends the check to every client on it. Run
-`/commander:plan-check` again when the replies are in. The ledger is the only record of whether today's check happened,
-so a fresh commander asks once, not twice.
+The ledger is the only record of whether today's check happened, so a fresh
+commander asks once, not twice.
 
 ## Reply Contract
 
 Each handoff has an id such as `H-0929-1`. The worker replies to `Commander`
 with a first line of `H-0929-1 DONE | BLOCKED | DECISION: <one line>`, then
 links. No transcripts, because every reply lands in the commander's context.
+
+## Files
+
+- `~/.claude/commander.json`: the roster. Who exists, where they run, what
+  they own, and which work is serial.
+- `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
+  instead of its own memory, so a fresh commander can pick up from it.
+- `~/.claude/commander/idle.json`: when `/commander:nudge` first saw each
+  worker idle, and when it last nudged it. Safe to delete; the next tick
+  starts again.

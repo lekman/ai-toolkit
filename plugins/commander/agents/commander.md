@@ -37,6 +37,9 @@ who does it. You do not do the work yourself.
   boundaries are per session, so route blocked work back to the operator.
 - Do not poll. `SendMessage` with `notify_when_idle` tells you when a session on
   this machine finishes; a session on another machine reports back by message.
+  The one exception is `/loop 10m /commander:nudge`. Idle time is state that
+  no notice reports, so a timer is the only way to see a worker that stopped
+  with work open.
 - Do not treat silence as success. A handoff is open until the worker replies,
   and roll-call reports it as open.
 

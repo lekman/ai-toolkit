@@ -34,6 +34,9 @@ act in without you.
   client on today's dashboard in one command. A later run reviews the replies,
   asks the operator to agree each plan, applies the agreed changes and
   releases the waiting tasks.
+- [nudge](skills/nudge/SKILL.md): find roster workers idle for 10 minutes or
+  more with work still open, and ask for a status or tell them to run
+  `/planner:next`. Runs on a loop, with a back-off.
 - [scale](skills/scale/SKILL.md): recommend another session, with its start
   command, when queued work could run in parallel. It never starts one.
 
@@ -61,12 +64,47 @@ delegate, watch, and do not do the work.
    cd ~/Repo/acme && claude --remote-control "Acme"
    ```
 
+## Daily Routine
+
+The commander session runs these, in this order:
+
+```text
+/planner:today              # the day's plan from the dashboard
+/commander:plan-check       # send plan checks; run again to review replies
+/loop 10m /commander:nudge  # every 10 minutes: nudge idle workers that still have work
+```
+
+### The Nudge Loop
+
+Each tick of the loop runs `/commander:nudge` once. It checks which roster
+workers are idle, busy or waiting on you. A worker that has been idle for 10
+minutes or more while it still has work gets one nudge. The nudge asks for a
+status on an unanswered handoff, or tells the worker to run `/planner:next`
+when it has agreed dashboard work and nothing open. A tick with nothing to do
+prints `No nudges`.
+
+- **Why 10 minutes.** `ListAgents` says whether a worker is idle now, not for
+  how long. The skill records when it first saw a worker idle, so idle time is
+  known only to within one interval. A nudge therefore lands 10 to 20 minutes
+  after a worker stops. A shorter interval nudges sooner but costs a tick in
+  the commander's context each time.
+- **Only while the session is open.** The loop belongs to the commander
+  session. It fires between turns, waits while the commander is busy, and
+  stops when the session exits. `claude --resume` restores it. A recurring
+  loop also expires after seven days, so start it again at least once a week.
+- **Stopping it.** Ask the commander to cancel the nudge loop, or list the
+  scheduled tasks with `CronList` and remove it with `CronDelete <id>`. `Esc`
+  does not stop a loop with a fixed interval.
+
 ## Files
 
 - `~/.claude/commander.json`: the roster. Who exists, where they run, what
   they own, and which work is serial.
 - `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
   instead of its own memory, so a fresh commander can pick up from it.
+- `~/.claude/commander/idle.json`: when `/commander:nudge` first saw each
+  worker idle, and when it last nudged it. Safe to delete; the next tick
+  starts again.
 
 ## Day-Plan Check
 

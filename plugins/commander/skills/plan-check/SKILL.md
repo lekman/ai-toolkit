@@ -48,9 +48,10 @@ Match the group name to an agent's `client`, ignoring case. Pick the owner in
 this order:
 
 1. One agent has that client → it.
-2. Several do → the `always_on` one.
-3. Several are `always_on` → the one whose `owns` covers the client's
-   engineering (for example `all <client> engineering`).
+2. Several do → the one whose `owns` covers engineering (for example
+   `all <client> engineering`, or engineering on named repositories). Apply
+   this whether or not the agents are `always_on`.
+3. Still several → the `always_on` one.
 
 A group is a **gap** when no agent matches, when the rule above leaves more
 than one, or when the client is in `out_of_scope_clients`. Send nothing for a
@@ -119,9 +120,17 @@ For each client the operator agreed:
    - remove items the operator agreed are moot;
    - reorder the open items into the agreed order;
    - move pulled-in items from the Tomorrow or Future band, or from
-     Unscheduled, into today's group, removing or adding the `>` quote prefix as
+     Unscheduled, into today's group, removing the `>` quote prefix as
      [the dashboard structure](../../../obsidian/rules/dashboard-structure.md)
-     describes.
+     describes;
+   - move an item to a later day in the Tomorrow or Future band, adding the
+     `>` quote prefix and ending the item with `*(moved from <day>)*`;
+   - add a dated state note to the end of an item, such as
+     `· **29 Sep, plan check:** waiting on the review`.
+
+   Item wording belongs to the operator. When a worker proposes rewriting an
+   item, add a dated state note with the new facts and leave the wording as it
+   is.
 
    Re-read the lines afterwards to confirm the write held. The commander makes
    these edits, not the workers, because several sessions writing

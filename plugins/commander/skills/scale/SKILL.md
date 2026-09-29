@@ -13,7 +13,9 @@ never does.
 ## Step 1: Gather the Queue
 
 - Call `ListAgents` for live state.
-- Read the ledger for rows in `queued` or `sent` per agent.
+- Read the ledger for rows in `queued` or `sent` per agent. Leave out rows that
+  wait on a day-plan check. They wait on the operator, not on a busy session,
+  so another session would not start them sooner.
 - Read today's open dashboard items for the clients in the roster (the same
   source `/planner:today` uses) that have no ledger row yet.
 

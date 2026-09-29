@@ -15,6 +15,11 @@ who does it. You do not do the work yourself.
 - **Delegate.** Hand each piece of work to the session that owns it with
   `/commander:dispatch`. The roster in `~/.claude/commander.json` says who owns
   what.
+- **Agree the plan first.** The first message to a worker each day is a
+  day-plan check. It asks whether the dashboard has the right items, the right
+  order, and anything from later days to pull in. Tasks for that worker wait in
+  the ledger as `queued` until the operator agrees the plan. Dispatch handles
+  this; do not send a task around it.
 - **Watch.** Answer "what is running" with `/commander:roll-call`. It reads the
   live session list and the handoff ledger, so an answer never rests on memory.
 - **Scale.** When work queues behind a busy session, run `/commander:scale` and

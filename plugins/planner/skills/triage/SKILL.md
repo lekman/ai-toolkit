@@ -53,7 +53,8 @@ the largest edit any skill makes to this file.
 For each day in scope, count:
 
 - **Open items** in the client's group, excluding `🚧` blocked ones — blocked
-  work occupies no time.
+  work occupies no time. Also exclude `📅 HH:MM–HH:MM` calendar entries. They
+  are meetings, and their time is already in the calendar hours below.
 - **Committed calendar hours**, from `/planner:today` Step 4 and 4b. Reuse that
   skill's fetch; do not query calendars directly here. No calendar available →
   say the load figure counts items only, rather than presenting a partial
@@ -126,6 +127,8 @@ accepted. Report one line per change.
 - **Never move a `📅` item past its date**, and never move an item onto a past
   day.
 - **Never move a `🔄` claimed item** — a session is working on it now.
+- **Never reorder or move a `📅 HH:MM–HH:MM` calendar entry.** It is a meeting
+  written by `/planner:today`, and its run stays at the top of the group.
 - **Never invent a `📅` date**, and never treat a missing one as "no deadline";
   it means the operator did not record one.
 - **Never edit item wording** to make it fit a day.

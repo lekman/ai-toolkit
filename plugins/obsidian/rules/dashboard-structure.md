@@ -81,6 +81,7 @@ being asked.
 | `🚧`          | blocked, waiting on someone else                 | `/obsidian:add --blocked` |
 | `🔄`          | claimed by a running session                     | `/planner:next`           |
 | `📅 <date>`   | an externally fixed deadline, **not** a priority | `/obsidian:add --due`     |
+| `⏱ <n>h\|m`   | estimated effort, read against daily capacity    | the operator              |
 | `🔴 🟡 🟢 ⚪` | defect **severity**, not priority                | the operator              |
 
 A `📅` date says a deadline is externally fixed. It is **not** a priority

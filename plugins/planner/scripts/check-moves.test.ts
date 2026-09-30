@@ -96,6 +96,34 @@ test("a reworded item fails both ways", () => {
   expect(r.out).toContain("GAINED:");
 });
 
+test("a roll that drops a claim marker passes", () => {
+  const claimed = BOARD.replace(
+    "- [ ] Review the schema proposal",
+    "- [ ] 🔄 Review the schema proposal",
+  );
+  const rolled = BOARD.replace(
+    "- [ ] Review the schema proposal\n",
+    "",
+  ).replace(
+    "> - [ ] Rewrite the onboarding guide",
+    "> - [ ] Rewrite the onboarding guide\n> - [ ] Review the schema proposal",
+  );
+  expect(
+    check({ "Dashboard.md": claimed }, { "Dashboard.md": rolled }).code,
+  ).toBe(0);
+});
+
+test("a claimed item that is reworded still fails", () => {
+  const claimed = BOARD.replace(
+    "- [ ] Review the schema proposal",
+    "- [ ] 🔄 Review the schema proposal",
+  );
+  const edit = BOARD.replace("Review the schema", "Review the new schema");
+  const r = check({ "Dashboard.md": claimed }, { "Dashboard.md": edit });
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("LOST:");
+});
+
 test("a ticked item fails", () => {
   const ticked = BOARD.replace(
     "- [ ] Draft the workshop",
@@ -130,6 +158,47 @@ test("a day with open items that disappears fails", () => {
   );
   const r = check({ "Dashboard.md": BOARD }, { "Dashboard.md": gone });
   expect(r.out).toContain("DAY LOST: Thursday 1 October");
+});
+
+test("a past day rolled away with its open items passes", () => {
+  // The roll moved both of Tuesday's items into Wednesday, which became today.
+  const rolled = `## Focus
+
+### Wednesday 30 September
+
+#### **Acme**
+
+- [ ] Rewrite the onboarding guide
+- [ ] Draft the workshop programme
+- [ ] Review the schema proposal
+
+> [!note]- Tomorrow
+>
+> ### Thursday 1 October
+>
+> #### **Acme**
+>
+> - [ ] Submit the timesheet
+
+> [!note]- Future
+
+## Initiatives
+`;
+  const r = check({ "Dashboard.md": BOARD }, { "Dashboard.md": rolled }, [
+    "--today",
+    "Wednesday 30 September",
+  ]);
+  expect(r.out).toBe("OK 4 items\n");
+});
+
+test("a past day that disappears with its items still fails on the items", () => {
+  const gone = BOARD.replace(
+    /### Tuesday 29 September[\s\S]*?(?=> \[!note\]- Tomorrow)/,
+    "",
+  );
+  const r = check({ "Dashboard.md": BOARD }, { "Dashboard.md": gone });
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("LOST:   - [ ] Review the schema proposal");
 });
 
 test("--today rejects a stale board", () => {

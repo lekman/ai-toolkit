@@ -9,9 +9,12 @@
  *      stripped, must appear the same number of times before and after, summed
  *      across all the files given. An item that moved from the dashboard to the
  *      work log counts once on each side. An item that was deleted, ticked,
- *      reworded or merged does not.
+ *      reworded or merged does not. A `🔄` claim marker is ignored, because
+ *      the roll drops it.
  *   2. Days. A day heading may disappear only if it held no open item before
- *      the run, which is what archiving an emptied day looks like. With
+ *      the run, which is what archiving an emptied day looks like, or if it is
+ *      earlier than `--today`, which is what a roll looks like. Check 1 still
+ *      proves that its open items went somewhere. With
  *      `--today`, the dashboard must also have exactly one unprefixed day
  *      heading and it must be that day, and Tomorrow must hold at most one day
  *      (none only when Future holds no day either).
@@ -44,7 +47,12 @@ function items(lines: string[], into: Map<string, number>): void {
   for (const line of lines) {
     const s = stripQuotes(line).trimEnd();
     if (!ITEM.test(s)) continue;
-    const key = s.trimStart().replace(/^- \[X\]/, "- [x]");
+    // The roll drops a 🔄 claim on purpose, because the claiming session has
+    // ended. The item is otherwise unchanged, so the marker is not compared.
+    const key = s
+      .trimStart()
+      .replace(/^- \[X\]/, "- [x]")
+      .replace(/^(- \[[ x]\]) 🔄\s*/u, "$1 ");
     into.set(key, (into.get(key) ?? 0) + 1);
   }
 }
@@ -66,6 +74,37 @@ function days(lines: string[]): Map<string, boolean> {
     }
   }
   return out;
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/**
+ * Whether day heading `a` is earlier than `b`. Headings carry no year, so a
+ * gap of more than six months is read as crossing the new year.
+ */
+function isEarlier(a: string, b: string): boolean {
+  const at = (d: string) => {
+    const m = d.match(/(\d{1,2}) ([A-Z][a-z]+)$/);
+    return m ? MONTHS.indexOf(m[2]) * 31 + Number(m[1]) : NaN;
+  };
+  const diff = at(b) - at(a);
+  if (Number.isNaN(diff)) return false;
+  if (diff > 186) return false;
+  if (diff < -186) return true;
+  return diff > 0;
 }
 
 /** The unprefixed day headings, and the days inside each band. */
@@ -126,7 +165,8 @@ const dashBefore = read(join(beforeDir, dashboard));
 const dashAfter = read(join(afterDir, dashboard));
 const daysAfter = days(dashAfter);
 for (const [day, hadOpen] of days(dashBefore)) {
-  if (hadOpen && !daysAfter.has(day))
+  const rolled = today !== undefined && isEarlier(day, today);
+  if (hadOpen && !rolled && !daysAfter.has(day))
     problems.push(`DAY LOST: ${day} held open items`);
 }
 

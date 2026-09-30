@@ -34,6 +34,9 @@ act in without you.
   client on today's dashboard in one command. A later run reviews the replies,
   asks the operator to agree each plan, applies the agreed changes and
   releases the waiting tasks.
+- [nudge](skills/nudge/SKILL.md): find roster workers idle for 10 minutes or
+  more with work still open, and ask for a status or tell them to run
+  `/planner:next`. Runs on a loop, with a back-off.
 - [scale](skills/scale/SKILL.md): recommend another session, with its start
   command, when queued work could run in parallel. It never starts one.
 
@@ -61,12 +64,47 @@ delegate, watch, and do not do the work.
    cd ~/Repo/acme && claude --remote-control "Acme"
    ```
 
-## Files
+## Daily Routine
 
-- `~/.claude/commander.json`: the roster. Who exists, where they run, what
-  they own, and which work is serial.
-- `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
-  instead of its own memory, so a fresh commander can pick up from it.
+The commander session runs these, in this order:
+
+```text
+/planner:today              # the day's plan from the dashboard
+/commander:plan-check       # send plan checks; run again to review replies
+/loop 10m /commander:nudge  # every 10 minutes: nudge idle workers that still have work
+```
+
+### The Nudge Loop
+
+Each tick of the loop runs `/commander:nudge` once. It checks which roster
+workers are idle, busy or waiting on you. A worker that has been idle for 10
+minutes or more while it still has work gets one nudge. The nudge asks for a
+status on an unanswered handoff, or tells the worker to run `/planner:next`
+when it has agreed dashboard work and nothing open. A tick with nothing to do
+prints `No nudges`.
+
+- **Why 10 minutes.** `ListAgents` says whether a worker is idle now, not for
+  how long. The skill records when it first saw a worker idle, so idle time is
+  known only to within one interval. A nudge therefore lands 10 to 20 minutes
+  after a worker stops. The scheduler delays each fire by an offset
+  ([Jitter](https://code.claude.com/docs/en/scheduled-tasks#jitter)), but the
+  offset comes from the task ID and is the same on every fire, so ticks stay
+  10 minutes apart. A shorter interval nudges sooner but costs a tick in the
+  commander's context each time.
+- **Only while the session is open.** The loop fires between turns, waits
+  while the commander is busy, and stops when the session exits. The docs say
+  `claude --resume` or `--continue` restores it unless its seven days have
+  passed
+  ([Limitations](https://code.claude.com/docs/en/scheduled-tasks#limitations)),
+  but the `CronCreate` tool in some versions describes its jobs as
+  session-only. After a resume, check with `CronList` and start the loop again
+  if it is missing. A fresh conversation never has it. A recurring loop also
+  expires after seven days, so start it again at least once a week.
+- **Stopping it.** Ask the commander to cancel the nudge loop, or list the
+  scheduled tasks with `CronList` and remove it with `CronDelete <id>`. `Esc`
+  does not stop a loop with a fixed interval; it only stops a loop that picks
+  its own interval
+  ([Stop a loop](https://code.claude.com/docs/en/scheduled-tasks#stop-a-loop)).
 
 ## Day-Plan Check
 
@@ -83,13 +121,21 @@ tasks for that worker wait in the ledger as `queued`, each marked
 `waits on <plan-check id>`. After the operator agrees, the commander applies
 the agreed changes to the dashboard itself, then sends the tasks in id order.
 
-The morning routine is two commands. `/planner:today` shows the plan, and
-`/commander:plan-check` sends the check to every client on it. Run
-`/commander:plan-check` again when the replies are in. The ledger is the only record of whether today's check happened,
-so a fresh commander asks once, not twice.
+The ledger is the only record of whether today's check happened, so a fresh
+commander asks once, not twice.
 
 ## Reply Contract
 
 Each handoff has an id such as `H-0929-1`. The worker replies to `Commander`
 with a first line of `H-0929-1 DONE | BLOCKED | DECISION: <one line>`, then
 links. No transcripts, because every reply lands in the commander's context.
+
+## Files
+
+- `~/.claude/commander.json`: the roster. Who exists, where they run, what
+  they own, and which work is serial.
+- `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
+  instead of its own memory, so a fresh commander can pick up from it.
+- `~/.claude/commander/idle.json`: when `/commander:nudge` first saw each
+  worker idle, and when it last nudged it. Safe to delete; the next tick
+  starts again.

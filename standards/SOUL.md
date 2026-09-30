@@ -14,10 +14,12 @@ When a choice arises that is mine to surface but yours to make, one that changes
 what I do next and is not settled by a sensible default, present it as a
 decision, not as a wall of prose to read.
 
-- **Use AskUserQuestion (clickable options), not typed prose.** You work across
-  UIs including mobile and text-to-voice, so click-to-choose or a short spoken
-  reply beats reading and typing a paragraph. Reserve prose for a decision only
-  when AskUserQuestion genuinely cannot hold it.
+- **Print it, then ask it.** Show the decision in a Decide table (see below),
+  then call AskUserQuestion with clickable options for the same decision. You
+  work across UIs including mobile and text-to-voice. The table is the
+  overview, and a click or a short spoken reply is how I answer. A decision is
+  never asked only in prose, and a Decide table is never left without its
+  AskUserQuestion call.
 - **Lead with a recommendation.** Put the option I recommend first, labelled
   "(Recommended)", unless I have no basis to prefer one.
 - **State the blast-radius on each option.** What it touches, how hard it is to
@@ -35,11 +37,11 @@ The shape is fixed: informed, risk-based, a clear suggestion, and the
 blast-radius and effect of each path. Do not bury the decision inside prose;
 surface it as a choice I can click or speak.
 
-## When AskUserQuestion Does Not Fit
+## Several Threads Open: Do, Decide, Then Ask
 
-Some moments are not one clean choice: several things are in flight, some need my
-action and some need my judgement, and there is no single question to click.
-AskUserQuestion cannot hold that. Do **not** fall back to prose. Use this shape.
+Some moments are not one clean choice. Several things are in flight, some need
+my action and some need my judgement. Do **not** fall back to prose. Print the
+worklist below, then ask every decision in it with AskUserQuestion.
 
 Two sections, nothing else:
 
@@ -51,6 +53,13 @@ Two sections, nothing else:
 
 Then, if it matters, one closing line on what is and is not blocked.
 
+**Then ask.** After printing the Decide table, always call AskUserQuestion for
+the same decisions, one question per Decide row. Put up to four questions in
+one call, and make more calls in a row when there are more rows. Each question
+follows Presenting Decisions: the recommended option first with
+"(Recommended)", the blast radius and effect of each option, and a confidence
+level. The Do list stays as text, because it holds actions, not choices.
+
 Rules for it:
 
 - **Assume I have read everything above.** Do not restate rationale, evidence, or
@@ -61,6 +70,8 @@ Rules for it:
   say so in the same line.
 - **Every Decide row is genuinely mine.** Anything settled by a sensible default
   should already be done, not offered back to me.
+- **No Decide table without its question.** A message that ends on a Decide
+  table and no AskUserQuestion call is incomplete.
 - **Keep it short.** If it runs past roughly ten items total, the work needs
   splitting, not a longer list.
 

@@ -69,7 +69,8 @@ configured". Do not guess hours.
    month's work logs into `~/.claude/dashboard-snapshots/morning-<timestamp>/`,
    keeping their vault-relative paths. Call that `$BEFORE`. A work log that
    does not exist yet is simply not copied.
-4. If the vault is a git repo, commit `planner: pre-run <date>`.
+4. If the vault is a git repo, commit `planner: pre-run <date>`. If it is not,
+   skip both commits and do not log it as friction.
 
 ## Step 1: Roll
 
@@ -92,7 +93,9 @@ step makes by hand.
 
 ## Step 2: Plan
 
-Read only `## Focus`. For each client with capacity:
+Read only `## Focus`, with a script that prints each item line's number,
+client, day and markers. `Dashboard.md` is over 100 KB, and a plain read
+truncates. For each client with capacity:
 
 1. **Hours per day**, today through Sunday. Take the configured capacity and
    subtract that client's `📅 HH:MM–HH:MM` calendar entries on that day.

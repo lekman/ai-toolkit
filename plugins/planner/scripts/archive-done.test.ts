@@ -30,6 +30,7 @@ function run(
     env: {
       ...process.env,
       DASHBOARD_PATH: path,
+      DASHBOARD_TODAY: `${new Date().getFullYear()}-09-16`,
       DASHBOARD_SNAPSHOT_DIR: join(dir, "snapshots"),
     },
   });
@@ -112,6 +113,33 @@ test("says so and writes nothing when there is nothing ticked", () => {
   expect(r.out.trim()).toBe("No items found to archive");
   expect(r.dashboard).toBe(nothing);
   expect(r.log).toBe("");
+});
+
+test("keeps a group with no checkbox while the day still has open work", () => {
+  const board = FIXTURE.replace(
+    "\n> [!note]- Tomorrow",
+    "\n#### **Globex**\n\n> [!note] Intention: prose only, and the day is not over.\n\n> [!note]- Tomorrow",
+  );
+  const r = run(board);
+  expect(r.dashboard).toContain(
+    "Intention: prose only, and the day is not over.",
+  );
+  expect(r.log).not.toContain("prose only");
+});
+
+test("files every group, prose and all, once the day has nothing open", () => {
+  const board = FIXTURE.replace("- [ ] Unfinished thing\n", "").replace(
+    "\n> [!note]- Tomorrow",
+    "\n#### **Globex**\n\n> [!note] Intention: prose only.\n\n> [!abstract] **[[Handover]]** — for the next session\n\n> [!note]- Tomorrow",
+  );
+  const r = run(board, ["--verbose"]);
+  expect(r.code).toBe(0);
+  expect(r.dashboard).not.toContain("### Wednesday 16 September");
+  expect(r.dashboard).not.toContain("Intention:");
+  expect(r.log).toContain("Intention: prose that must never move.");
+  expect(r.log).toContain("Intention: prose only.");
+  expect(r.log).toContain("[[Handover]]");
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
 });
 
 test("--dry-run changes neither file", () => {

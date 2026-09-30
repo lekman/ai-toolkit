@@ -62,11 +62,13 @@ the bands. That is `roll-forward.ts`:
 bun "<skill-base-dir>/../../scripts/roll-forward.ts"
 ```
 
-It rolls today's open items into Tomorrow and then, **only when today's section
-is empty**, performs the two-stage shift described in
-[the dashboard structure](../../../obsidian/rules/dashboard-structure.md).
-Running it before the archive rolls the open work; running it after the archive
-turns the page. Both runs are safe and idempotent.
+It rolls today's open items into Tomorrow, then runs this archive, which files
+what is left of the day and performs the two-stage shift described in
+[the dashboard structure](../../../obsidian/rules/dashboard-structure.md). Once
+a day has nothing open, every client group on it goes to the work log,
+including one that holds only an intention, an overview or a handover link. An
+intention never carries to another day. A second roll does nothing while today
+is a date that has not started yet.
 
 `--shift-only` turns the page without touching anyone's open items, which is
 what belongs straight after an archive: the day is already gone, so there is

@@ -78,13 +78,12 @@ If the unprefixed day under `## Focus` is today, go to step 2.
 Otherwise, repeat until it is today, at most 10 times:
 
 ```bash
-bun "<skill-base-dir>/../../scripts/archive-done.ts"
 bun "<skill-base-dir>/../../scripts/roll-forward.ts"
 ```
 
-Archive files the ticked items and runs the shift if the day emptied. Roll
-carries open items into Tomorrow and shifts. A pass that does not change the
-unprefixed day is a failure: go to step 4 and fail it.
+Roll carries open items into Tomorrow, files the day's ticked items and prose
+in the work log, and shifts. A pass that does not change the unprefixed day is
+a failure. Go to step 4 and fail it.
 
 If the Tomorrow day is **later** than today (today had no heading of its own),
 first move the Tomorrow day to the top of Future and put an empty

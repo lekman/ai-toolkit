@@ -75,6 +75,14 @@ configured". Do not guess hours.
 
 If the unprefixed day under `## Focus` is today, go to step 2.
 
+Before the first pass, read the unprefixed day. Fail at step 4 without
+running the scripts if it holds either of the two things below, and name
+each in Decide.
+
+- A callout other than an intention, such as a handover link. The shift
+  keeps it as operator prose, so the day never empties.
+- A `🔄` item. The roll drops the marker, and the check reports the item lost.
+
 Otherwise, repeat until it is today, at most 10 times:
 
 ```bash

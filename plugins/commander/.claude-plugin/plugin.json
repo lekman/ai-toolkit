@@ -1,5 +1,5 @@
 {
   "name": "commander",
-  "description": "Run one long-lived Claude Code session as a commander over other named sessions: see who is up and what they are doing (/commander:roll-call), hand work to the right session with a self-contained brief and a reply contract (/commander:dispatch), check every client's day plan in one command before any task goes out (/commander:plan-check), nudge workers that sit idle with work open (/commander:nudge), and get a recommendation to open another session when work could run in parallel (/commander:scale)",
-  "version": "0.3.0"
+  "description": "Run one long-lived Claude Code session as a commander over other named sessions: see who is up and what they are doing (/commander:roll-call), hand work to the right session with a self-contained brief and a reply contract (/commander:dispatch), check every client's day plan in one command before any task goes out (/commander:plan-check), nudge workers that sit idle with work open (/commander:nudge), push to the operator's phone when a worker or a question waits too long (/commander:notify), and get a recommendation to open another session when work could run in parallel (/commander:scale)",
+  "version": "0.4.0"
 }

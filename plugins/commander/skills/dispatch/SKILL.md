@@ -31,7 +31,9 @@ Pick the agent in this order:
 
 If the client is in `out_of_scope_clients`, stop and say so. If nothing
 matches, ask the operator with `AskUserQuestion`, listing the roster agents as
-options.
+options. Wrap the question in `notify ask` and `notify answered` (see
+`/commander:notify`), so it reaches the operator's phone if it waits past the
+threshold.
 
 Work in an agent's `serial` list (for example deployments and releases) always
 goes to that agent and is never split across sessions, because two sessions
@@ -100,7 +102,9 @@ Then one line per proposed change. Do not send transcripts or logs.
 ```
 
 Record it with `Task` set to `Day-plan check: today's items, order, pull-ins
-from later days`. The reply arrives as `decision`. Show it to the operator.
+from later days`. The reply arrives as `decision`. Show it to the operator. A
+row that stays in `decision` past the notify threshold is pushed to the
+operator's phone by `/commander:nudge` Step 5.
 
 ### Step 3b: Release the Queue
 
@@ -173,7 +177,10 @@ instead of adding one.
 ```
 
 Statuses: `queued`, `sent`, `done`, `blocked`, `decision`, `orphaned`,
-`cancelled`. When a reply arrives, update `Status`, `Updated` and `Result`
+`cancelled`. A `decision` row waits on the operator. `/commander:nudge` pushes
+it to their phone once its `Updated` time is past the notify threshold, so keep
+`Updated` as the time the decision arrived, and put the worker's one-line
+question in `Result`. When a reply arrives, update `Status`, `Updated` and `Result`
 (one line plus links). Remove `done` and `cancelled` rows older than seven
 days, because the ledger tracks what is open, and the vault and GitHub keep the
 history.

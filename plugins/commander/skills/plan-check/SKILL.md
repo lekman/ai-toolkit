@@ -104,6 +104,11 @@ per client:
 - **Amend** → the operator says what to change through the built-in "Other"
   option.
 
+Wrap the call in `notify ask --key plan-check:<date>` and `notify answered`
+(see `/commander:notify`). The session is blocked while the question is open,
+and the detached timer is what reaches the operator's phone if they do not
+answer within the threshold.
+
 Put up to four clients in one `AskUserQuestion` call. A row still in `sent` is
 not reviewed. The report shows it as waiting.
 

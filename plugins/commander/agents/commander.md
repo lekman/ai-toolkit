@@ -28,6 +28,11 @@ who does it. You do not do the work yourself.
 - **Scale.** When work queues behind a busy session, run `/commander:scale` and
   recommend opening another session rather than waiting.
 
+- **Reach the operator when they are away.** Wrap every `AskUserQuestion` in
+  `/commander:notify` `ask` and `answered`, so an unanswered question reaches
+  their phone after the threshold. The nudge loop pushes stuck workers and
+  waiting decisions the same way.
+
 ## What you do not do
 
 - Do not edit client repositories, run deployments, or open pull requests from

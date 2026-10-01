@@ -6,8 +6,10 @@
  * each following from the last:
  *
  *   1. A ticked `- [x]` item moves to the archive.
- *   2. A client group left with no checkbox items moves entirely — heading,
- *      intention callout and prose — because an empty group is noise.
+ *   2. A client group left with no open items moves entirely — heading,
+ *      intention callout and prose — because an empty group is noise. Once the
+ *      whole day has no open item, a group with no checkbox at all moves too:
+ *      an intention never carries to another day.
  *   3. A day left with no client groups loses its heading too.
  *
  * It then runs `roll-forward.ts --shift-only`, so a finished day is replaced by
@@ -201,11 +203,17 @@ const emptiedDays: string[] = [];
 
 for (const day of days) {
   let groupsRemaining = day.groups.length;
+  // A day with nothing open is over. A group left with no checkbox holds only
+  // the day's intention, overview or handover link, and that is a record of
+  // the day, so it goes to the work log with the day.
+  const dayOver = !day.groups.some((g) =>
+    g.lines.some((l) => isItem(l) && !isTicked(l)),
+  );
 
   for (const group of day.groups) {
     const items = group.lines.filter(isItem);
     const ticked = group.lines.filter(isTicked);
-    if (ticked.length === 0) continue;
+    if (ticked.length === 0 && !(dayOver && items.length === 0)) continue;
 
     const openLeft = items.length - ticked.length;
 

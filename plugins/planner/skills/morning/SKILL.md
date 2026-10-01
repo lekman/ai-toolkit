@@ -69,7 +69,8 @@ configured". Do not guess hours.
    month's work logs into `~/.claude/dashboard-snapshots/morning-<timestamp>/`,
    keeping their vault-relative paths. Call that `$BEFORE`. A work log that
    does not exist yet is simply not copied.
-4. If the vault is a git repo, commit `planner: pre-run <date>`.
+4. If the vault is a git repo, commit `planner: pre-run <date>`. If it is not,
+   skip both commits and do not log it as friction.
 
 ## Step 1: Roll
 
@@ -78,13 +79,12 @@ If the unprefixed day under `## Focus` is today, go to step 2.
 Otherwise, repeat until it is today, at most 10 times:
 
 ```bash
-bun "<skill-base-dir>/../../scripts/archive-done.ts"
 bun "<skill-base-dir>/../../scripts/roll-forward.ts"
 ```
 
-Archive files the ticked items and runs the shift if the day emptied. Roll
-carries open items into Tomorrow and shifts. A pass that does not change the
-unprefixed day is a failure: go to step 4 and fail it.
+Roll carries open items into Tomorrow, files the day's ticked items and prose
+in the work log, and shifts. A pass that does not change the unprefixed day is
+a failure. Go to step 4 and fail it.
 
 If the Tomorrow day is **later** than today (today had no heading of its own),
 first move the Tomorrow day to the top of Future and put an empty
@@ -93,7 +93,9 @@ step makes by hand.
 
 ## Step 2: Plan
 
-Read only `## Focus`. For each client with capacity:
+Read only `## Focus`, with a script that prints each item line's number,
+client, day and markers. `Dashboard.md` is over 100 KB, and a plain read
+truncates. For each client with capacity:
 
 1. **Hours per day**, today through Sunday. Take the configured capacity and
    subtract that client's `📅 HH:MM–HH:MM` calendar entries on that day.

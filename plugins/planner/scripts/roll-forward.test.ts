@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const SCRIPT = join(import.meta.dir, "roll-forward.ts");
-const ARCHIVE = join(import.meta.dir, "archive-done.ts");
 
 interface Run {
   out: string;
@@ -27,6 +26,7 @@ function exec(script: string, path: string, flags: string[] = []): Run {
     env: {
       ...process.env,
       DASHBOARD_PATH: path,
+      DASHBOARD_TODAY: `${new Date().getFullYear()}-09-16`,
       DASHBOARD_SNAPSHOT_DIR: join(path, "..", "snapshots"),
     },
   });
@@ -44,6 +44,31 @@ function exec(script: string, path: string, flags: string[] = []): Run {
     text,
     path,
   };
+}
+
+/** The work log the archive writes beside a fixture dashboard. */
+function workLog(path: string): string {
+  const log = join(
+    path,
+    "..",
+    "Archive",
+    "Work Logs",
+    String(new Date().getFullYear()),
+    "September.md",
+  );
+  try {
+    return readFileSync(log, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+/** The unprefixed day, from its heading to the Tomorrow band. */
+function todayOf(text: string): string {
+  const start = text.search(/^### /m);
+  return start < 0
+    ? ""
+    : text.slice(start, text.indexOf("> [!note]- Tomorrow"));
 }
 
 const FIXTURE = `# Dashboard
@@ -97,17 +122,19 @@ Untouched.
 
 /* --------------------------------------------------------------- rolling */
 
-test("moves today's open items into the Tomorrow callout", () => {
+test("moves today's open items into tomorrow, which becomes today", () => {
   const r = run(SCRIPT, FIXTURE);
   expect(r.code).toBe(0);
-  expect(r.text).toContain("> - [ ] 🧾 Admin thing");
-  expect(r.text).toContain("> - [ ] Globex open thing");
+  const today = todayOf(r.text);
+  expect(today).toContain("### Thursday 17 September");
+  expect(today).toContain("\n- [ ] 🧾 Admin thing");
+  expect(today).toContain("\n- [ ] Globex open thing");
 });
 
-test("leaves ticked items for the archive", () => {
+test("files ticked items in the work log", () => {
   const r = run(SCRIPT, FIXTURE);
-  expect(r.text).toContain("- [x] Done thing");
-  expect(r.text).not.toContain("> - [x] Done thing");
+  expect(r.text).not.toContain("Done thing");
+  expect(workLog(r.path)).toContain("- [x] Done thing");
 });
 
 test("drops the claim marker but keeps the others", () => {
@@ -129,7 +156,7 @@ test("appends after tomorrow's existing items, preserving order", () => {
 
 test("creates a client group that tomorrow does not have", () => {
   const r = run(SCRIPT, FIXTURE);
-  expect(r.text).toContain("> #### **Globex**");
+  expect(todayOf(r.text)).toContain("\n#### **Globex**\n");
 });
 
 test("removes a group the roll emptied", () => {
@@ -145,11 +172,14 @@ test("removes a group the roll emptied", () => {
   expect(today).not.toContain("#### **Globex**");
 });
 
-test("never touches the operator's prose", () => {
+test("keeps the operator's prose, and files the day's intention with the day", () => {
   const r = run(SCRIPT, FIXTURE);
   expect(r.text).toContain("Prose that must never move.");
-  expect(r.text).toContain("Intention: three things and nothing else.");
   expect(r.text).toContain("Untouched.");
+  expect(r.text).not.toContain("Intention: three things and nothing else.");
+  expect(workLog(r.path)).toContain(
+    "Intention: three things and nothing else.",
+  );
 });
 
 test("leaves everything outside Focus alone", () => {
@@ -167,17 +197,15 @@ test("--dry-run changes nothing", () => {
 
 /* ---------------------------------------------------------------- shifting */
 
-test("refuses to shift while today still has content", () => {
+test("one roll archives what the day finished and turns the page", () => {
   const r = run(SCRIPT, FIXTURE, ["--verbose"]);
-  expect(r.out).toContain("no shift");
-  expect(r.text).toContain("### Wednesday 16 September");
-});
-
-test("the archive turns the page itself, and never promotes Unscheduled", () => {
-  const first = run(SCRIPT, FIXTURE);
-  const r = exec(ARCHIVE, first.path, ["--verbose"]);
   expect(r.out).toContain("promoted to today: Thursday 17 September");
   expect(r.out).toContain("new tomorrow: Friday 18 September");
+  expect(r.text).not.toContain("### Wednesday 16 September");
+});
+
+test("the roll never promotes Unscheduled", () => {
+  const r = run(SCRIPT, FIXTURE);
   expect(r.text).toContain("### Thursday 17 September");
   // Unscheduled stays one level deep in Future; only a dated day is promoted.
   expect(r.text).not.toContain("\n### Unscheduled");
@@ -185,17 +213,13 @@ test("the archive turns the page itself, and never promotes Unscheduled", () => 
 });
 
 test("the promoted day loses exactly one quote level", () => {
-  const first = run(SCRIPT, FIXTURE);
-  exec(ARCHIVE, first.path);
-  const r = exec(SCRIPT, first.path);
+  const r = run(SCRIPT, FIXTURE);
   expect(r.text).toContain("\n#### **Acme**\n");
   expect(r.text).toContain("\n- [ ] Already planned for tomorrow\n");
 });
 
 test("leaves exactly one unprefixed day heading", () => {
-  const first = run(SCRIPT, FIXTURE);
-  exec(ARCHIVE, first.path);
-  const r = exec(SCRIPT, first.path);
+  const r = run(SCRIPT, FIXTURE);
   const focus = r.text.slice(
     r.text.indexOf("## Focus"),
     r.text.indexOf("## Initiatives"),
@@ -205,9 +229,7 @@ test("leaves exactly one unprefixed day heading", () => {
 });
 
 test("does not double the blank lines inside a callout", () => {
-  const first = run(SCRIPT, FIXTURE);
-  exec(ARCHIVE, first.path);
-  const r = exec(SCRIPT, first.path);
+  const r = run(SCRIPT, FIXTURE);
   expect(r.text).not.toContain("\n>\n>\n");
 });
 
@@ -216,8 +238,7 @@ test("an empty Future leaves an empty Tomorrow callout, which is correct", () =>
     /> \[!note\]- Future[\s\S]*?\n\n## Initiatives/,
     "> [!note]- Future\n\n## Initiatives",
   );
-  const first = run(SCRIPT, noFuture);
-  const r = exec(ARCHIVE, first.path);
+  const r = run(SCRIPT, noFuture);
   expect(r.text).toContain("> [!note]- Tomorrow");
   expect(r.text).toContain("### Thursday 17 September");
 });
@@ -243,12 +264,13 @@ test("--shift-only leaves today's open items alone", () => {
   expect(r.text).toBe(FIXTURE);
 });
 
-test("a --shift-only after an archive has nothing left to do", () => {
-  // The archive already turned the page, and the day it promoted is not empty.
+test("a --shift-only after the page turned has nothing left to do", () => {
+  // The roll already turned the page, and the day it promoted has not started.
   const first = run(SCRIPT, FIXTURE);
-  exec(ARCHIVE, first.path);
   const r = exec(SCRIPT, first.path, ["--shift-only", "--verbose"]);
-  expect(r.out.trim()).toBe("Nothing to shift: today still has content");
+  expect(r.out.trim()).toBe(
+    "Nothing to shift: today is Thursday 17 September, which has not started",
+  );
   const focus = r.text.slice(
     r.text.indexOf("## Focus"),
     r.text.indexOf("## Initiatives"),
@@ -265,10 +287,12 @@ test("says so and writes nothing when there is nothing to do", () => {
   expect(r.text).toBe(empty);
 });
 
-test("is idempotent: a second run with nothing open does nothing", () => {
+test("is idempotent: a second run does not roll tomorrow's work again", () => {
   const first = run(SCRIPT, FIXTURE);
   const second = exec(SCRIPT, first.path);
-  expect(second.out.trim()).toBe("Nothing to roll: today still has content");
+  expect(second.out.trim()).toBe(
+    "Nothing to roll: today is Thursday 17 September, which has not started",
+  );
   expect(second.text).toBe(first.text);
 });
 
@@ -283,7 +307,10 @@ test("creates a missing Tomorrow band rather than writing into Future", () => {
   const tomorrowAt = focus.indexOf("> [!note]- Tomorrow");
   const futureAt = focus.indexOf("> [!note]- Future");
   expect(tomorrowAt).toBeLessThan(futureAt);
-  expect(focus.slice(tomorrowAt, futureAt)).toContain("🧾 Admin thing");
+  // The created day is the next working day, and the same run promotes it.
+  const today = todayOf(r.text);
+  expect(today).toContain("### Thursday 17 September");
+  expect(today).toContain("🧾 Admin thing");
 });
 
 test("refuses to write when an iCloud conflict copy is present", () => {
@@ -349,14 +376,16 @@ const INTENTION_ONLY = `# Dashboard
 Untouched.
 `;
 
-test("a group left holding only its intention is removed with the items", () => {
+test("an intention never carries to the next day: it goes to the work log", () => {
   const r = run(SCRIPT, INTENTION_ONLY, ["--verbose"]);
   expect(r.code).toBe(0);
   expect(r.text).not.toContain("Intention: three things and nothing else.");
-  expect(r.text).not.toContain("#### **Acme**\n\n> [!note]");
+  expect(workLog(r.path)).toContain(
+    "Intention: three things and nothing else.",
+  );
 });
 
-test("clearing the intention lets the same run turn the page", () => {
+test("filing the intention lets the same run turn the page", () => {
   const r = run(SCRIPT, INTENTION_ONLY, ["--verbose"]);
   expect(r.out).toContain("promoted to today: Thursday 17 September");
   expect(r.out).toContain("new tomorrow: Friday 18 September");
@@ -364,23 +393,35 @@ test("clearing the intention lets the same run turn the page", () => {
   expect(r.text).not.toContain("### Wednesday 16 September");
 });
 
-test("an end-of-day overview is a record, and still holds the day open", () => {
+test("an end-of-day overview is a record, so it goes to the work log", () => {
   const overview = INTENTION_ONLY.replace(
     "> [!note] Intention: three things and nothing else.",
     "> [!note] Two of the three landed. **Watch:** the third needs Magnus.",
   );
   const r = run(SCRIPT, overview, ["--verbose"]);
-  expect(r.text).toContain("**Watch:** the third needs Magnus.");
-  expect(r.out).toContain("no shift: today still has content");
-  expect(r.text).toContain("### Wednesday 16 September");
+  expect(r.text).not.toContain("**Watch:** the third needs Magnus.");
+  expect(workLog(r.path)).toContain("**Watch:** the third needs Magnus.");
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
 });
 
-test("a multi-line intention is removed whole, continuation lines included", () => {
+test("a handover callout beside the intention does not hold the day open", () => {
+  const handover = INTENTION_ONLY.replace(
+    "> [!note] Intention: three things and nothing else.",
+    "> [!note] Intention: three things and nothing else.\n\n> [!abstract] **[[Handover — follow-ups]]** — for the next session",
+  );
+  const r = run(SCRIPT, handover, ["--verbose"]);
+  expect(r.out).toContain("promoted to today: Thursday 17 September");
+  expect(r.text).not.toContain("### Wednesday 16 September");
+  expect(workLog(r.path)).toContain("[[Handover — follow-ups]]");
+});
+
+test("a multi-line intention is filed whole, continuation lines included", () => {
   const wrapped = INTENTION_ONLY.replace(
     "> [!note] Intention: three things and nothing else.",
     "> [!note] Intention: three things and nothing else.\n> The rest moved to Thursday.",
   );
   const r = run(SCRIPT, wrapped, ["--verbose"]);
   expect(r.text).not.toContain("The rest moved to Thursday.");
+  expect(workLog(r.path)).toContain("The rest moved to Thursday.");
   expect(r.out).toContain("promoted to today: Thursday 17 September");
 });

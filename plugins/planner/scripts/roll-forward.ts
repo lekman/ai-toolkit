@@ -95,11 +95,6 @@ const isDatedHeading = (l: string) =>
 const isAnyDayHeading = (l: string) => /^#{2,3} \S/.test(strip(l));
 const isClientHeading = (l: string) => /^#### /.test(strip(l));
 const isBandStart = (l: string) => /^> \[!note\]- /.test(l);
-// A client block opens with a callout. `Intention:` states what the day was
-// for; anything else — an end-of-day overview, a handover link — is a record
-// of what happened. Only the first is residue once the items have gone.
-const isIntention = (l: string) => /^>\s*\[!note\]\s+Intention:/i.test(l);
-const isCalloutStart = (l: string) => /^>\s*\[![a-z]+\]/i.test(l);
 const isItem = (l: string) => /^- \[[ x]\]/.test(strip(l));
 const isOpen = (l: string) => /^- \[ \]/.test(strip(l));
 const clientName = (l: string) =>
@@ -185,7 +180,7 @@ function layout(lines: string[]): Layout {
 }
 
 /** The next Mon–Fri after today, formatted as the dashboard writes days. */
-function nextWorkingDay(from = new Date()): string {
+function nextWorkingDay(from = today()): string {
   const d = new Date(from);
   do {
     d.setDate(d.getDate() + 1);
@@ -193,6 +188,70 @@ function nextWorkingDay(from = new Date()): string {
   const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
   const month = d.toLocaleDateString("en-GB", { month: "long" });
   return `${weekday} ${d.getDate()} ${month}`;
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/**
+ * Whether a day heading such as "Thursday 1 October" is later than today.
+ * Headings carry no year, so the year is the one that puts the day nearest to
+ * today.
+ */
+function dayIsAhead(title: string): boolean {
+  const m = title.match(/^[A-Z][a-z]+day (\d{1,2}) ([A-Z][a-z]+)/);
+  if (!m) return false;
+  const month = MONTHS.indexOf(m[2]);
+  if (month < 0) return false;
+  const now = today();
+  const nearest = [-1, 0, 1]
+    .map((y) => new Date(now.getFullYear() + y, month, Number(m[1])))
+    .sort(
+      (a, b) =>
+        Math.abs(a.getTime() - now.getTime()) -
+        Math.abs(b.getTime() - now.getTime()),
+    )[0];
+  return nearest.getTime() > now.getTime();
+}
+
+/** Midnight today, or DASHBOARD_TODAY (YYYY-MM-DD) when the tests set it. */
+function today(): Date {
+  const now = process.env.DASHBOARD_TODAY
+    ? new Date(`${process.env.DASHBOARD_TODAY}T00:00:00`)
+    : new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+/**
+ * Run archive-done.ts on the file just written. It files today's ticked items
+ * and prose-only groups, then runs this script with --shift-only. The same
+ * interpreter runs it, for the reason archive-done.ts gives in turnThePage().
+ */
+function archiveTheDay(): string {
+  const script = join(import.meta.dir, "archive-done.ts");
+  let proc;
+  try {
+    proc = Bun.spawnSync([process.execPath, script], { env: process.env });
+  } catch (e) {
+    fail(`archive failed after the roll: ${(e as Error).message}`);
+  }
+  const out = proc.stdout.toString().trim();
+  const err = proc.stderr.toString().trim();
+  if (proc.exitCode !== 0)
+    fail(`archive failed after the roll: ${err || out || "no output"}`);
+  return out.replace(/^Done;?\s*/, "") || out;
 }
 
 /* -------------------------------------------------------------------- roll */
@@ -296,12 +355,10 @@ function rollOpenItems(input: string[]): { lines: string[]; rolled: Rolled[] } {
 }
 
 /**
- * A group the roll emptied keeps its heading, and archive-done.ts will not take
- * it — that skips any group with nothing ticked. Left alone it holds the day
- * open forever and the shift never fires. So the roll clears what it emptied,
- * but only when the heading and blank lines are all that is left: an intention
- * callout or a framing paragraph is the operator's prose, and prose outranks
- * the tidying.
+ * A group the roll emptied down to its heading holds nothing worth keeping, so
+ * the roll removes it. A group that still holds prose, such as an intention, an
+ * overview or a handover link, is a record of the day: archive-done.ts moves it
+ * to the work log once the day has nothing open.
  */
 function pruneEmptiedGroups(lines: string[]): void {
   const l = layout(lines);
@@ -325,22 +382,10 @@ function pruneEmptiedGroups(lines: string[]): void {
         break;
       }
     }
-    let onlyResidue = true;
-    let inIntention = false;
-    for (let i = start + 1; i < end; i++) {
-      const trimmed = lines[i].trim();
-      if (trimmed === "" || trimmed === ">") continue;
-      if (isIntention(lines[i])) {
-        inIntention = true;
-        continue;
-      }
-      // Continuation lines of the intention, but not the start of a new callout.
-      if (inIntention && lines[i].startsWith(">") && !isCalloutStart(lines[i]))
-        continue;
-      onlyResidue = false;
-      break;
-    }
-    if (onlyResidue) lines.splice(start, end - start);
+    const onlyHeading = lines
+      .slice(start + 1, end)
+      .every((x) => x.trim() === "" || x.trim() === ">");
+    if (onlyHeading) lines.splice(start, end - start);
   }
 
   // Splicing leaves runs of blank lines behind; the day should read as it did.
@@ -502,13 +547,35 @@ try {
   );
 }
 const original = before.split("\n");
+
+// A today later than the calendar date means the page already turned, for
+// example a second end-of-day run. Rolling again would push tomorrow's work a
+// further day with nothing to show for it.
+{
+  const l = layout(original);
+  const heading = l.todayIndex >= 0 ? strip(original[l.todayIndex]) : "";
+  const day = heading.replace(/^#{2,3}\s*/, "").trim();
+  const ahead = dayIsAhead(day);
+  if (ahead) {
+    process.stdout.write(
+      `${shiftOnly ? "Nothing to shift" : "Nothing to roll"}: today is ${day}, which has not started\n`,
+    );
+    process.exit(0);
+  }
+}
+
 const { lines: afterRoll, rolled } = shiftOnly
   ? { lines: original, rolled: [] as Rolled[] }
   : rollOpenItems(original);
 const { lines: shifted, shift } = shiftDays(afterRoll);
 const final = tidyBands(shifted);
 
-if (rolled.length === 0 && !shift.promoted) {
+// Once the roll has taken the open items, what holds the day is finished work:
+// ticked items and the day's prose. archive-done.ts files both and turns the
+// page, so one roll always ends on the next day.
+const finishes = !shiftOnly && shift.reason === "today still has content";
+
+if (rolled.length === 0 && !shift.promoted && !finishes) {
   // shiftDays() knows why it declined; saying only "Nothing to shift" leaves the
   // operator to find the leftover group by hand.
   const base = shiftOnly ? "Nothing to shift" : "Nothing to roll";
@@ -535,9 +602,13 @@ if (!dryRun) {
       `${dashboardPath} changed while this run was working. Nothing written; run it again.`,
     );
   }
-  snapshot = snapshotDashboard();
-  writeFileSync(dashboardPath, final.join("\n"), "utf8");
+  if (rolled.length || shift.promoted) {
+    snapshot = snapshotDashboard();
+    writeFileSync(dashboardPath, final.join("\n"), "utf8");
+  }
 }
+
+const archived = finishes && !dryRun ? archiveTheDay() : "";
 
 if (verbose || dryRun) {
   process.stdout.write(`${dryRun ? "DRY RUN" : "APPLIED"}\n`);
@@ -549,8 +620,14 @@ if (verbose || dryRun) {
     process.stdout.write(`  promoted to today: ${shift.promoted}\n`);
   if (shift.newTomorrow)
     process.stdout.write(`  new tomorrow: ${shift.newTomorrow}\n`);
-  if (shift.reason) process.stdout.write(`  no shift: ${shift.reason}\n`);
+  if (finishes)
+    process.stdout.write(
+      dryRun
+        ? "  then archives what is left of today and turns the page\n"
+        : `  archive: ${archived}\n`,
+    );
+  else if (shift.reason) process.stdout.write(`  no shift: ${shift.reason}\n`);
   if (snapshot) process.stdout.write(`  snapshot: ${snapshot}\n`);
 } else {
-  process.stdout.write("Done\n");
+  process.stdout.write(archived ? `Done; ${archived}\n` : "Done\n");
 }

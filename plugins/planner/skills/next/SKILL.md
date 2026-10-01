@@ -76,9 +76,17 @@ so in one line and stop. "All done" is a valid answer and needs no ceremony.
 
 ## Step 4: Choose
 
-Walk the items in order. Skip any item tagged `🚧`, which the operator writes
-on work that waits on someone else or on a decision that is not theirs to make
-right now. Report what was skipped and why; never silently pass over work.
+Walk the items in order. Skip two kinds of line, and report what was skipped
+and why; never silently pass over work.
+
+- Items tagged `🚧`, which the operator writes on work that waits on someone
+  else or on a decision that is not theirs to make right now.
+- **Calendar entries**: lines that start with `📅 HH:MM–HH:MM`, such as
+  `- [ ] 📅 13:30–14:00 **Daily sync**`. `/planner:today` Step 4c writes them
+  for the day's meetings. They are meetings, not work, and they have no
+  `[Details]` link, so without this rule they would count as quick wins below
+  and win. A `📅` followed by a date (`📅 2026-10-02`) is a deadline on real
+  work, not a calendar entry, and is not skipped.
 
 Blocked is read from the tag only, for the same reason admin is (below): a
 command that runs several times a day cannot decide from prose whether "await
@@ -180,6 +188,8 @@ report on the deliberation. Reasoning is what explain mode is for.
 - **Never edit an item's prose** while claiming it. Add the claim marker; leave
   every word the operator wrote.
 - **Never pick a `🚧` item** to have something to do. Report the block.
+- **Never pick a `📅 HH:MM–HH:MM` calendar entry.** It is a meeting. Report it
+  as skipped, like a blocked item.
 - **Never add, move or remove a tag.** `🧾` and `🚧` are the operator's;
   `/obsidian:add` writes them. This skill reads them and writes only the `🔄`
   claim.

@@ -36,22 +36,24 @@ before any edit. A non-zero exit stops the skill.
 ## Step 3: Check That Today Is Actually Done
 
 Read the client's group under today's heading. If it still has open `- [ ]`
-items that are not tagged `🚧`, **stop**:
+items that are not tagged `🚧` and are not `📅 HH:MM–HH:MM` calendar entries,
+**stop**:
 
 ```text
 today still has 3 open items for Globex — finish those first, or pass --force
 ```
 
 Pulling tomorrow's work while today's is unfinished is how a day's plan stops
-meaning anything. Blocked items do not count: a group holding nothing but `🚧`
-items is done as far as the operator can act on it.
+meaning anything. Blocked items and calendar entries do not count. A group
+holding nothing but `🚧` items and meetings is done as far as the operator can
+act on it.
 
 ## Step 4: Choose from Tomorrow
 
 Read the client's `#### **<Client>**` group inside the `> [!note]- Tomorrow`
 callout, stripping one `"> "` level. Apply **`/planner:next` Step 4 unchanged**:
-skip `🚧`, take `🧾` admin first, then items with no `[Details]` link, then file
-order.
+skip `🚧` and `📅 HH:MM–HH:MM` calendar entries, take `🧾` admin first, then
+items with no `[Details]` link, then file order.
 
 If Tomorrow holds no group for this client, or none of its items are available,
 say so in one line and stop. Never reach into Future for something to do —

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.4.2...rag-core@v0.4.3) (2026-10-01)
+
+
+### Fixes
+
+* **dependabot:** bump @lancedb/lancedb from 0.38.0 to 0.39.0 ([#75](https://github.com/lekman/ai-toolkit/issues/75)) ([18b62a2](https://github.com/lekman/ai-toolkit/commit/18b62a22c7d124478c52fc45ae02ff1d0a5d1f48))
+
 ## [0.4.2](https://github.com/lekman/ai-toolkit/compare/rag-core@v0.4.1...rag-core@v0.4.2) (2026-09-18)
 
 

@@ -1,6 +1,6 @@
 ---
 name: nudge
-description: Find roster worker sessions that have been idle for 10 minutes or more while they still have work, and nudge each one once, with a back-off. Asks for a status on an unanswered handoff, or tells an idle worker with agreed dashboard work to run /planner:next. Meant to run on a loop. Use when the user says "/commander:nudge", "nudge idle workers", "who is stuck", or runs "/loop 10m /commander:nudge".
+description: Find roster worker sessions that have been idle for 10 minutes or more while they still have work, and nudge each one once, with a back-off. Asks for a status on an unanswered handoff, or tells an idle worker with agreed dashboard work to run /planner:next. Escalates to the operator's phone through /commander:notify when a worker stays stuck, waits on approval, or a decision or question goes unanswered for the notify threshold. Meant to run on a loop. Use when the user says "/commander:nudge", "nudge idle workers", "who is stuck", or runs "/loop 10m /commander:nudge".
 user-invocable: true
 ---
 
@@ -45,7 +45,9 @@ every other session.
     "last_nudge": "2026-09-29T10:32:00Z",
     "nudges": 1,
     "fingerprint": "H-0929-3 sent 2026-09-29 10:05",
-    "reported": null
+    "reported": null,
+    "state": "idle",
+    "state_since": "2026-09-29T10:12:00Z"
   }
 }
 ```
@@ -53,18 +55,30 @@ every other session.
 The `fingerprint` is the agent's open ledger rows (id, status and updated
 time) joined into one string. When it changes, the worker has done something.
 
+`state` is what `ListAgents` last showed for the agent, and `state_since` is
+when that started. Step 5 measures escalation from it.
+
 ## Step 2: Decide per Agent
 
-Go through the roster agents in roster order.
+Go through the roster agents in roster order. When an agent's state differs
+from the record's `state`, set `state` and `state_since` to now, and clear its
+pushes so the new state can push once:
 
-| `ListAgents` shows                    | Do                                                                                                                                                                                         |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Not listed                            | Remove its record. Missing sessions are `/commander:roll-call`'s job.                                                                                                                      |
-| `busy`                                | Remove its record.                                                                                                                                                                         |
-| `requires_action`                     | Never nudge. The agent is waiting on the operator. Report it once (Step 4) and set `reported` to `requires_action`, so the next tick stays quiet. Clear `reported` when the state changes. |
-| `idle`, no record                     | Create the record with `idle_since` set to now. Nothing else this tick.                                                                                                                    |
-| `idle`, `idle_since` under 10 min ago | Nothing.                                                                                                                                                                                   |
-| `idle`, 10 min or more                | Go to Step 3.                                                                                                                                                                              |
+```bash
+$NOTIFY clear --prefix "agent:<name>:"
+```
+
+`$NOTIFY` is `bun <skill-base-dir>/../../scripts/notify.ts`, the script from
+`/commander:notify`. Removing a record also clears its pushes.
+
+| `ListAgents` shows                    | Do                                                                                                                                                                                                                               |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Not listed                            | Remove its record. Missing sessions are `/commander:roll-call`'s job.                                                                                                                                                            |
+| `busy`                                | Remove its record.                                                                                                                                                                                                               |
+| `requires_action`                     | Never nudge. The agent is waiting on the operator. Report it once (Step 4) and set `reported` to `requires_action`, so the next tick stays quiet. Clear `reported` when the state changes. Step 5 pushes it after the threshold. |
+| `idle`, no record                     | Create the record with `idle_since` set to now. Nothing else this tick.                                                                                                                                                          |
+| `idle`, `idle_since` under 10 min ago | Nothing.                                                                                                                                                                                                                         |
+| `idle`, 10 min or more                | Go to Step 3.                                                                                                                                                                                                                    |
 
 ## Step 3: Pick the Nudge
 
@@ -118,6 +132,38 @@ Otherwise pick the first nudge that applies:
 Send with `SendMessage` to the exact roster name. Set `last_nudge` to now and
 add 1 to `nudges`. A nudge adds no ledger row, because it is not a handoff.
 
+## Step 5: Escalate to the Phone
+
+The operator is often away from the terminal. Push with `/commander:notify`
+when a state has lasted the roster's `notify.threshold_minutes` (default 30).
+Each key sends once per state, because the state change in Step 2 clears it.
+
+| When                                                                     | Key                            | Title                                 |
+| ------------------------------------------------------------------------ | ------------------------------ | ------------------------------------- |
+| `requires_action` since `state_since` for the threshold or more          | `agent:<name>:requires_action` | `<name> is waiting for your approval` |
+| Reported `stuck`, and `last_nudge` was the threshold or more ago         | `agent:<name>:stuck`           | `<name> looks stuck`                  |
+| `idle` with a `sent` row, and `last_nudge` was the threshold or more ago | `agent:<name>:no-reply`        | `<name> has not replied to <id>`      |
+| A ledger row in `decision` whose `Updated` is the threshold or more ago  | `decision:<id>`                | `Decision waiting: <id>`              |
+
+```bash
+$NOTIFY send --key "agent:Acme:stuck" --title "Acme looks stuck" \
+  --message "Nudged twice since 10:32 with no change. Check the session."
+```
+
+The message is one line: what is waiting and since when. For a `decision` row,
+use the row's `Result` as the message, which is the worker's one-line
+question.
+
+Then run the backstop for questions the commander itself asked:
+
+```bash
+$NOTIFY due
+```
+
+A push that fails (exit 1 or 2) is reported in Step 4 with the script's
+reason, so a missing credential is seen on the next tick, not discovered when
+nobody was reached.
+
 ## Step 4: Write State and Report
 
 Write `idle.json` back with every change from this tick.
@@ -129,6 +175,8 @@ nudged Acme: H-0929-3 STATUS
 nudged Globex: /planner:next
 Admin needs you: waiting for approval (requires_action)
 Acme stuck: nudged twice with no change since 10:32. Check the session.
+pushed: Acme stuck
+push failed: decision:H-0929-4 (PUSHOVER_USER_KEY not set)
 ```
 
 If there is nothing to print, print `No nudges`. A loop tick runs many times

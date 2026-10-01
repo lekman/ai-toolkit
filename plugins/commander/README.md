@@ -37,6 +37,9 @@ act in without you.
 - [nudge](skills/nudge/SKILL.md): find roster workers idle for 10 minutes or
   more with work still open, and ask for a status or tell them to run
   `/planner:next`. Runs on a loop, with a back-off.
+- [notify](skills/notify/SKILL.md): push to the operator's phone through
+  Pushover, once per state, and push a question the operator has not answered
+  even while the commander session is blocked on it.
 - [scale](skills/scale/SKILL.md): recommend another session, with its start
   command, when queued work could run in parallel. It never starts one.
 
@@ -73,6 +76,28 @@ The commander session runs these, in this order:
 /commander:plan-check       # send plan checks; run again to review replies
 /loop 10m /commander:nudge  # every 10 minutes: nudge idle workers that still have work
 ```
+
+### Reaching the Operator Away From the Terminal
+
+The commander pushes to the operator's phone through
+[`/commander:notify`](skills/notify/SKILL.md) when something waits on them for
+the roster's `notify.threshold_minutes` (default 30):
+
+- a worker waiting for approval (`requires_action`), stuck after two nudges,
+  or silent on a handoff after its last nudge;
+- a `decision` row in the ledger;
+- a question the commander asked with `AskUserQuestion`.
+
+A question needs its own mechanism. While `AskUserQuestion` is open the
+commander session is blocked and no loop tick fires, so the nudge loop cannot
+see it. The commander therefore starts a detached timer, an operating-system
+process outside the session, before it asks, and removes the question from
+`pending.json` when the answer arrives. A timer that fires on an answered
+question does nothing. The nudge loop pushes any question still pending past
+the threshold as a backstop, for a timer lost to a restart.
+
+The commander session needs `PUSHOVER_APP_TOKEN` and `PUSHOVER_USER_KEY` in
+its environment. Quiet hours are off unless the roster sets them.
 
 ### The Nudge Loop
 
@@ -136,6 +161,9 @@ links. No transcripts, because every reply lands in the commander's context.
   they own, and which work is serial.
 - `~/.claude/commander/ledger.md`: open handoffs. The commander reads it
   instead of its own memory, so a fresh commander can pick up from it.
+- `~/.claude/commander/notify.json`, `pending.json` and `notify.log`: when each
+  push key last sent, the questions waiting on the operator, and a log of
+  pushes. No credentials.
 - `~/.claude/commander/idle.json`: when `/commander:nudge` first saw each
   worker idle, and when it last nudged it. Safe to delete; the next tick
   starts again.

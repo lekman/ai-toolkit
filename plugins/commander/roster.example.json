@@ -3,6 +3,11 @@
   "machine": "server",
   "ledger": "~/.claude/commander/ledger.md",
   "out_of_scope_clients": ["Initech"],
+  "notify": {
+    "enabled": true,
+    "threshold_minutes": 30,
+    "quiet_hours": null
+  },
   "agents": [
     {
       "name": "Acme",

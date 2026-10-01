@@ -66,7 +66,10 @@ One table, then open items. Keep it to one screen.
 
 Then, only if non-empty:
 
-- **Needs you**: rows in `blocked` or `decision`, with the worker's one line.
+- **Needs you**: rows in `blocked` or `decision`, with the worker's one line,
+  and agents in `requires_action`. Mark any the operator's phone has already
+  been told about (a key in `~/.claude/commander/notify.json`), so the operator
+  can tell a pushed item from a new one.
 - **Faults**: always-on agents that are missing, orphaned handoffs, naming
   mismatches.
 

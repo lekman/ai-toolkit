@@ -17,6 +17,10 @@ import { serveFolder } from "../scripts/serve.system.ts";
 const CLI = join(import.meta.dir, "..", "scripts", "cli.ts");
 const FIXTURES = join(import.meta.dir, "fixtures");
 const SITE = join(FIXTURES, "site");
+
+/** A timestamped line on stderr, to show on CI where a slow test spends its time. */
+const mark = (what: string): void =>
+  console.error(`[${new Date().toISOString()}] ${what}`);
 const SECRET = "sk-test-0123456789-never-print-me";
 
 const ffmpeg = await findFfmpeg().catch(() => "");
@@ -331,6 +335,7 @@ scenes:
     let tone: Blob;
 
     beforeAll(() => {
+      mark("beforeAll: making the tone");
       const mp3 = join(mkdtempSync(join(tmpdir(), "sbv-tone-")), "tone.mp3");
       execFileSync(ffmpeg, [
         "-hide_banner",
@@ -346,6 +351,7 @@ scenes:
         "64k",
         mp3,
       ]);
+      mark("beforeAll: tone made");
       tone = new Blob([readFileSync(mp3)]);
       server = Bun.serve({
         async fetch(req) {
@@ -380,7 +386,9 @@ scenes:
       };
       const cache = join(dir, "cache");
 
+      mark("voice: first run");
       const first = await run([script, "--cache-dir", cache], env);
+      mark("voice: first run done");
       expect(first.code).toBe(0);
       expect(first.out).toContain("3 clip(s) generated, 0 reused");
       expect(first.out).not.toContain(SECRET);
@@ -391,6 +399,7 @@ scenes:
       );
 
       const info = streams(join(dir, "out", "fixture-tour.mp4"));
+      mark("voice: streams read");
       expect(info).toMatch(/Audio: aac/);
       expect(info).toMatch(/Subtitle: mov_text/);
       // Each 2.5 s clip sets its step to 2.9 s, so the video is longer than the silent one.

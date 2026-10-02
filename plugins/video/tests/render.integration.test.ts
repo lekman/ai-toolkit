@@ -12,11 +12,11 @@ import { join } from "node:path";
 
 import { findFfmpeg } from "../scripts/ffmpeg.system.ts";
 import { launchBrowser } from "../scripts/record.system.ts";
-import { serveFolder } from "../scripts/serve.system.ts";
 
 const CLI = join(import.meta.dir, "..", "scripts", "cli.ts");
 const FIXTURES = join(import.meta.dir, "fixtures");
 const SITE = join(FIXTURES, "site");
+const PLAY = join(FIXTURES, "play-video.ts");
 
 /** A timestamped line on stderr, to show on CI where a slow test spends its time. */
 const mark = (what: string): void =>
@@ -36,12 +36,12 @@ const browserReady = await launchBrowser(false)
 // CLI runs. A synchronous spawn would block it and hang the run. A run that
 // has not finished within `limitMs` is killed, and the error shows its output
 // so far, so a hang on CI says where it stopped.
-async function run(
-  args: string[],
+async function runProcess(
+  cmd: string[],
   env: Record<string, string> = {},
   limitMs = 90_000,
-) {
-  const proc = Bun.spawn(["bun", CLI, ...args], {
+): Promise<{ code: number; out: string }> {
+  const proc = Bun.spawn(cmd, {
     env: {
       ...process.env,
       ELEVENLABS_API_KEY: "",
@@ -86,6 +86,14 @@ async function run(
   return { code, out: chunks.join("") };
 }
 
+/** Run the CLI with arguments; see runProcess. */
+function run(
+  args: string[],
+  env: Record<string, string> = {},
+): Promise<{ code: number; out: string }> {
+  return runProcess(["bun", CLI, ...args], env);
+}
+
 /** Start times of the cues in a WebVTT file, in seconds. */
 function cueStarts(vtt: string): number[] {
   return [...vtt.matchAll(/^(\d\d):(\d\d):(\d\d\.\d+) -->/gm)].map(
@@ -94,56 +102,20 @@ function cueStarts(vtt: string): number[] {
 }
 
 /**
- * Load a video in Chromium's <video> element with its WebVTT file as a
- * track. Resolves when it can play, with its length and the track's cues.
+ * Load a video in Chromium's <video> element, in its own process, with its
+ * WebVTT file as a track. Returns its length and the track's cue count.
  */
 async function playInChromium(
   dir: string,
   video: string,
   vtt: string,
 ): Promise<{ cues: number; duration: number }> {
-  writeFileSync(
-    join(dir, "play.html"),
-    `<!doctype html><video src="${video}" preload="auto" muted><track kind="subtitles" srclang="en" src="${vtt}" default></video>`,
-  );
-  const server = await serveFolder(dir);
-  const browser = await launchBrowser(false);
-  try {
-    const page = await browser.newPage();
-    await page.goto(`${server.url}play.html`);
-    return await page.evaluate(
-      () =>
-        new Promise<{ cues: number; duration: number }>((resolve, reject) => {
-          const v = document.querySelector("video") as HTMLVideoElement;
-          const track = document.querySelector("track") as HTMLTrackElement;
-          const timer = setTimeout(
-            () => reject(new Error("the video never reached canplay")),
-            20_000,
-          );
-          v.addEventListener("error", () =>
-            reject(new Error(`media error ${v.error?.code}`)),
-          );
-          const loaded = new Promise((r) => {
-            if (track.readyState === 2) r(null);
-            else track.addEventListener("load", r);
-          });
-          const playable = new Promise((r) => {
-            if (v.readyState >= 3) r(null);
-            else v.addEventListener("canplay", r);
-          });
-          void Promise.all([loaded, playable]).then(() => {
-            clearTimeout(timer);
-            resolve({
-              cues: track.track.cues?.length ?? 0,
-              duration: v.duration,
-            });
-          });
-        }),
-    );
-  } finally {
-    await browser.close();
-    await server.close();
-  }
+  const res = await runProcess(["bun", PLAY, dir, video, vtt]);
+  if (res.code !== 0) throw new Error(`play-video failed:\n${res.out}`);
+  return JSON.parse(res.out.trim().split("\n").at(-1) ?? "{}") as {
+    cues: number;
+    duration: number;
+  };
 }
 
 function streams(file: string): string {

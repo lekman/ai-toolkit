@@ -36,6 +36,7 @@ import { parseArgs } from "node:util";
 
 import {
   buildTimeline,
+  chaptersFile,
   concatArgs,
   concatList,
   muxArgs,
@@ -45,6 +46,7 @@ import { defaultCacheDir, DiskClipCache } from "./clip-cache.system.ts";
 import { MissingKeyError, resolveApiKey } from "./credentials.ts";
 import { ElevenLabsClient, opRead } from "./elevenlabs.system.ts";
 import { FfmpegProbe, findFfmpeg, runFfmpeg } from "./ffmpeg.system.ts";
+import { introHtml, logoDataUri, logoMime } from "./intro.ts";
 import { recordScenes } from "./record.system.ts";
 import { parseScript, ScriptError } from "./script.ts";
 import { serveFolder, type StaticServer } from "./serve.system.ts";
@@ -55,6 +57,20 @@ import { isServerUrl } from "./urls.ts";
 import { Voice } from "./voice.ts";
 
 const log = (line: string): void => console.error(line);
+
+/**
+ * The intro logo as an <img> source. An http(s) URL is used as is; a file is
+ * read and inlined as a data: URI. Exits with code 2 when the file is
+ * missing or is not an image type the card supports.
+ */
+function resolveLogo(scriptDir: string, logo: string): string {
+  if (isServerUrl(logo)) return logo;
+  const path = resolve(scriptDir, logo);
+  if (!existsSync(path)) fail(2, `intro.logo not found: ${path}`);
+  const mime = logoMime(extname(path));
+  if (!mime) fail(2, `intro.logo must be SVG, PNG, JPEG, WebP or GIF: ${path}`);
+  return logoDataUri(readFileSync(path), mime);
+}
 
 function fail(code: number, message: string): never {
   console.error(message);
@@ -103,6 +119,10 @@ async function main(argv: string[]): Promise<void> {
   const cache = new DiskClipCache(
     resolve(values["cache-dir"] ?? defaultCacheDir()),
   );
+
+  const logoSrc = script.intro
+    ? resolveLogo(scriptDir, script.intro.logo)
+    : undefined;
 
   if (values["dry-run"]) {
     const lengths = useVoice
@@ -180,6 +200,16 @@ async function main(argv: string[]): Promise<void> {
     const recorded = await recordScenes({
       baseUrl,
       headed: Boolean(values.headed),
+      introHtml:
+        script.intro && logoSrc
+          ? introHtml({
+              background: script.intro.background,
+              durationMs: plan.introMs,
+              logoSrc,
+              subtitle: script.intro.subtitle,
+              title: script.title,
+            })
+          : undefined,
       log,
       plan,
       probe,
@@ -190,7 +220,10 @@ async function main(argv: string[]): Promise<void> {
     const maxLine = script.subtitles.max_line;
     writeFileSync(`${stem}.srt`, toSrt(timeline.cues, maxLine));
     writeFileSync(`${stem}.vtt`, toVtt(timeline.cues, maxLine));
-    writeFileSync(`${stem}.md`, toTranscript(script));
+    const sceneStarts = timeline.sceneStarts.slice(script.intro ? 1 : 0);
+    writeFileSync(`${stem}.md`, toTranscript(script, sceneStarts));
+    const chapters = join(workDir, "chapters.txt");
+    writeFileSync(chapters, chaptersFile(timeline.chapters));
 
     log("Encoding scenes");
     const segments: string[] = [];
@@ -221,6 +254,7 @@ async function main(argv: string[]): Promise<void> {
     await runFfmpeg(
       ffmpeg,
       muxArgs({
+        chapters,
         clips: placed,
         out: output,
         srt: script.subtitles.burn ? undefined : `${stem}.srt`,

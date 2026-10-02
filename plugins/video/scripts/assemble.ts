@@ -7,6 +7,8 @@ import type { Cue } from "./subtitles.ts";
 
 /** One scene as recorded, with times relative to the moment the scene was ready. */
 export interface RecordedScene {
+  /** Chapter title for the scene. */
+  label: string;
   /** Captions shown during the scene, relative to the scene start. */
   captions: Cue[];
   /** Length of the usable part of the recording. */
@@ -18,8 +20,16 @@ export interface RecordedScene {
   videoPath: string;
 }
 
+/** A chapter of the video: one per recorded scene, the intro included. */
+export interface Chapter {
+  endMs: number;
+  startMs: number;
+  title: string;
+}
+
 /** The whole video on one clock. */
 export interface Timeline {
+  chapters: Chapter[];
   cues: Cue[];
   sceneStarts: number[];
   /** Global start of each step, keyed by `scene:step`. */
@@ -29,6 +39,7 @@ export interface Timeline {
 
 /** Place every scene end to end and move captions and steps onto the global clock. */
 export function buildTimeline(scenes: RecordedScene[]): Timeline {
+  const chapters: Chapter[] = [];
   const cues: Cue[] = [];
   const sceneStarts: number[] = [];
   const stepStarts = new Map<string, number>();
@@ -39,9 +50,25 @@ export function buildTimeline(scenes: RecordedScene[]): Timeline {
       cues.push({ endMs: t + c.endMs, startMs: t + c.startMs, text: c.text });
     }
     for (const s of scene.steps) stepStarts.set(s.key, t + s.startMs);
+    chapters.push({
+      endMs: t + scene.durationMs,
+      startMs: t,
+      title: scene.label,
+    });
     t += scene.durationMs;
   }
-  return { cues, sceneStarts, stepStarts, totalMs: t };
+  return { chapters, cues, sceneStarts, stepStarts, totalMs: t };
+}
+
+/** Chapter markers in ffmpeg's metadata file format. */
+export function chaptersFile(chapters: Chapter[]): string {
+  const escape = (v: string): string =>
+    v.replace(/[=;#\\\n]/g, (c) => `\\${c}`);
+  const blocks = chapters.map(
+    (c) =>
+      `[CHAPTER]\nTIMEBASE=1/1000\nSTART=${Math.round(c.startMs)}\nEND=${Math.round(c.endMs)}\ntitle=${escape(c.title)}\n`,
+  );
+  return `;FFMETADATA1\n${blocks.join("")}`;
 }
 
 const secs = (ms: number): string => (Math.max(0, ms) / 1000).toFixed(3);
@@ -122,6 +149,8 @@ export function concatArgs(listPath: string, out: string): string[] {
  * when captions are already burned into the picture, or they show twice.
  */
 export function muxArgs(input: {
+  /** ffmetadata file with chapter markers. */
+  chapters?: string;
   clips: { path: string; startMs: number }[];
   out: string;
   srt?: string;
@@ -149,10 +178,16 @@ export function muxArgs(input: {
         : `${labels}amix=inputs=${n}:normalize=0:dropout_transition=0`;
     filter = `${delayed};${mix},apad,aformat=sample_rates=44100:channel_layouts=stereo[aout]`;
   }
-  const subIndex = n === 0 ? 2 : n + 1;
-  if (input.srt) args.push("-i", input.srt);
+  let next = n === 0 ? 2 : n + 1;
+  const subIndex = next;
+  if (input.srt) {
+    args.push("-i", input.srt);
+    next++;
+  }
+  if (input.chapters) args.push("-f", "ffmetadata", "-i", input.chapters);
   args.push("-filter_complex", filter, "-map", "0:v", "-map", "[aout]");
   if (input.srt) args.push("-map", `${subIndex}:s`);
+  if (input.chapters) args.push("-map_chapters", String(next));
   args.push("-c:v", "copy", "-c:a", "aac", "-b:a", "160k");
   if (input.srt)
     args.push("-c:s", "mov_text", "-metadata:s:s:0", "language=eng");

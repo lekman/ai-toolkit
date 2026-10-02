@@ -8,7 +8,8 @@ caption bar shows the line being spoken.
 
 ## What You Get
 
-- An MP4 (H.264 video, AAC audio).
+- An MP4 (H.264 video, AAC audio), with one chapter per scene.
+- An optional intro card with a logo and the title.
 - SubRip (`.srt`) and WebVTT (`.vtt`) subtitles, always.
 - A markdown transcript that also works as a written guide.
 
@@ -23,10 +24,11 @@ caption bar shows the line being spoken.
    read its caption, and its `pause`.
 4. **Record.** Playwright records each scene in its own browser context. The
    recorder notes the real start time of every step and caption.
-5. **Assemble.** ffmpeg cuts each recording to the part after the page was
-   ready, joins the scenes, places each voice clip at the recorded start of
-   its step, and writes the MP4. The subtitles come from the same recorded
-   times.
+5. **Assemble.** An intro card, when the script has one, is recorded first,
+   and every later time moves by its length. ffmpeg cuts each recording to
+   the part after the page was ready, joins the scenes, places each voice
+   clip at the recorded start of its step, and writes the MP4 with one
+   chapter per scene. The subtitles come from the same recorded times.
 
 ## What It Costs
 

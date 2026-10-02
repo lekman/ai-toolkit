@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   buildTimeline,
+  chaptersFile,
   concatList,
   muxArgs,
   parseDuration,
@@ -14,6 +15,7 @@ describe("buildTimeline", () => {
       {
         captions: [{ endMs: 2000, startMs: 800, text: "A" }],
         durationMs: 3000,
+        label: "One",
         offsetMs: 400,
         steps: [{ endMs: 2000, key: "0:0", startMs: 800 }],
         videoPath: "/1.webm",
@@ -21,6 +23,7 @@ describe("buildTimeline", () => {
       {
         captions: [{ endMs: 1900, startMs: 800, text: "B" }],
         durationMs: 2500,
+        label: "Two",
         offsetMs: 380,
         steps: [{ endMs: 1900, key: "1:0", startMs: 800 }],
         videoPath: "/2.webm",
@@ -33,6 +36,50 @@ describe("buildTimeline", () => {
       { endMs: 4900, startMs: 3800, text: "B" },
     ]);
     expect(timeline.stepStarts.get("1:0")).toBe(3800);
+  });
+});
+
+describe("buildTimeline with an intro", () => {
+  test("the intro shifts every cue, step and chapter by its length", () => {
+    const intro = {
+      captions: [],
+      durationMs: 3000,
+      label: "Title",
+      offsetMs: 300,
+      steps: [],
+      videoPath: "/intro.webm",
+    };
+    const scene = {
+      captions: [{ endMs: 2000, startMs: 800, text: "A" }],
+      durationMs: 3500,
+      label: "One",
+      offsetMs: 400,
+      steps: [{ endMs: 2000, key: "0:0", startMs: 800 }],
+      videoPath: "/1.webm",
+    };
+    const timeline = buildTimeline([intro, scene]);
+    expect(timeline.cues).toEqual([{ endMs: 5000, startMs: 3800, text: "A" }]);
+    expect(timeline.stepStarts.get("0:0")).toBe(3800);
+    expect(timeline.chapters).toEqual([
+      { endMs: 3000, startMs: 0, title: "Title" },
+      { endMs: 6500, startMs: 3000, title: "One" },
+    ]);
+    expect(timeline.totalMs).toBe(6500);
+  });
+});
+
+describe("chaptersFile", () => {
+  test("writes ffmetadata chapters in ms and escapes special characters", () => {
+    expect(
+      chaptersFile([
+        { endMs: 3000, startMs: 0, title: "Intro" },
+        { endMs: 6500.4, startMs: 3000, title: "Step 1; a=b" },
+      ]),
+    ).toBe(
+      ";FFMETADATA1\n" +
+        "[CHAPTER]\nTIMEBASE=1/1000\nSTART=0\nEND=3000\ntitle=Intro\n" +
+        "[CHAPTER]\nTIMEBASE=1/1000\nSTART=3000\nEND=6500\ntitle=Step 1\\; a\\=b\n",
+    );
   });
 });
 
@@ -88,6 +135,31 @@ describe("muxArgs", () => {
     expect(filter).toContain("amix=inputs=2:normalize=0");
     expect(args.join(" ")).toContain("-map 3:s");
     expect(args).toContain("mov_text");
+  });
+
+  test("chapters come after the subtitles as their own input", () => {
+    const args = muxArgs({
+      chapters: "/c.txt",
+      clips: [{ path: "/a.mp3", startMs: 0 }],
+      out: "/o.mp4",
+      srt: "/o.srt",
+      totalMs: 4000,
+      video: "/v.mp4",
+    }).join(" ");
+    expect(args).toContain("-i /o.srt -f ffmetadata -i /c.txt");
+    expect(args).toContain("-map 2:s");
+    expect(args).toContain("-map_chapters 3");
+  });
+
+  test("without subtitles the chapters take the next input", () => {
+    const args = muxArgs({
+      chapters: "/c.txt",
+      clips: [],
+      out: "/o.mp4",
+      totalMs: 4000,
+      video: "/v.mp4",
+    }).join(" ");
+    expect(args).toContain("-map_chapters 2");
   });
 });
 

@@ -90,6 +90,24 @@ scenes:
     expect(plan.totalMs).toBe((s1?.durationMs ?? 0) + (s2?.durationMs ?? 0));
   });
 
+  test("an intro moves every scene later by its length", () => {
+    const withIntro = parseScript(
+      `intro: { logo: logo.svg, duration: 2.5 }\n` +
+        `title: T\noutput: o.mp4\nstorybook: ./sb\nscenes:\n  - story: a--b\n    steps: [{ say: Hi. }]\n`,
+    );
+    const plan = planTiming(withIntro);
+    expect(plan.introMs).toBe(2500);
+    expect(plan.scenes[0]?.startMs).toBe(2500);
+    expect(plan.totalMs).toBe(2500 + (plan.scenes[0]?.durationMs ?? 0));
+    expect(formatPlan(plan)).toStartWith(
+      "Intro card  (starts 0:00.0, lasts 0:02.5)",
+    );
+  });
+
+  test("no intro block means no intro time", () => {
+    expect(planTiming(script).introMs).toBe(0);
+  });
+
   test("the printed plan marks estimated voice lengths", () => {
     const voice = new Map([[stepKey(0, 0), { estimated: true, ms: 3000 }]]);
     const text = formatPlan(planTiming(script, voice));

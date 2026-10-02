@@ -104,8 +104,24 @@ const Voice = z.strictObject({
   voice_id: z.string().trim().min(1),
 });
 
+/** A CSS colour the intro card can use as is: hex, a name, or rgb()/hsl(). */
+const CSS_COLOUR =
+  /^(#[0-9a-f]{3,8}|[a-z]+|(rgb|rgba|hsl|hsla)\([0-9.,%\s]+\))$/i;
+
+const Intro = z.strictObject({
+  background: z
+    .string()
+    .trim()
+    .regex(CSS_COLOUR, "use a hex colour, a colour name, or rgb()/hsl()")
+    .default("#ffffff"),
+  duration: z.number().min(1).max(15).default(3),
+  logo: z.string().trim().min(1),
+  subtitle: z.string().trim().min(1).optional(),
+});
+
 const VideoScript = z
   .strictObject({
+    intro: Intro.optional(),
     output: z.string().trim().min(1),
     scenes: z.array(Scene).min(1, "a script needs at least one scene"),
     storybook: z.string().trim().min(1).optional(),
@@ -151,6 +167,8 @@ export type VideoScript = z.infer<typeof VideoScript>;
 export type Scene = VideoScript["scenes"][number];
 /** One step of a validated scene. */
 export type Step = Scene["steps"][number];
+/** Intro card settings of a validated script. */
+export type IntroConfig = NonNullable<VideoScript["intro"]>;
 /** Voice settings of a validated script. */
 export type VoiceConfig = NonNullable<VideoScript["voice"]>;
 

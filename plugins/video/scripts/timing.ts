@@ -53,6 +53,8 @@ export interface PlannedScene {
 
 /** The whole plan. */
 export interface TimingPlan {
+  /** Length of the intro card; 0 when there is none. */
+  introMs: number;
   scenes: PlannedScene[];
   totalMs: number;
 }
@@ -106,7 +108,8 @@ export function planTiming(
   script: VideoScript,
   voice: VoiceLengths = new Map(),
 ): TimingPlan {
-  let sceneStart = 0;
+  const introMs = script.intro ? Math.round(script.intro.duration * 1000) : 0;
+  let sceneStart = introMs;
   const scenes = script.scenes.map((scene, sceneIndex) => {
     let t = SCENE_LEAD_MS;
     const steps = scene.steps.map((step, stepIndex) => {
@@ -140,7 +143,7 @@ export function planTiming(
     sceneStart += durationMs;
     return planned;
   });
-  return { scenes, totalMs: sceneStart };
+  return { introMs, scenes, totalMs: sceneStart };
 }
 
 /** Format ms as m:ss.s for the plan table. */
@@ -153,6 +156,9 @@ export function clock(ms: number): string {
 /** The plan as a plain-text table, for --dry-run. */
 export function formatPlan(plan: TimingPlan): string {
   const lines: string[] = [];
+  if (plan.introMs > 0) {
+    lines.push(`Intro card  (starts 0:00.0, lasts ${clock(plan.introMs)})`);
+  }
   for (const scene of plan.scenes) {
     lines.push(
       `Scene ${scene.sceneIndex + 1}: ${scene.label}  (starts ${clock(scene.startMs)}, lasts ${clock(scene.durationMs)})`,

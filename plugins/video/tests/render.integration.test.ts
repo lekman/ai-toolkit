@@ -84,6 +84,36 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
     );
   }, 180_000);
 
+  test("an intro card comes first and shifts the subtitles, with chapters in the MP4", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+    const script = join(dir, "intro.yaml");
+    const text = readFileSync(join(FIXTURES, "render.yaml"), "utf8")
+      .replace("storybook: ./site", `storybook: ${join(FIXTURES, "site")}`)
+      .replace(
+        "title: Fixture tour",
+        `title: Fixture tour\nintro: { logo: ${join(FIXTURES, "logo.svg")}, duration: 2, subtitle: A short test }`,
+      );
+    writeFileSync(script, text);
+    const out = join(dir, "intro.mp4");
+    const res = await run([script, "--no-voice", "--out", out]);
+    expect(res.code).toBe(0);
+    expect(res.out).toContain("Recording the intro card");
+
+    const info = streams(out);
+    const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
+    expect(seconds).toBeGreaterThan(10);
+    expect(info).toContain("Chapter #0:0: start 0.000000, end 2.000000");
+    expect(info).toMatch(/title\s*: Fixture tour/);
+    expect(info).toMatch(/title\s*: Approve a case/);
+
+    const srt = readFileSync(join(dir, "intro.srt"), "utf8");
+    // Without the intro the first cue starts at about 0.8 s.
+    expect(srt).toMatch(/^1\n00:00:02,[89]\d\d -->/);
+    expect(readFileSync(join(dir, "intro.md"), "utf8")).toContain(
+      "## 1. Approve a case [0:02.0]",
+    );
+  }, 180_000);
+
   test("a missing target fails with the scene and step named", async () => {
     const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
     const script = join(dir, "bad.yaml");

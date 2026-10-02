@@ -102,6 +102,28 @@ describe("parseScript", () => {
     expect(problems(yaml)[0]).toStartWith("scenes[0].url: a relative `url`");
   });
 
+  test("an intro gets a 3 second default and a white background", () => {
+    const script = parseScript(`${minimal}intro: { logo: brand/logo.svg }\n`);
+    expect(script.intro).toEqual({
+      background: "#ffffff",
+      duration: 3,
+      logo: "brand/logo.svg",
+    });
+  });
+
+  test("an intro needs a logo and refuses CSS that is not a colour", () => {
+    expect(problems(`${minimal}intro: { duration: 3 }\n`)[0]).toStartWith(
+      "intro.logo:",
+    );
+    expect(
+      problems(
+        `${minimal}intro: { logo: l.svg, background: "red; display: none" }\n`,
+      ),
+    ).toEqual([
+      "intro.background: use a hex colour, a colour name, or rgb()/hsl()",
+    ]);
+  });
+
   test("YAML syntax errors are reported as such", () => {
     const [p] = problems("title: [unclosed\n");
     expect(p).toStartWith("YAML:");

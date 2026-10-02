@@ -32,12 +32,12 @@ real data, or for pages that hold patient data (see
 
 From `output: out/tour.mp4` in the script:
 
-| File           | Contents                                                        |
-| -------------- | --------------------------------------------------------------- |
-| `out/tour.mp4` | H.264 video and AAC audio. Silent audio when there is no voice. |
-| `out/tour.srt` | SubRip subtitles.                                               |
-| `out/tour.vtt` | WebVTT subtitles, for a web player.                             |
-| `out/tour.md`  | The transcript: scene headings and the spoken lines.            |
+| File           | Contents                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `out/tour.mp4` | H.264 video and AAC audio, with one chapter per scene. Silent audio when there is no voice. |
+| `out/tour.srt` | SubRip subtitles.                                                                           |
+| `out/tour.vtt` | WebVTT subtitles, for a web player.                                                         |
+| `out/tour.md`  | The transcript: scene headings with their start times, and the spoken lines.                |
 
 Subtitles are always written. With `subtitles.burn: true` (the default) the
 captions are drawn into the picture by the caption bar. With `burn: false`
@@ -90,6 +90,11 @@ voice:
   similarity_boost: 0.75
 subtitles:
   burn: true # draw captions into the picture (default)
+intro: # optional title card before the first scene
+  logo: brand/logo.svg # file relative to the script, or an https URL
+  duration: 3 # seconds (default 3)
+  subtitle: For clinical reviewers
+  background: "#ffffff" # the default
 scenes:
   - title: The Case List
     story: pages-cases--sample-data
@@ -117,17 +122,35 @@ scenes:
 
 | Key         | Required                               | Meaning                                                                           |
 | ----------- | -------------------------------------- | --------------------------------------------------------------------------------- |
-| `title`     | yes                                    | Heading of the transcript.                                                        |
+| `title`     | yes                                    | Heading of the transcript, and the title on the intro card.                       |
 | `output`    | yes                                    | Path of the MP4, relative to the script.                                          |
 | `scenes`    | yes                                    | One or more scenes, recorded in order.                                            |
 | `storybook` | for `story` scenes and relative `url`s | URL of a running Storybook, or a built Storybook folder.                          |
 | `viewport`  | no                                     | `width` and `height` in pixels. Default 1920 by 1080.                             |
 | `voice`     | no                                     | ElevenLabs settings. Without it the video has no narration.                       |
 | `subtitles` | no                                     | `burn` (default `true`) and `max_line`, characters per caption line (default 42). |
+| `intro`     | no                                     | A title card before the first scene. Without it the video starts with scene 1.    |
 
 Voice settings other than `voice_id` are optional: `model_id`,
 `output_format` (default `mp3_44100_128`), `stability`, `similarity_boost`,
 `style`, `speed` and `use_speaker_boost`. They go to ElevenLabs as they are.
+
+### Intro Card
+
+With an `intro` block, the video opens on a card with the logo, the script's
+`title` under it, and the `subtitle` if there is one. The card fades in, holds,
+and fades out over `duration` seconds (1 to 15, default 3). It has no voice and
+no caption bar.
+
+- `logo`: an SVG, PNG, JPEG, WebP or GIF file, relative to the script, or an
+  `https://` URL. A file is embedded in the card, so the page needs no file
+  access. Use a logo made for the card's background.
+- `background`: a hex colour, a colour name, or `rgb()`/`hsl()`. The text is
+  dark on a light background and white on a dark one.
+
+The card is an HTML page recorded like a scene, so fonts and SVG render as
+in a browser. Everything after it moves later by its length: the subtitles,
+the voice, the chapters and the transcript times.
 
 ### Scenes
 
@@ -244,7 +267,8 @@ Each step lasts the longest of:
   1.5 seconds;
 - its `pause`.
 
-A step with no line and no pause lasts 0.8 seconds. Each scene shows for 0.8
+A step with no line and no pause lasts 0.8 seconds. The intro card, when
+there is one, comes before all of this. Each scene shows for 0.8
 seconds before its first step and 0.7 seconds after its last. The voice
 starts as the step starts, while the cursor travels to the target.
 

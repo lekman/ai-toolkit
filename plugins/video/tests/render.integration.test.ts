@@ -66,7 +66,12 @@ async function run(
   if (done === "timeout") {
     const closedBefore = pipesClosed;
     proc.kill("SIGKILL");
-    const [out, err] = await output;
+    const [out, err] = await Promise.race([
+      output,
+      new Promise<[string, string]>((r) =>
+        setTimeout(() => r(["(output still open after the kill)", ""]), 5000),
+      ),
+    ]);
     throw new Error(
       `The CLI did not finish in ${limitMs} ms (its pipes were ${closedBefore ? "already closed" : "still open"}). Output:\n${out}${err}`,
     );
@@ -406,12 +411,14 @@ scenes:
       const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
       expect(seconds).toBeGreaterThan(10.5);
 
+      mark("voice: second run (dry run)");
       const second = await run([script, "--cache-dir", cache, "--dry-run"], {
         ELEVENLABS_API_URL: server.url.origin,
       });
       expect(second.code).toBe(0);
       expect(second.out).toContain("Every voice clip is cached");
 
+      mark("voice: third run");
       const third = await run([script, "--cache-dir", cache], {
         ELEVENLABS_API_URL: server.url.origin,
       });

@@ -29,8 +29,14 @@ const browserReady = await launchBrowser(false)
   .catch(() => false);
 
 // Async, so the stand-in API served from this process can answer while the
-// CLI runs. A synchronous spawn would block it and hang the run.
-async function run(args: string[], env: Record<string, string> = {}) {
+// CLI runs. A synchronous spawn would block it and hang the run. A run that
+// has not finished within `limitMs` is killed, and the error shows its output
+// so far, so a hang on CI says where it stopped.
+async function run(
+  args: string[],
+  env: Record<string, string> = {},
+  limitMs = 150_000,
+) {
   const proc = Bun.spawn(["bun", CLI, ...args], {
     env: {
       ...process.env,
@@ -41,11 +47,27 @@ async function run(args: string[], env: Record<string, string> = {}) {
     stderr: "pipe",
     stdout: "pipe",
   });
-  const [out, err, code] = await Promise.all([
+  const output = Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
-    proc.exited,
   ]);
+  let pipesClosed = false;
+  void output.then(() => (pipesClosed = true));
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const limit = new Promise<"timeout">((r) => {
+    timer = setTimeout(() => r("timeout"), limitMs);
+  });
+  const done = await Promise.race([Promise.all([output, proc.exited]), limit]);
+  clearTimeout(timer);
+  if (done === "timeout") {
+    const closedBefore = pipesClosed;
+    proc.kill("SIGKILL");
+    const [out, err] = await output;
+    throw new Error(
+      `The CLI did not finish in ${limitMs} ms (its pipes were ${closedBefore ? "already closed" : "still open"}). Output:\n${out}${err}`,
+    );
+  }
+  const [[out, err], code] = done;
   return { code, out: `${out}${err}` };
 }
 

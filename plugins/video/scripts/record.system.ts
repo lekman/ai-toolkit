@@ -1,28 +1,52 @@
 /**
  * Drive Chromium through each scene with Playwright and record it.
  *
- * Each scene gets its own browser context, so each scene is one raw video
- * file. The recorder notes when the page was ready, when each step and each
- * caption started and ended, and returns those times with the file.
+ * Each scene opens its own page, so each scene is one raw video file. By
+ * default each scene also gets its own browser context; with
+ * `persist_storage` every scene shares one, so local storage and cookies
+ * carry from scene to scene. The recorder notes when the page was ready,
+ * when each step and each caption started and ended, and returns those
+ * times with the file.
  */
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { type Browser, chromium, type Locator, type Page } from "playwright";
+import {
+  type Browser,
+  type BrowserContext,
+  chromium,
+  type Locator,
+  type Page,
+} from "playwright";
 
 import type { RecordedScene } from "./assemble.ts";
 import type { IMediaProbe } from "./interfaces.ts";
-import type { Step, VideoScript } from "./script.ts";
+import type { Scene, Step, VideoScript } from "./script.ts";
 import type { Cue } from "./subtitles.ts";
-import type { TimingPlan } from "./timing.ts";
 
+import {
+  type Box,
+  dragPath,
+  type Point,
+  pointInBox,
+  wheelDeltas,
+} from "./gestures.ts";
 import { installOverlay, type OverlayApi } from "./overlay.ts";
 import { planChunks, wrapLines } from "./subtitles.ts";
-import { SCENE_LEAD_MS, SCENE_TAIL_MS, stepKey } from "./timing.ts";
+import {
+  CURSOR_MS,
+  DRAG_HOLD_MS,
+  DRAG_STEP_MS,
+  DRAG_STEPS,
+  SCENE_LEAD_MS,
+  SCENE_TAIL_MS,
+  SETTLE_MS,
+  stepKey,
+  type TimingPlan,
+  WHEEL_STEP_MS,
+} from "./timing.ts";
 import { sceneUrl } from "./urls.ts";
 
-/** Time the cursor takes to travel to a target, in ms. */
-const CURSOR_MS = 650;
 /** How long an action waits for its target to appear, in ms. */
 const ACTION_TIMEOUT_MS = 10_000;
 
@@ -61,76 +85,230 @@ function stepError(
 ): Error {
   const reason =
     error instanceof Error ? error.message.split("\n")[0] : String(error);
-  const what = s.target ? `${s.do} on ${s.target}` : (s.do ?? "say");
+  const where = s.frame ? `${s.target} in ${s.frame}` : s.target;
+  const what = where ? `${s.do} on ${where}` : (s.do ?? "say");
   return new Error(
     `Scene ${scene + 1}, step ${step + 1} (${what}) failed: ${reason}`,
   );
 }
 
-async function overlay(page: Page, captions: boolean): Promise<void> {
-  await page.evaluate(installOverlay, { captions });
+/**
+ * The overlay on one page, with the cursor position and caption it shows.
+ * Both are kept here, so they come back when a reload or a navigation
+ * replaces the document.
+ */
+export class Stage {
+  /** The caption on screen, already wrapped into lines. */
+  caption: null | string = null;
+  /** The page being recorded. */
+  readonly page: Page;
+  /** Cursor position on the top page, from the left, in CSS pixels. */
+  x: number;
+  /** Cursor position on the top page, from the top, in CSS pixels. */
+  y: number;
+  readonly #captions: boolean;
+
+  constructor(
+    page: Page,
+    opts: { captions: boolean; size: { height: number; width: number } },
+  ) {
+    this.page = page;
+    this.#captions = opts.captions;
+    this.x = opts.size.width / 2;
+    this.y = opts.size.height / 2;
+  }
+
+  async #call<K extends keyof OverlayApi>(
+    name: K,
+    ...args: Parameters<OverlayApi[K]>
+  ): Promise<void> {
+    await this.page.evaluate(
+      ([n, a]) => {
+        const api = (
+          window as unknown as {
+            __sbv: Record<string, (...x: unknown[]) => void>;
+          }
+        ).__sbv;
+        api[n as string]?.(...(a as unknown[]));
+      },
+      [name, args] as const,
+    );
+  }
+
+  /** Show a caption, or hide it with null. */
+  async show(text: null | string): Promise<void> {
+    this.caption = text;
+    await this.#call("caption", text);
+  }
+
+  /**
+   * Install the overlay if the page has none. When it is new, put the
+   * cursor and the caption back where they were.
+   */
+  async install(): Promise<void> {
+    const fresh = await this.page.evaluate(installOverlay, {
+      captions: this.#captions,
+    });
+    if (!fresh) return;
+    await this.#call("move", this.x, this.y, 0);
+    if (this.caption) await this.#call("caption", this.caption);
+  }
+
+  /** Move the drawn cursor. The real mouse does not move. */
+  async move(to: Point, ms: number, linear = false): Promise<void> {
+    this.x = to.x;
+    this.y = to.y;
+    await this.#call("move", to.x, to.y, ms, linear);
+  }
+
+  /** Draw a ripple under the cursor, as for a click. */
+  async pulse(): Promise<void> {
+    await this.#call("pulse");
+  }
+
+  /** Draw the highlight ring around a box, or hide it with null. */
+  async ring(box: Box | null): Promise<void> {
+    await this.#call("ring", box);
+  }
 }
 
-async function call<K extends keyof OverlayApi>(
-  page: Page,
-  name: K,
-  ...args: Parameters<OverlayApi[K]>
-): Promise<void> {
-  await page.evaluate(
-    ([n, a]) => {
-      const api = (
-        window as unknown as {
-          __sbv: Record<string, (...x: unknown[]) => void>;
-        }
-      ).__sbv;
-      api[n as string]?.(...(a as unknown[]));
-    },
-    [name, args] as const,
-  );
+/**
+ * The element a step acts on. With `frame`, the target is looked for inside
+ * the first iframe that matches it; without, on the page itself.
+ */
+function locate(page: Page, step: Step): Locator | undefined {
+  if (!step.target) return undefined;
+  const root = step.frame
+    ? page.locator(step.frame).first().contentFrame()
+    : page;
+  return root.locator(step.target).first();
 }
 
-/** Move the drawn cursor and the real mouse to the centre of a target. */
+/**
+ * Move the drawn cursor to a point in a target: its centre, or `at` as
+ * fractions of its box. Returns the box and the point, both on the top page.
+ * Playwright gives the box of an element in an iframe on the top page too,
+ * so the cursor lands on it.
+ */
 async function pointAt(
-  page: Page,
+  stage: Stage,
   loc: Locator,
-): Promise<{ box: { height: number; width: number; x: number; y: number } }> {
+  at?: Point,
+): Promise<{ box: Box; point: Point }> {
   await loc.waitFor({ state: "visible", timeout: ACTION_TIMEOUT_MS });
   await loc.scrollIntoViewIfNeeded({ timeout: ACTION_TIMEOUT_MS });
   const box = await loc.boundingBox();
   if (!box) throw new Error("the target has no size on screen");
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  await call(page, "move", x, y, CURSOR_MS);
-  await sleep(CURSOR_MS + 50);
-  return { box };
+  const point = pointInBox(box, at);
+  await stage.move(point, CURSOR_MS);
+  await sleep(CURSOR_MS + SETTLE_MS);
+  return { box, point };
 }
 
-async function perform(page: Page, step: Step): Promise<void> {
+/** `at` as a position relative to the target's top-left corner, for Playwright. */
+function position(box: Box, at?: Point): Point | undefined {
+  return at ? { x: box.width * at.x, y: box.height * at.y } : undefined;
+}
+
+/** Wait until Storybook has rendered the story into its root element. */
+async function waitForStory(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const root = document.querySelector("#storybook-root, #root");
+      return Boolean(root && root.children.length > 0);
+    },
+    undefined,
+    { timeout: 30_000 },
+  );
+}
+
+/** Wait until a scene's page is ready to record: the story, `wait_for`, and fonts. */
+async function waitForScene(page: Page, scene: Scene): Promise<void> {
+  if (scene.story) await waitForStory(page);
+  if (scene.wait_for) {
+    await page
+      .locator(scene.wait_for)
+      .first()
+      .waitFor({ state: "visible", timeout: 30_000 });
+  }
+  await page.evaluate(() => document.fonts.ready.then(() => true));
+}
+
+/**
+ * Press, move and release the real mouse from one point in the target to
+ * another, so pointerdown, pointermove and pointerup fire on the page. The
+ * drawn cursor follows each move.
+ */
+async function drag(stage: Stage, loc: Locator, step: Step): Promise<void> {
+  const { box, point: start } = await pointAt(stage, loc, step.from);
+  const end = pointInBox(box, step.to);
+  const mouse = stage.page.mouse;
+  await mouse.move(start.x, start.y);
+  await mouse.down();
+  await stage.pulse();
+  await sleep(DRAG_HOLD_MS);
+  const t0 = performance.now();
+  for (const [i, p] of dragPath(
+    start,
+    end,
+    step.steps ?? DRAG_STEPS,
+  ).entries()) {
+    await mouse.move(p.x, p.y);
+    await stage.move(p, DRAG_STEP_MS, true);
+    await sleep(t0 + (i + 1) * DRAG_STEP_MS - performance.now());
+  }
+  await sleep(DRAG_HOLD_MS);
+  await mouse.up();
+}
+
+/** Run one step's action on the page. */
+export async function perform(
+  stage: Stage,
+  scene: Scene,
+  step: Step,
+): Promise<void> {
   if (!step.do || step.do === "wait") return;
-  const loc = step.target ? page.locator(step.target).first() : undefined;
+  const page = stage.page;
+  const loc = locate(page, step);
   switch (step.do) {
-    case "click": {
-      await pointAt(page, loc as Locator);
-      await call(page, "pulse");
-      await (loc as Locator).click({ timeout: ACTION_TIMEOUT_MS });
+    case "click":
+    case "dblclick": {
+      const { box } = await pointAt(stage, loc as Locator, step.at);
+      await stage.pulse();
+      const options = {
+        position: position(box, step.at),
+        timeout: ACTION_TIMEOUT_MS,
+      };
+      if (step.do === "click") await (loc as Locator).click(options);
+      else await (loc as Locator).dblclick(options);
+      return;
+    }
+    case "drag": {
+      await drag(stage, loc as Locator, step);
       return;
     }
     case "highlight": {
-      const { box } = await pointAt(page, loc as Locator);
-      await call(page, "ring", box);
+      const { box } = await pointAt(stage, loc as Locator);
+      await stage.ring(box);
       return;
     }
     case "hover": {
-      const { box } = await pointAt(page, loc as Locator);
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      const { point } = await pointAt(stage, loc as Locator, step.at);
+      await page.mouse.move(point.x, point.y);
       return;
     }
     case "press": {
       if (loc) {
-        await pointAt(page, loc);
+        await pointAt(stage, loc);
         await loc.focus({ timeout: ACTION_TIMEOUT_MS });
       }
       await page.keyboard.press(String(step.value));
+      return;
+    }
+    case "reload": {
+      await page.reload({ timeout: 60_000, waitUntil: "load" });
+      await waitForScene(page, scene);
+      await stage.install();
       return;
     }
     case "scroll": {
@@ -150,8 +328,8 @@ async function perform(page: Page, step: Step): Promise<void> {
       return;
     }
     case "type": {
-      await pointAt(page, loc as Locator);
-      await call(page, "pulse");
+      await pointAt(stage, loc as Locator);
+      await stage.pulse();
       await (loc as Locator).click({ timeout: ACTION_TIMEOUT_MS });
       await (loc as Locator).fill("", { timeout: ACTION_TIMEOUT_MS });
       await (loc as Locator).pressSequentially(String(step.value), {
@@ -159,19 +337,16 @@ async function perform(page: Page, step: Step): Promise<void> {
       });
       return;
     }
+    case "wheel": {
+      const { point } = await pointAt(stage, loc as Locator, step.at);
+      await page.mouse.move(point.x, point.y);
+      for (const dy of wheelDeltas(step.delta_y ?? 0, step.steps ?? 1)) {
+        await page.mouse.wheel(0, dy);
+        await sleep(WHEEL_STEP_MS);
+      }
+      return;
+    }
   }
-}
-
-/** Wait until Storybook has rendered the story into its root element. */
-async function waitForStory(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const root = document.querySelector("#storybook-root, #root");
-      return Boolean(root && root.children.length > 0);
-    },
-    undefined,
-    { timeout: 30_000 },
-  );
 }
 
 /**
@@ -268,6 +443,7 @@ export async function recordScenes(input: {
   const burn = script.subtitles.burn;
   const browser = await launchBrowser(input.headed);
   const recorded: RecordedScene[] = [];
+  let shared: BrowserContext | undefined;
   try {
     if (input.introHtml && plan.introMs > 0) {
       input.log("Recording the intro card");
@@ -282,23 +458,32 @@ export async function recordScenes(input: {
         }),
       );
     }
+    const newContext = (dir: string): Promise<BrowserContext> =>
+      browser.newContext({
+        deviceScaleFactor: 1,
+        recordVideo: {
+          dir: join(input.workDir, dir),
+          size: { height, width },
+        },
+        reducedMotion: "no-preference",
+        viewport: { height, width },
+      });
+    // One context for every scene keeps local storage and cookies between
+    // them. Each scene still has its own page, and so its own recording.
+    shared = script.persist_storage ? await newContext("scenes") : undefined;
     for (const [si, scene] of script.scenes.entries()) {
       const planned = plan.scenes[si];
       if (!planned) throw new Error(`No timing plan for scene ${si + 1}`);
       input.log(
         `Recording scene ${si + 1}/${script.scenes.length}: ${planned.label}`,
       );
-      const context = await browser.newContext({
-        deviceScaleFactor: 1,
-        recordVideo: {
-          dir: join(input.workDir, `scene-${si + 1}`),
-          size: { height, width },
-        },
-        reducedMotion: "no-preference",
-        viewport: { height, width },
-      });
+      const context = shared ?? (await newContext(`scene-${si + 1}`));
       const t0 = performance.now();
       const page = await context.newPage();
+      const stage = new Stage(page, {
+        captions: burn,
+        size: { height, width },
+      });
       const captions: Cue[] = [];
       const steps: RecordedScene["steps"] = [];
       let tReady = 0;
@@ -306,22 +491,15 @@ export async function recordScenes(input: {
       try {
         const url = sceneUrl(scene, input.baseUrl);
         await page.goto(url, { timeout: 60_000, waitUntil: "load" });
-        if (scene.story) await waitForStory(page);
-        if (scene.wait_for) {
-          await page
-            .locator(scene.wait_for)
-            .first()
-            .waitFor({ state: "visible", timeout: 30_000 });
-        }
-        await page.evaluate(() => document.fonts.ready.then(() => true));
-        await overlay(page, burn);
+        await waitForScene(page, scene);
+        await stage.install();
         await page.mouse.move(width / 2, height / 2);
         tReady = performance.now();
         const now = (): number => performance.now() - tReady;
 
         await sleep(SCENE_LEAD_MS);
         let open: Cue | undefined;
-        const show = async (text: string | null): Promise<void> => {
+        const show = async (text: null | string): Promise<void> => {
           const t = now();
           if (open) {
             open.endMs = t;
@@ -329,11 +507,7 @@ export async function recordScenes(input: {
             open = undefined;
           }
           if (text) open = { endMs: t, startMs: t, text };
-          await call(
-            page,
-            "caption",
-            text ? wrapLines(text, maxLine).join("\n") : null,
-          );
+          await stage.show(text ? wrapLines(text, maxLine).join("\n") : null);
         };
 
         for (const [pi, step] of scene.steps.entries()) {
@@ -342,14 +516,14 @@ export async function recordScenes(input: {
             throw new Error(
               `No timing plan for scene ${si + 1}, step ${pi + 1}`,
             );
-          await overlay(page, burn); // a click may have replaced the document
+          await stage.install(); // a click may have replaced the document
           const start = now();
           const chunks = step.say
             ? planChunks(step.say, target.durationMs, maxLine)
             : [];
           await show(chunks[0]?.text ?? null);
           try {
-            await perform(page, step);
+            await perform(stage, scene, step);
           } catch (error) {
             throw stepError(si, pi, step, error);
           }
@@ -361,7 +535,7 @@ export async function recordScenes(input: {
           const end = now();
           const next = scene.steps[pi + 1];
           if (!next?.say) await show(null);
-          if (step.do === "highlight") await call(page, "ring", null);
+          if (step.do === "highlight") await stage.ring(null);
           steps.push({ endMs: end, key: stepKey(si, pi), startMs: start });
         }
         await show(null);
@@ -369,7 +543,7 @@ export async function recordScenes(input: {
         tEnd = now();
       } finally {
         await page.close();
-        await context.close();
+        if (!shared) await context.close();
       }
       const cut = await cutPoint(
         page,
@@ -386,6 +560,7 @@ export async function recordScenes(input: {
       });
     }
   } finally {
+    await shared?.close();
     await browser.close();
   }
   return recorded;

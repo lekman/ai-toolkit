@@ -6,7 +6,7 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -15,6 +15,10 @@ import { launchBrowser } from "../scripts/record.system.ts";
 
 const CLI = join(import.meta.dir, "..", "scripts", "cli.ts");
 const FIXTURES = join(import.meta.dir, "fixtures");
+const SITE = join(FIXTURES, "site");
+const PLAY = join(FIXTURES, "play-video.ts");
+const STAND_IN = join(FIXTURES, "stand-in-api.ts");
+
 const SECRET = "sk-test-0123456789-never-print-me";
 
 const ffmpeg = await findFfmpeg().catch(() => "");
@@ -26,25 +30,69 @@ const browserReady = await launchBrowser(false)
   })
   .catch(() => false);
 
-// Async, so the stand-in API served from this process can answer while the
-// CLI runs. A synchronous spawn would block it and hang the run.
-async function run(args: string[], env: Record<string, string> = {}) {
-  const proc = Bun.spawn(["bun", CLI, ...args], {
+/**
+ * Run a command and wait for it, synchronously. Waiting on an async child's
+ * exit and pipes inside `bun test` was unreliable on Linux CI: a child that
+ * had exited was missed. A run still going after `limitMs` is killed, and
+ * the error shows its output so far.
+ */
+function runProcess(
+  cmd: string[],
+  env: Record<string, string> = {},
+  limitMs = 90_000,
+): { code: number; out: string } {
+  const [bin, ...args] = cmd as [string, ...string[]];
+  const res = spawnSync(bin, args, {
+    encoding: "utf8",
     env: {
       ...process.env,
       ELEVENLABS_API_KEY: "",
       ELEVENLABS_API_KEY_REF: "",
       ...env,
     },
-    stderr: "pipe",
-    stdout: "pipe",
+    killSignal: "SIGKILL",
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: limitMs,
   });
-  const [out, err, code] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
-  return { code, out: `${out}${err}` };
+  const out = `${res.stdout ?? ""}${res.stderr ?? ""}`;
+  if (res.error || res.status === null) {
+    throw new Error(
+      `${cmd.join(" ")} did not finish in ${limitMs} ms (${res.error?.message ?? res.signal}). Output so far:\n${out}`,
+    );
+  }
+  return { code: res.status, out };
+}
+
+/** Run the CLI with arguments; see runProcess. */
+function run(
+  args: string[],
+  env: Record<string, string> = {},
+): { code: number; out: string } {
+  return runProcess(["bun", CLI, ...args], env);
+}
+
+/** Start times of the cues in a WebVTT file, in seconds. */
+function cueStarts(vtt: string): number[] {
+  return [...vtt.matchAll(/^(\d\d):(\d\d):(\d\d\.\d+) -->/gm)].map(
+    (m) => Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]),
+  );
+}
+
+/**
+ * Load a video in Chromium's <video> element, in its own process, with its
+ * WebVTT file as a track. Returns its length and the track's cue count.
+ */
+function playInChromium(
+  dir: string,
+  video: string,
+  vtt: string,
+): { cues: number; duration: number } {
+  const res = runProcess(["bun", PLAY, dir, video, vtt]);
+  if (res.code !== 0) throw new Error(`play-video failed:\n${res.out}`);
+  return JSON.parse(res.out.trim().split("\n").at(-1) ?? "{}") as {
+    cues: number;
+    duration: number;
+  };
 }
 
 function streams(file: string): string {
@@ -58,7 +106,7 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
   test("records the fixture pages with --no-voice", async () => {
     const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
     const out = join(dir, "tour.mp4");
-    const res = await run([
+    const res = run([
       join(FIXTURES, "render.yaml"),
       "--no-voice",
       "--out",
@@ -95,7 +143,7 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       );
     writeFileSync(script, text);
     const out = join(dir, "intro.mp4");
-    const res = await run([script, "--no-voice", "--out", out]);
+    const res = run([script, "--no-voice", "--out", out]);
     expect(res.code).toBe(0);
     expect(res.out).toContain("Recording the intro card");
 
@@ -121,19 +169,144 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       script,
       `title: Bad\noutput: bad.mp4\nstorybook: ${join(FIXTURES, "site")}\nscenes:\n  - url: form.html\n    steps:\n      - { say: Click it., do: click, target: "#does-not-exist" }\n`,
     );
-    const res = await run([script, "--no-voice"]);
+    const res = run([script, "--no-voice"]);
     expect(res.code).toBe(1);
     expect(res.out).toContain(
       "Scene 1, step 1 (click on #does-not-exist) failed",
     );
   }, 60_000);
 
-  describe("with voice from a stand-in API", () => {
-    let server: ReturnType<typeof Bun.serve>;
-    const requests: { key: string | null; text: string; url: string }[] = [];
-    let tone: Blob;
+  test("a WebM joined from two segments plays in Chromium, with storage kept across scenes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+    const frame = `'iframe[title="Chart"]'`;
+    // A whole script, so the segment can also be recorded on its own.
+    writeFileSync(
+      join(dir, "seg-one.yaml"),
+      `title: Zoom and select
+output: one.mp4
+storybook: ${SITE}
+scenes:
+  - title: Zoom and select
+    url: chart.html
+    steps:
+      - { say: Scroll up on the chart to zoom in., do: wheel, target: "#chart", delta_y: -200, steps: 2 }
+      - { say: Drag across the chart to select a range., do: drag, target: "#chart", from: { x: 0.2, y: 0.5 }, to: { x: 0.6, y: 0.5 } }
+      - { do: highlight, target: "text=Dragged 20% to 60% in 20 moves" }
+      - { say: Double-click to mark a point., do: dblclick, target: "#chart" }
+      - { say: Reload the page. The zoom stays., do: reload }
+      - { do: highlight, target: "text=Stored zoom 3" }
+`,
+    );
+    writeFileSync(
+      join(dir, "seg-two.yaml"),
+      `scenes:
+  - title: Next visit
+    url: chart.html
+    steps:
+      - { say: A new page still has the zoom., do: highlight, target: "text=Stored zoom 3" }
+  - title: Framed chart
+    url: framed.html
+    wait_for: ${frame.slice(0, -1)} >> internal:control=enter-frame >> #chart'
+    steps:
+      - { say: The chart in the frame takes a drag too., do: drag, frame: ${frame}, target: "#chart", from: { x: 0.1, y: 0.5 }, to: { x: 0.9, y: 0.5 } }
+      - { do: highlight, frame: ${frame}, target: "text=Dragged 10% to 90% in 20 moves" }
+`,
+    );
+    const script = join(dir, "walk.yaml");
+    writeFileSync(
+      script,
+      `title: Chart walkthrough
+output: out/walk.webm
+viewport: { width: 800, height: 480 }
+storybook: ${SITE}
+persist_storage: true
+subtitles: { burn: false }
+scenes:
+  - include: seg-one.yaml
+  - include: seg-two.yaml
+`,
+    );
+    const res = run([script, "--no-voice"]);
+    expect(res.out).toContain("WebM: libvpx-vp9 video");
+    expect(res.code).toBe(0);
 
-    beforeAll(() => {
+    const out = join(dir, "out");
+    const info = streams(join(out, "walk.webm"));
+    expect(info).toMatch(/Input #0, matroska,webm/);
+    expect(info).toMatch(/Video: vp9/);
+    expect(info).not.toMatch(/Audio:/);
+    expect(info).not.toMatch(/Subtitle:/);
+    expect(info).toMatch(/title\s*: Zoom and select/);
+    expect(info).toMatch(/title\s*: Next visit/);
+    expect(info).toMatch(/title\s*: Framed chart/);
+
+    // One clock across both segments: every cue starts after the one before.
+    const vtt = readFileSync(join(out, "walk.vtt"), "utf8");
+    const starts = cueStarts(vtt);
+    expect(starts).toHaveLength(6);
+    expect(
+      starts.every((t, i) => i === 0 || t > (starts[i - 1] as number)),
+    ).toBe(true);
+    const transcript = readFileSync(join(out, "walk.md"), "utf8");
+    const headings = [
+      ...transcript.matchAll(/^## (\d)\. (.+) \[0:(\d\d\.\d)\]$/gm),
+    ];
+    expect(headings.map((m) => `${m[1]} ${m[2]}`)).toEqual([
+      "1 Zoom and select",
+      "2 Next visit",
+      "3 Framed chart",
+    ]);
+    const sceneTimes = headings.map((m) => Number(m[3]));
+    expect(sceneTimes[1]).toBeGreaterThan(sceneTimes[0] as number);
+    expect(sceneTimes[2]).toBeGreaterThan(sceneTimes[1] as number);
+    expect(starts[4]).toBeGreaterThan(sceneTimes[1] as number);
+    expect(starts[5]).toBeGreaterThan(sceneTimes[2] as number);
+
+    const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
+    const played = playInChromium(out, "walk.webm", "walk.vtt");
+    expect(played.cues).toBe(6);
+    expect(Math.abs(played.duration - seconds)).toBeLessThan(0.1);
+  }, 300_000);
+
+  test("without persist_storage each scene starts with empty storage", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+    const script = join(dir, "fresh.yaml");
+    writeFileSync(
+      script,
+      `title: Fresh
+output: fresh.mp4
+viewport: { width: 640, height: 360 }
+storybook: ${SITE}
+scenes:
+  - url: chart.html
+    steps: [{ do: wheel, target: "#chart", delta_y: -100 }, { do: highlight, target: "text=Zoom 2" }]
+  - url: chart.html
+    steps: [{ do: highlight, target: "text=Nothing stored" }]
+`,
+    );
+    const res = run([script, "--no-voice"]);
+    expect(res.code).toBe(0);
+    expect(streams(join(dir, "fresh.mp4"))).toMatch(/Video: h264/);
+  }, 120_000);
+
+  describe("with voice from a stand-in API", () => {
+    let api: ReturnType<typeof Bun.spawn>;
+    let apiDir: string;
+    let origin: string;
+    const requests = (): {
+      key: null | string;
+      text: string;
+      url: string;
+    }[] => {
+      const file = join(apiDir, "requests.jsonl");
+      if (!existsSync(file)) return [];
+      return readFileSync(file, "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as never);
+    };
+
+    beforeAll(async () => {
       const mp3 = join(mkdtempSync(join(tmpdir(), "sbv-tone-")), "tone.mp3");
       execFileSync(ffmpeg, [
         "-hide_banner",
@@ -149,23 +322,17 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
         "64k",
         mp3,
       ]);
-      tone = new Blob([readFileSync(mp3)]);
-      server = Bun.serve({
-        async fetch(req) {
-          const body = (await req.json()) as { text: string };
-          requests.push({
-            key: req.headers.get("xi-api-key"),
-            text: body.text,
-            url: req.url,
-          });
-          return new Response(tone, {
-            headers: { "content-type": "audio/mpeg" },
-          });
-        },
-        port: 0,
+      apiDir = mkdtempSync(join(tmpdir(), "sbv-api-"));
+      api = Bun.spawn(["bun", STAND_IN, mp3, apiDir], {
+        stderr: "inherit",
+        stdout: "ignore",
       });
+      const portFile = join(apiDir, "port");
+      for (let i = 0; i < 100 && !existsSync(portFile); i++)
+        await Bun.sleep(100);
+      origin = `http://127.0.0.1:${readFileSync(portFile, "utf8")}`;
     });
-    afterAll(() => server.stop(true));
+    afterAll(() => api?.kill());
 
     test("generates each line once, reuses the cache, and never prints the key", async () => {
       const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
@@ -179,17 +346,17 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       writeFileSync(script, text);
       const env = {
         ELEVENLABS_API_KEY: SECRET,
-        ELEVENLABS_API_URL: server.url.origin,
+        ELEVENLABS_API_URL: origin,
       };
       const cache = join(dir, "cache");
 
-      const first = await run([script, "--cache-dir", cache], env);
+      const first = run([script, "--cache-dir", cache], env);
       expect(first.code).toBe(0);
       expect(first.out).toContain("3 clip(s) generated, 0 reused");
       expect(first.out).not.toContain(SECRET);
-      expect(requests.length).toBe(3);
-      expect(requests.every((r) => r.key === SECRET)).toBe(true);
-      expect(requests[0]?.url).toContain(
+      expect(requests().length).toBe(3);
+      expect(requests().every((r) => r.key === SECRET)).toBe(true);
+      expect(requests()[0]?.url).toContain(
         "/v1/text-to-speech/DODLEQrClDo8wCz460ld?output_format=mp3_44100_128",
       );
 
@@ -200,19 +367,44 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
       expect(seconds).toBeGreaterThan(10.5);
 
-      const second = await run([script, "--cache-dir", cache, "--dry-run"], {
-        ELEVENLABS_API_URL: server.url.origin,
+      const second = run([script, "--cache-dir", cache, "--dry-run"], {
+        ELEVENLABS_API_URL: origin,
       });
       expect(second.code).toBe(0);
       expect(second.out).toContain("Every voice clip is cached");
 
-      const third = await run([script, "--cache-dir", cache], {
-        ELEVENLABS_API_URL: server.url.origin,
+      const third = run([script, "--cache-dir", cache], {
+        ELEVENLABS_API_URL: origin,
       });
       expect(third.code).toBe(0); // no key set: every clip is cached, so none is needed
       expect(third.out).toContain("0 clip(s) generated, 3 reused");
-      expect(requests.length).toBe(3);
+      expect(requests().length).toBe(3);
     }, 300_000);
+
+    test("--format webm writes Opus voice", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+      const script = join(dir, "voiced.yaml");
+      writeFileSync(
+        script,
+        `title: Voiced WebM
+output: out/v.mp4
+viewport: { width: 640, height: 360 }
+storybook: ${SITE}
+voice: { provider: elevenlabs, voice_id: DODLEQrClDo8wCz460ld }
+scenes:
+  - url: form.html
+    steps: [{ say: Type the case number to find it. }]
+`,
+      );
+      const res = run(
+        [script, "--format", "webm", "--cache-dir", join(dir, "cache")],
+        { ELEVENLABS_API_KEY: SECRET, ELEVENLABS_API_URL: origin },
+      );
+      expect(res.code).toBe(0);
+      const info = streams(join(dir, "out", "v.webm"));
+      expect(info).toMatch(/Video: vp9/);
+      expect(info).toMatch(/Audio: opus, 48000 Hz, stereo/);
+    }, 120_000);
 
     test("without a key and an uncached line, the run stops before recording", async () => {
       const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
@@ -221,7 +413,7 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
         script,
         `title: No key\noutput: x.mp4\nvoice: { provider: elevenlabs, voice_id: abc }\nscenes:\n  - url: "file:///dev/null"\n    steps: [{ say: A line that is not cached. }]\n`,
       );
-      const res = await run([script, "--cache-dir", join(dir, "cache")]);
+      const res = run([script, "--cache-dir", join(dir, "cache")]);
       expect(res.code).toBe(2);
       expect(res.out).toContain("No ElevenLabs API key is available.");
       expect(res.out).not.toContain("Recording scene");

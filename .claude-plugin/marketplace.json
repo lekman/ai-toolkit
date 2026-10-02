@@ -80,7 +80,7 @@
     {
       "name": "video",
       "source": "./plugins/video",
-      "description": "Tutorial videos of a real UI from a YAML script: Storybook stories driven by Playwright, cursor, highlight and caption overlay, ElevenLabs voice cached per line, SRT and WebVTT subtitles and a markdown transcript",
+      "description": "Tutorial videos of a real UI from a YAML script: Storybook stories driven by Playwright, chart gestures and iframe targets, MP4 or WebM, cursor, highlight and caption overlay, ElevenLabs voice cached per line, SRT and WebVTT subtitles and a markdown transcript",
       "category": "productivity",
       "tags": [
         "video",

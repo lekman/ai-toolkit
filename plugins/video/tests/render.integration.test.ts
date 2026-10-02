@@ -6,7 +6,7 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,10 +17,8 @@ const CLI = join(import.meta.dir, "..", "scripts", "cli.ts");
 const FIXTURES = join(import.meta.dir, "fixtures");
 const SITE = join(FIXTURES, "site");
 const PLAY = join(FIXTURES, "play-video.ts");
+const STAND_IN = join(FIXTURES, "stand-in-api.ts");
 
-/** A timestamped line on stderr, to show on CI where a slow test spends its time. */
-const mark = (what: string): void =>
-  console.error(`[${new Date().toISOString()}] ${what}`);
 const SECRET = "sk-test-0123456789-never-print-me";
 
 const ffmpeg = await findFfmpeg().catch(() => "");
@@ -32,65 +30,44 @@ const browserReady = await launchBrowser(false)
   })
   .catch(() => false);
 
-// Async, so the stand-in API served from this process can answer while the
-// CLI runs. A synchronous spawn would block it and hang the run. A run that
-// has not finished within `limitMs` is killed, and the error shows its output
-// so far, so a hang on CI says where it stopped.
-async function runProcess(
+/**
+ * Run a command and wait for it, synchronously. Waiting on an async child's
+ * exit and pipes inside `bun test` was unreliable on Linux CI: a child that
+ * had exited was missed. A run still going after `limitMs` is killed, and
+ * the error shows its output so far.
+ */
+function runProcess(
   cmd: string[],
   env: Record<string, string> = {},
   limitMs = 90_000,
-): Promise<{ code: number; out: string }> {
-  const proc = Bun.spawn(cmd, {
+): { code: number; out: string } {
+  const [bin, ...args] = cmd as [string, ...string[]];
+  const res = spawnSync(bin, args, {
+    encoding: "utf8",
     env: {
       ...process.env,
       ELEVENLABS_API_KEY: "",
       ELEVENLABS_API_KEY_REF: "",
       ...env,
     },
-    stderr: "pipe",
-    stdout: "pipe",
+    killSignal: "SIGKILL",
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: limitMs,
   });
-  // Collected as it arrives, so a run that is stopped still shows its log.
-  const chunks: string[] = [];
-  const collect = async (stream: ReadableStream<Uint8Array>): Promise<void> => {
-    const decoder = new TextDecoder();
-    const reader = stream.getReader();
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) return;
-      chunks.push(decoder.decode(value));
-    }
-  };
-  const output = Promise.all([collect(proc.stdout), collect(proc.stderr)]);
-  let pipesClosed = false;
-  void output.then(() => (pipesClosed = true));
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const limit = new Promise<"timeout">((r) => {
-    timer = setTimeout(() => r("timeout"), limitMs);
-  });
-  const done = await Promise.race([Promise.all([output, proc.exited]), limit]);
-  clearTimeout(timer);
-  if (done === "timeout") {
-    const closedBefore = pipesClosed;
-    const exitedBefore = proc.exitCode !== null;
-    const ps = spawnSync("ps", ["-eo", "pid,ppid,stat,etime,wchan:20,args"], {
-      encoding: "utf8",
-    }).stdout;
-    proc.kill("SIGKILL");
+  const out = `${res.stdout ?? ""}${res.stderr ?? ""}`;
+  if (res.error || res.status === null) {
     throw new Error(
-      `The CLI did not finish in ${limitMs} ms (pipes ${closedBefore ? "closed" : "open"}, process ${exitedBefore ? `exited with ${proc.exitCode}` : "running"}). Output so far:\n${chunks.join("")}\nProcesses:\n${ps}`,
+      `${cmd.join(" ")} did not finish in ${limitMs} ms (${res.error?.message ?? res.signal}). Output so far:\n${out}`,
     );
   }
-  const code = done[1];
-  return { code, out: chunks.join("") };
+  return { code: res.status, out };
 }
 
 /** Run the CLI with arguments; see runProcess. */
 function run(
   args: string[],
   env: Record<string, string> = {},
-): Promise<{ code: number; out: string }> {
+): { code: number; out: string } {
   return runProcess(["bun", CLI, ...args], env);
 }
 
@@ -105,12 +82,12 @@ function cueStarts(vtt: string): number[] {
  * Load a video in Chromium's <video> element, in its own process, with its
  * WebVTT file as a track. Returns its length and the track's cue count.
  */
-async function playInChromium(
+function playInChromium(
   dir: string,
   video: string,
   vtt: string,
-): Promise<{ cues: number; duration: number }> {
-  const res = await runProcess(["bun", PLAY, dir, video, vtt]);
+): { cues: number; duration: number } {
+  const res = runProcess(["bun", PLAY, dir, video, vtt]);
   if (res.code !== 0) throw new Error(`play-video failed:\n${res.out}`);
   return JSON.parse(res.out.trim().split("\n").at(-1) ?? "{}") as {
     cues: number;
@@ -129,7 +106,7 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
   test("records the fixture pages with --no-voice", async () => {
     const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
     const out = join(dir, "tour.mp4");
-    const res = await run([
+    const res = run([
       join(FIXTURES, "render.yaml"),
       "--no-voice",
       "--out",
@@ -166,7 +143,7 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       );
     writeFileSync(script, text);
     const out = join(dir, "intro.mp4");
-    const res = await run([script, "--no-voice", "--out", out]);
+    const res = run([script, "--no-voice", "--out", out]);
     expect(res.code).toBe(0);
     expect(res.out).toContain("Recording the intro card");
 
@@ -192,7 +169,7 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       script,
       `title: Bad\noutput: bad.mp4\nstorybook: ${join(FIXTURES, "site")}\nscenes:\n  - url: form.html\n    steps:\n      - { say: Click it., do: click, target: "#does-not-exist" }\n`,
     );
-    const res = await run([script, "--no-voice"]);
+    const res = run([script, "--no-voice"]);
     expect(res.code).toBe(1);
     expect(res.out).toContain(
       "Scene 1, step 1 (click on #does-not-exist) failed",
@@ -249,7 +226,7 @@ scenes:
   - include: seg-two.yaml
 `,
     );
-    const res = await run([script, "--no-voice"]);
+    const res = run([script, "--no-voice"]);
     expect(res.out).toContain("WebM: libvpx-vp9 video");
     expect(res.code).toBe(0);
 
@@ -286,7 +263,7 @@ scenes:
     expect(starts[5]).toBeGreaterThan(sceneTimes[2] as number);
 
     const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
-    const played = await playInChromium(out, "walk.webm", "walk.vtt");
+    const played = playInChromium(out, "walk.webm", "walk.vtt");
     expect(played.cues).toBe(6);
     expect(Math.abs(played.duration - seconds)).toBeLessThan(0.1);
   }, 300_000);
@@ -307,18 +284,29 @@ scenes:
     steps: [{ do: highlight, target: "text=Nothing stored" }]
 `,
     );
-    const res = await run([script, "--no-voice"]);
+    const res = run([script, "--no-voice"]);
     expect(res.code).toBe(0);
     expect(streams(join(dir, "fresh.mp4"))).toMatch(/Video: h264/);
   }, 120_000);
 
   describe("with voice from a stand-in API", () => {
-    let server: ReturnType<typeof Bun.serve>;
-    const requests: { key: string | null; text: string; url: string }[] = [];
-    let tone: Blob;
+    let api: ReturnType<typeof Bun.spawn>;
+    let apiDir: string;
+    let origin: string;
+    const requests = (): {
+      key: null | string;
+      text: string;
+      url: string;
+    }[] => {
+      const file = join(apiDir, "requests.jsonl");
+      if (!existsSync(file)) return [];
+      return readFileSync(file, "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as never);
+    };
 
-    beforeAll(() => {
-      mark("beforeAll: making the tone");
+    beforeAll(async () => {
       const mp3 = join(mkdtempSync(join(tmpdir(), "sbv-tone-")), "tone.mp3");
       execFileSync(ffmpeg, [
         "-hide_banner",
@@ -334,24 +322,17 @@ scenes:
         "64k",
         mp3,
       ]);
-      mark("beforeAll: tone made");
-      tone = new Blob([readFileSync(mp3)]);
-      server = Bun.serve({
-        async fetch(req) {
-          const body = (await req.json()) as { text: string };
-          requests.push({
-            key: req.headers.get("xi-api-key"),
-            text: body.text,
-            url: req.url,
-          });
-          return new Response(tone, {
-            headers: { "content-type": "audio/mpeg" },
-          });
-        },
-        port: 0,
+      apiDir = mkdtempSync(join(tmpdir(), "sbv-api-"));
+      api = Bun.spawn(["bun", STAND_IN, mp3, apiDir], {
+        stderr: "inherit",
+        stdout: "ignore",
       });
+      const portFile = join(apiDir, "port");
+      for (let i = 0; i < 100 && !existsSync(portFile); i++)
+        await Bun.sleep(100);
+      origin = `http://127.0.0.1:${readFileSync(portFile, "utf8")}`;
     });
-    afterAll(() => server.stop(true));
+    afterAll(() => api?.kill());
 
     test("generates each line once, reuses the cache, and never prints the key", async () => {
       const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
@@ -365,44 +346,39 @@ scenes:
       writeFileSync(script, text);
       const env = {
         ELEVENLABS_API_KEY: SECRET,
-        ELEVENLABS_API_URL: server.url.origin,
+        ELEVENLABS_API_URL: origin,
       };
       const cache = join(dir, "cache");
 
-      mark("voice: first run");
-      const first = await run([script, "--cache-dir", cache], env);
-      mark("voice: first run done");
+      const first = run([script, "--cache-dir", cache], env);
       expect(first.code).toBe(0);
       expect(first.out).toContain("3 clip(s) generated, 0 reused");
       expect(first.out).not.toContain(SECRET);
-      expect(requests.length).toBe(3);
-      expect(requests.every((r) => r.key === SECRET)).toBe(true);
-      expect(requests[0]?.url).toContain(
+      expect(requests().length).toBe(3);
+      expect(requests().every((r) => r.key === SECRET)).toBe(true);
+      expect(requests()[0]?.url).toContain(
         "/v1/text-to-speech/DODLEQrClDo8wCz460ld?output_format=mp3_44100_128",
       );
 
       const info = streams(join(dir, "out", "fixture-tour.mp4"));
-      mark("voice: streams read");
       expect(info).toMatch(/Audio: aac/);
       expect(info).toMatch(/Subtitle: mov_text/);
       // Each 2.5 s clip sets its step to 2.9 s, so the video is longer than the silent one.
       const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
       expect(seconds).toBeGreaterThan(10.5);
 
-      mark("voice: second run (dry run)");
-      const second = await run([script, "--cache-dir", cache, "--dry-run"], {
-        ELEVENLABS_API_URL: server.url.origin,
+      const second = run([script, "--cache-dir", cache, "--dry-run"], {
+        ELEVENLABS_API_URL: origin,
       });
       expect(second.code).toBe(0);
       expect(second.out).toContain("Every voice clip is cached");
 
-      mark("voice: third run");
-      const third = await run([script, "--cache-dir", cache], {
-        ELEVENLABS_API_URL: server.url.origin,
+      const third = run([script, "--cache-dir", cache], {
+        ELEVENLABS_API_URL: origin,
       });
       expect(third.code).toBe(0); // no key set: every clip is cached, so none is needed
       expect(third.out).toContain("0 clip(s) generated, 3 reused");
-      expect(requests.length).toBe(3);
+      expect(requests().length).toBe(3);
     }, 300_000);
 
     test("--format webm writes Opus voice", async () => {
@@ -420,9 +396,9 @@ scenes:
     steps: [{ say: Type the case number to find it. }]
 `,
       );
-      const res = await run(
+      const res = run(
         [script, "--format", "webm", "--cache-dir", join(dir, "cache")],
-        { ELEVENLABS_API_KEY: SECRET, ELEVENLABS_API_URL: server.url.origin },
+        { ELEVENLABS_API_KEY: SECRET, ELEVENLABS_API_URL: origin },
       );
       expect(res.code).toBe(0);
       const info = streams(join(dir, "out", "v.webm"));
@@ -437,7 +413,7 @@ scenes:
         script,
         `title: No key\noutput: x.mp4\nvoice: { provider: elevenlabs, voice_id: abc }\nscenes:\n  - url: "file:///dev/null"\n    steps: [{ say: A line that is not cached. }]\n`,
       );
-      const res = await run([script, "--cache-dir", join(dir, "cache")]);
+      const res = run([script, "--cache-dir", join(dir, "cache")]);
       expect(res.code).toBe(2);
       expect(res.out).toContain("No ElevenLabs API key is available.");
       expect(res.out).not.toContain("Recording scene");

@@ -291,8 +291,8 @@ A long walkthrough can be split into segment files and joined into one
 video. List them in the main script's `scenes`:
 
 ```yaml
-title: Ops Portal Walkthrough
-output: out/ops-portal.webm
+title: Admin Console Walkthrough
+output: out/admin-console.webm
 storybook: ../../storybook-static
 persist_storage: true
 voice: { provider: elevenlabs, voice_id: DODLEQrClDo8wCz460ld }
@@ -302,7 +302,7 @@ scenes:
   - title: Wrap up
     story: pages-dashboard--default
     steps:
-      - say: That is the whole portal.
+      - say: That is the whole console.
 ```
 
 Each `include` is replaced by the scenes of that file, in order. The result

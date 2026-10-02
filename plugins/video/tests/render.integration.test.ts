@@ -39,7 +39,7 @@ const browserReady = await launchBrowser(false)
 async function run(
   args: string[],
   env: Record<string, string> = {},
-  limitMs = 150_000,
+  limitMs = 90_000,
 ) {
   const proc = Bun.spawn(["bun", CLI, ...args], {
     env: {

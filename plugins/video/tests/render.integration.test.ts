@@ -74,9 +74,12 @@ async function run(
   if (done === "timeout") {
     const closedBefore = pipesClosed;
     const exitedBefore = proc.exitCode !== null;
+    const ps = spawnSync("ps", ["-eo", "pid,ppid,stat,etime,wchan:20,args"], {
+      encoding: "utf8",
+    }).stdout;
     proc.kill("SIGKILL");
     throw new Error(
-      `The CLI did not finish in ${limitMs} ms (pipes ${closedBefore ? "closed" : "open"}, process ${exitedBefore ? `exited with ${proc.exitCode}` : "running"}). Output so far:\n${chunks.join("")}`,
+      `The CLI did not finish in ${limitMs} ms (pipes ${closedBefore ? "closed" : "open"}, process ${exitedBefore ? `exited with ${proc.exitCode}` : "running"}). Output so far:\n${chunks.join("")}\nProcesses:\n${ps}`,
     );
   }
   const code = done[1];

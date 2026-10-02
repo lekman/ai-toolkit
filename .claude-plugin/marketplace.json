@@ -76,6 +76,20 @@
       "description": "Commander session skills: roll-call of named worker sessions against a roster, dispatch of self-contained handoffs with a reply contract and a ledger, and recommendations to open parallel sessions when work queues",
       "category": "workflow",
       "tags": ["agents", "orchestration", "sessions", "handoff", "workflow"]
+    },
+    {
+      "name": "video",
+      "source": "./plugins/video",
+      "description": "Tutorial videos of a real UI from a YAML script: Storybook stories driven by Playwright, cursor, highlight and caption overlay, ElevenLabs voice cached per line, SRT and WebVTT subtitles and a markdown transcript",
+      "category": "productivity",
+      "tags": [
+        "video",
+        "storybook",
+        "tutorial",
+        "playwright",
+        "subtitles",
+        "elevenlabs"
+      ]
     }
   ]
 }

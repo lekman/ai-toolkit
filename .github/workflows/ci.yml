@@ -60,6 +60,16 @@ jobs:
             (cd "$dir" && bun test)
           done
 
+      # The video plugin's end-to-end tests record real pages, so they need
+      # Playwright's Chromium. Without it they skip instead of failing.
+      - name: Install Chromium for the video plugin
+        working-directory: plugins/video
+        run: bunx playwright install --with-deps chromium
+
+      - name: Test the video plugin
+        working-directory: plugins/video
+        run: bun test
+
       - name: Build all packages
         run: bun run build
 

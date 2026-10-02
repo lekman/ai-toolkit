@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture story</title>
+    <style>
+      body {
+        margin: 0;
+        font:
+          20px system-ui,
+          sans-serif;
+        background: #f4f6f8;
+      }
+      .card {
+        margin: 60px auto;
+        width: 560px;
+        padding: 24px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        font: inherit;
+        padding: 8px 16px;
+      }
+      #status {
+        margin-top: 16px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="storybook-root"></div>
+    <script>
+      // Stands in for Storybook. Renders the story named by ?id= after a
+      // short delay. The id is set as text, never parsed as HTML.
+      const id = new URLSearchParams(location.search).get("id") ?? "";
+      const el = (tag, text, attrs = {}) => {
+        const node = document.createElement(tag);
+        if (text) node.textContent = text;
+        Object.assign(node, attrs);
+        return node;
+      };
+      setTimeout(() => {
+        const status = el("p", "Waiting for review", { id: "status" });
+        const approve = el("button", "Approve", {
+          id: "approve",
+          type: "button",
+        });
+        approve.addEventListener("click", () => {
+          status.textContent = "Approved";
+        });
+        const card = el("div", "", { className: "card" });
+        card.append(
+          el("h1", "Case review"),
+          el("p", `Story: ${id}`),
+          approve,
+          status,
+        );
+        document.getElementById("storybook-root").append(card);
+      }, 150);
+    </script>
+  </body>
+</html>

@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "packages/rag/*"
+    "packages/rag/*",
+    "plugins/video"
   ],
   "scripts": {
     "build": "bun run --filter '*' build",

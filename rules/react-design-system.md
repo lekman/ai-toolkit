@@ -31,7 +31,11 @@ It never contains:
 A view that shows data takes its state as one discriminated union, and draws loading, data, not configured and failed in the same way as every other view.
 
 ```ts
-type Load<T> = { kind: "loading" } | { kind: "ok"; data: T } | { kind: "unconfigured" } | { kind: "failed"; status: number; message?: string };
+type Load<T> =
+  | { kind: "loading" }
+  | { kind: "ok"; data: T }
+  | { kind: "unconfigured" }
+  | { kind: "failed"; status: number; message?: string };
 ```
 
 Every case gets a story.

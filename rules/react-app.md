@@ -21,7 +21,12 @@ Write one component per screen or panel, named for what it connects (`OrdersLive
 export function OrdersLive(): ReactNode {
   const api = useShopApi();
   const orders = useRead(() => api.orders(), [api]);
-  return <OrdersPanel load={rows(Answers.read(orders))} onDownload={(id) => void api.invoice(id)} />;
+  return (
+    <OrdersPanel
+      load={rows(Answers.read(orders))}
+      onDownload={(id) => void api.invoice(id)}
+    />
+  );
 }
 ```
 

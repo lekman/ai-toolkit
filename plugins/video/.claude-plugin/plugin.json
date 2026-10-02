@@ -1,5 +1,5 @@
 {
   "name": "video",
-  "description": "Record narrated, subtitled tutorial videos of a real UI from a YAML script (/video:storybook): Storybook stories or any page driven by Playwright, an optional intro card with a logo and title, a drawn cursor, highlight ring and caption bar, ElevenLabs voice cached per line, and SRT, WebVTT, chapters and a markdown transcript from the same timeline",
-  "version": "0.1.0"
+  "description": "Record narrated, subtitled tutorial videos of a real UI from a YAML script (/video:storybook): Storybook stories or any page driven by Playwright, with clicks, drags, wheel zoom and reloads, also inside iframes, segments joined into one video, MP4 or WebM output, an optional intro card with a logo and title, a drawn cursor, highlight ring and caption bar, ElevenLabs voice cached per line, and SRT, WebVTT, chapters and a markdown transcript from the same timeline",
+  "version": "0.2.0"
 }

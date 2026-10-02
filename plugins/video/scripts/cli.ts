@@ -3,20 +3,23 @@
  * storybook-video: record a narrated, subtitled tutorial video from a script.
  *
  * Usage:
- *   bun cli.ts <script.yaml> [--dry-run] [--no-voice] [--out <file.mp4>]
- *                            [--cache-dir <dir>] [--headed] [--keep-temp]
+ *   bun cli.ts <script.yaml> [--dry-run] [--no-voice] [--out <file>]
+ *                            [--format mp4|webm] [--cache-dir <dir>]
+ *                            [--headed] [--keep-temp]
  *
  * --dry-run    Validate the script and print the timing plan. Records nothing
  *              and calls no API. Voice lengths come from the cache, or are
  *              estimated (marked ~) for lines not generated yet.
  * --no-voice   Record without narration. No API key is needed.
- * --out        Write the MP4 here instead of the script's `output`.
+ * --out        Write the video here instead of the script's `output`.
+ * --format     mp4 (H.264 and AAC) or webm (VP9 and Opus). Without it, an
+ *              output ending in .webm is WebM and anything else is MP4.
  * --cache-dir  Voice clip cache. Default $XDG_CACHE_HOME/storybook-video/voice,
  *              or ~/.cache/storybook-video/voice.
  * --headed     Show the browser while recording.
  * --keep-temp  Keep the raw recordings and intermediate files.
  *
- * Writes <output>.mp4, and .srt, .vtt and .md beside it.
+ * Writes the video, and .srt, .vtt and .md beside it.
  *
  * Exit codes: 0 done; 1 recording, voice or ffmpeg failed; 2 bad arguments
  * or an invalid script.
@@ -39,16 +42,25 @@ import {
   chaptersFile,
   concatArgs,
   concatList,
+  type Format,
   muxArgs,
+  outputTarget,
+  pickWebmCodecs,
   segmentArgs,
+  type WebmCodecs,
 } from "./assemble.ts";
 import { defaultCacheDir, DiskClipCache } from "./clip-cache.system.ts";
 import { MissingKeyError, resolveApiKey } from "./credentials.ts";
 import { ElevenLabsClient, opRead } from "./elevenlabs.system.ts";
-import { FfmpegProbe, findFfmpeg, runFfmpeg } from "./ffmpeg.system.ts";
+import {
+  FfmpegProbe,
+  findFfmpeg,
+  listEncoders,
+  runFfmpeg,
+} from "./ffmpeg.system.ts";
 import { introHtml, logoDataUri, logoMime } from "./intro.ts";
 import { recordScenes } from "./record.system.ts";
-import { parseScript, ScriptError } from "./script.ts";
+import { loadScript, ScriptError } from "./script.ts";
 import { serveFolder, type StaticServer } from "./serve.system.ts";
 import { toSrt, toVtt } from "./subtitles.ts";
 import { clock, formatPlan, planTiming } from "./timing.ts";
@@ -86,6 +98,7 @@ async function main(argv: string[]): Promise<void> {
       options: {
         "cache-dir": { type: "string" },
         "dry-run": { type: "boolean" },
+        format: { type: "string" },
         headed: { type: "boolean" },
         help: { short: "h", type: "boolean" },
         "keep-temp": { type: "boolean" },
@@ -100,15 +113,18 @@ async function main(argv: string[]): Promise<void> {
   if (values.help || positionals.length !== 1) {
     fail(
       values.help ? 0 : 2,
-      "Usage: bun cli.ts <script.yaml> [--dry-run] [--no-voice] [--out <file.mp4>] [--cache-dir <dir>] [--headed] [--keep-temp]",
+      "Usage: bun cli.ts <script.yaml> [--dry-run] [--no-voice] [--out <file>] [--format mp4|webm] [--cache-dir <dir>] [--headed] [--keep-temp]",
     );
   }
+  const formatFlag = values.format;
+  if (formatFlag !== undefined && formatFlag !== "mp4" && formatFlag !== "webm")
+    fail(2, `--format must be mp4 or webm, not ${formatFlag}`);
 
   const scriptPath = resolve(positionals[0] as string);
   if (!existsSync(scriptPath)) fail(2, `Script not found: ${scriptPath}`);
   let script;
   try {
-    script = parseScript(readFileSync(scriptPath, "utf8"));
+    script = loadScript(scriptPath, (path) => readFileSync(path, "utf8"));
   } catch (error) {
     if (error instanceof ScriptError)
       fail(2, `${scriptPath}\n${error.message}`);
@@ -142,13 +158,27 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
 
-  let output = resolve(values.out ?? join(scriptDir, script.output));
-  if (extname(output).toLowerCase() !== ".mp4") output += ".mp4";
-  const stem = join(dirname(output), basename(output, ".mp4"));
+  const target = outputTarget(
+    resolve(values.out ?? join(scriptDir, script.output)),
+    formatFlag as Format | undefined,
+  );
+  const output = target.path;
+  const stem = join(dirname(output), basename(output, extname(output)));
   mkdirSync(dirname(output), { recursive: true });
 
   const ffmpeg = await findFfmpeg();
   const probe = new FfmpegProbe(ffmpeg);
+  let webm: undefined | WebmCodecs;
+  if (target.format === "webm") {
+    webm = pickWebmCodecs(await listEncoders(ffmpeg));
+    if (useVoice && !webm.audio) {
+      fail(
+        1,
+        "This ffmpeg has no Opus or Vorbis encoder, so it cannot put voice in a WebM. Use --no-voice or an MP4.",
+      );
+    }
+    log(`WebM: ${webm.video} video${useVoice ? `, ${webm.audio} audio` : ""}`);
+  }
 
   let clips = new Map<string, { durationMs: number; path: string }>();
   if (useVoice) {
@@ -250,16 +280,26 @@ async function main(argv: string[]): Promise<void> {
       const startMs = timeline.stepStarts.get(key);
       return startMs === undefined ? [] : [{ path: clip.path, startMs }];
     });
-    log("Mixing voice and subtitles");
+    log(
+      target.format === "webm"
+        ? `Encoding the WebM${placed.length ? " and mixing voice" : ""}`
+        : "Mixing voice and subtitles",
+    );
     await runFfmpeg(
       ffmpeg,
       muxArgs({
         chapters,
         clips: placed,
+        format: target.format,
         out: output,
-        srt: script.subtitles.burn ? undefined : `${stem}.srt`,
+        // A WebM never carries subtitles; a player loads the .vtt beside it.
+        srt:
+          script.subtitles.burn || target.format === "webm"
+            ? undefined
+            : `${stem}.srt`,
         totalMs: timeline.totalMs,
         video: joined,
+        webm,
       }),
     );
     const finalMs = await probe.durationMs(output);

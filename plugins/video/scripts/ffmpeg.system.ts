@@ -84,3 +84,19 @@ export class FfmpegProbe implements IMediaProbe {
     });
   }
 }
+
+/** The encoder list ffmpeg prints with `-encoders`. */
+export function listEncoders(bin: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      bin,
+      ["-hide_banner", "-encoders"],
+      { maxBuffer: 8 * 1024 * 1024 },
+      (error, stdout) => {
+        if (error)
+          reject(new Error(`ffmpeg -encoders failed: ${error.message}`));
+        else resolve(stdout);
+      },
+    );
+  });
+}

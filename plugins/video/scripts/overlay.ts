@@ -1,7 +1,8 @@
 /**
  * The overlay drawn on top of the page while recording: a cursor, a
  * highlight ring and a caption bar. It ignores pointer events, so clicks
- * reach the page underneath.
+ * reach the page underneath. It lives in the top page only; a target inside
+ * an iframe is reached with coordinates on the top page.
  *
  * `installOverlay` runs inside the browser through `page.evaluate`, so it
  * must not reference anything outside its own body.
@@ -15,17 +16,21 @@ export interface OverlayOptions {
 /** Browser-side API the recorder calls, installed as `window.__sbv`. */
 export interface OverlayApi {
   caption(text: string | null): void;
-  move(x: number, y: number, ms: number): void;
+  move(x: number, y: number, ms: number, linear?: boolean): void;
   pulse(): void;
   ring(
     rect: { height: number; width: number; x: number; y: number } | null,
   ): void;
 }
 
-/** Install the overlay once; a second call does nothing. */
-export function installOverlay(opts: OverlayOptions): void {
+/**
+ * Install the overlay once; a second call does nothing. Returns true when it
+ * was installed now, so the caller can put the cursor and the caption back
+ * after the document was replaced.
+ */
+export function installOverlay(opts: OverlayOptions): boolean {
   const w = window as unknown as { __sbv?: OverlayApi };
-  if (w.__sbv && document.getElementById("sbv-root")) return;
+  if (w.__sbv && document.getElementById("sbv-root")) return false;
 
   const root = document.createElement("div");
   root.id = "sbv-root";
@@ -38,6 +43,7 @@ export function installOverlay(opts: OverlayOptions): void {
     "position:fixed;border:4px solid #ffb000;border-radius:10px;box-shadow:0 0 0 6px rgba(255,176,0,.25),0 0 24px rgba(255,176,0,.5);opacity:0;transition:opacity .25s ease,left .35s ease,top .35s ease,width .35s ease,height .35s ease;";
 
   const cursor = document.createElement("div");
+  cursor.id = "sbv-cursor";
   cursor.style.cssText =
     "position:fixed;left:0;top:0;width:32px;height:32px;transform:translate(-4px,-2px);transition-property:left,top;transition-timing-function:cubic-bezier(.4,0,.2,1);filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));";
   cursor.innerHTML =
@@ -67,8 +73,11 @@ export function installOverlay(opts: OverlayOptions): void {
         bar.style.opacity = "1";
       } else bar.style.opacity = "0";
     },
-    move(x, y, ms) {
+    move(x, y, ms, linear) {
       cursor.style.transitionDuration = `${ms}ms`;
+      cursor.style.transitionTimingFunction = linear
+        ? "linear"
+        : "cubic-bezier(.4,0,.2,1)";
       cursor.style.left = `${x}px`;
       cursor.style.top = `${y}px`;
       cx = x;
@@ -98,4 +107,5 @@ export function installOverlay(opts: OverlayOptions): void {
       ring.style.opacity = "1";
     },
   };
+  return true;
 }

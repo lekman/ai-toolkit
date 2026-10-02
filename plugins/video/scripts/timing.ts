@@ -2,14 +2,14 @@
  * The timing plan: how long each step stays on screen, before anything is
  * recorded.
  *
- * A step lasts the longest of three things: its voice clip plus a short gap,
- * the time a viewer needs to read its caption, and the `pause` the script
- * asks for. The recorder holds each step at least this long; a slow page can
- * make a step run longer, and the recorded times are what the subtitles and
- * the audio follow.
+ * A step lasts the longest of four things: its voice clip plus a short gap,
+ * the time a viewer needs to read its caption, the `pause` the script asks
+ * for, and the time a drag, wheel or reload needs. The recorder holds each
+ * step at least this long; a slow page can make a step run longer, and the
+ * recorded times are what the subtitles and the audio follow.
  */
 
-import type { Scene, VideoScript } from "./script.ts";
+import type { Scene, Step, VideoScript } from "./script.ts";
 
 /** Reading speed for captions, in characters per second. */
 export const READING_CPS = 15;
@@ -25,9 +25,23 @@ export const SCENE_LEAD_MS = 800;
 export const SCENE_TAIL_MS = 700;
 /** Speaking speed used to estimate a clip that has not been generated, in words per second. */
 export const SPEECH_WPS = 2.5;
+/** Time the drawn cursor takes to travel to a target, in ms. */
+export const CURSOR_MS = 650;
+/** Time after the cursor arrives before the action, in ms. */
+export const SETTLE_MS = 50;
+/** Moves in a drag when the step does not set `steps`. */
+export const DRAG_STEPS = 20;
+/** Time per move of a drag, in ms. */
+export const DRAG_STEP_MS = 40;
+/** Time the button is held still after it goes down and before it comes up, in ms. */
+export const DRAG_HOLD_MS = 120;
+/** Time per wheel event, in ms. */
+export const WHEEL_STEP_MS = 120;
+/** Planned time for a reload; the recorded time is what the subtitles follow. */
+export const RELOAD_MS = 1500;
 
 /** Which rule set a step's length. */
-export type Driver = "minimum" | "pause" | "reading" | "voice";
+export type Driver = "action" | "minimum" | "pause" | "reading" | "voice";
 
 /** One step in the plan, with its offsets relative to the scene start. */
 export interface PlannedStep {
@@ -79,13 +93,35 @@ export function estimateSpeechMs(text: string): number {
   return Math.ceil((words / SPEECH_WPS) * 1000);
 }
 
+/**
+ * The time an action needs on its own, for the actions that take longer than
+ * the shortest step: a drag, a wheel and a reload. Other actions return 0.
+ */
+export function actionMs(step: Pick<Step, "do" | "steps">): number {
+  const travel = CURSOR_MS + SETTLE_MS;
+  switch (step.do) {
+    case "drag":
+      return (
+        travel + 2 * DRAG_HOLD_MS + (step.steps ?? DRAG_STEPS) * DRAG_STEP_MS
+      );
+    case "reload":
+      return RELOAD_MS;
+    case "wheel":
+      return travel + (step.steps ?? 1) * WHEEL_STEP_MS;
+    default:
+      return 0;
+  }
+}
+
 /** The length of one step and the rule that set it. */
 export function stepDuration(input: {
+  actionMs?: number;
   pauseSeconds?: number;
   say?: string;
   voiceMs?: number;
 }): { driver: Driver; durationMs: number } {
   const candidates: [Driver, number][] = [["minimum", MIN_STEP_MS]];
+  if (input.actionMs) candidates.push(["action", input.actionMs]);
   if (input.say) candidates.push(["reading", readingMs(input.say)]);
   if (input.voiceMs !== undefined && input.voiceMs > 0) {
     candidates.push(["voice", input.voiceMs + VOICE_GAP_MS]);
@@ -115,6 +151,7 @@ export function planTiming(
     const steps = scene.steps.map((step, stepIndex) => {
       const v = voice.get(stepKey(sceneIndex, stepIndex));
       const { driver, durationMs } = stepDuration({
+        actionMs: actionMs(step),
         pauseSeconds: step.pause,
         say: step.say,
         voiceMs: v?.ms,

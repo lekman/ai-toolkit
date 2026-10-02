@@ -12,9 +12,11 @@ import { join } from "node:path";
 
 import { findFfmpeg } from "../scripts/ffmpeg.system.ts";
 import { launchBrowser } from "../scripts/record.system.ts";
+import { serveFolder } from "../scripts/serve.system.ts";
 
 const CLI = join(import.meta.dir, "..", "scripts", "cli.ts");
 const FIXTURES = join(import.meta.dir, "fixtures");
+const SITE = join(FIXTURES, "site");
 const SECRET = "sk-test-0123456789-never-print-me";
 
 const ffmpeg = await findFfmpeg().catch(() => "");
@@ -45,6 +47,66 @@ async function run(args: string[], env: Record<string, string> = {}) {
     proc.exited,
   ]);
   return { code, out: `${out}${err}` };
+}
+
+/** Start times of the cues in a WebVTT file, in seconds. */
+function cueStarts(vtt: string): number[] {
+  return [...vtt.matchAll(/^(\d\d):(\d\d):(\d\d\.\d+) -->/gm)].map(
+    (m) => Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]),
+  );
+}
+
+/**
+ * Load a video in Chromium's <video> element with its WebVTT file as a
+ * track. Resolves when it can play, with its length and the track's cues.
+ */
+async function playInChromium(
+  dir: string,
+  video: string,
+  vtt: string,
+): Promise<{ cues: number; duration: number }> {
+  writeFileSync(
+    join(dir, "play.html"),
+    `<!doctype html><video src="${video}" preload="auto" muted><track kind="subtitles" srclang="en" src="${vtt}" default></video>`,
+  );
+  const server = await serveFolder(dir);
+  const browser = await launchBrowser(false);
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${server.url}play.html`);
+    return await page.evaluate(
+      () =>
+        new Promise<{ cues: number; duration: number }>((resolve, reject) => {
+          const v = document.querySelector("video") as HTMLVideoElement;
+          const track = document.querySelector("track") as HTMLTrackElement;
+          const timer = setTimeout(
+            () => reject(new Error("the video never reached canplay")),
+            20_000,
+          );
+          v.addEventListener("error", () =>
+            reject(new Error(`media error ${v.error?.code}`)),
+          );
+          const loaded = new Promise((r) => {
+            if (track.readyState === 2) r(null);
+            else track.addEventListener("load", r);
+          });
+          const playable = new Promise((r) => {
+            if (v.readyState >= 3) r(null);
+            else v.addEventListener("canplay", r);
+          });
+          void Promise.all([loaded, playable]).then(() => {
+            clearTimeout(timer);
+            resolve({
+              cues: track.track.cues?.length ?? 0,
+              duration: v.duration,
+            });
+          });
+        }),
+    );
+  } finally {
+    await browser.close();
+    await server.close();
+  }
 }
 
 function streams(file: string): string {
@@ -127,6 +189,119 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       "Scene 1, step 1 (click on #does-not-exist) failed",
     );
   }, 60_000);
+
+  test("a WebM joined from two segments plays in Chromium, with storage kept across scenes", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+    const frame = `'iframe[title="Chart"]'`;
+    // A whole script, so the segment can also be recorded on its own.
+    writeFileSync(
+      join(dir, "seg-one.yaml"),
+      `title: Zoom and select
+output: one.mp4
+storybook: ${SITE}
+scenes:
+  - title: Zoom and select
+    url: chart.html
+    steps:
+      - { say: Scroll up on the chart to zoom in., do: wheel, target: "#chart", delta_y: -200, steps: 2 }
+      - { say: Drag across the chart to select a range., do: drag, target: "#chart", from: { x: 0.2, y: 0.5 }, to: { x: 0.6, y: 0.5 } }
+      - { do: highlight, target: "text=Dragged 20% to 60% in 20 moves" }
+      - { say: Double-click to mark a point., do: dblclick, target: "#chart" }
+      - { say: Reload the page. The zoom stays., do: reload }
+      - { do: highlight, target: "text=Stored zoom 3" }
+`,
+    );
+    writeFileSync(
+      join(dir, "seg-two.yaml"),
+      `scenes:
+  - title: Next visit
+    url: chart.html
+    steps:
+      - { say: A new page still has the zoom., do: highlight, target: "text=Stored zoom 3" }
+  - title: Framed chart
+    url: framed.html
+    wait_for: ${frame.slice(0, -1)} >> internal:control=enter-frame >> #chart'
+    steps:
+      - { say: The chart in the frame takes a drag too., do: drag, frame: ${frame}, target: "#chart", from: { x: 0.1, y: 0.5 }, to: { x: 0.9, y: 0.5 } }
+      - { do: highlight, frame: ${frame}, target: "text=Dragged 10% to 90% in 20 moves" }
+`,
+    );
+    const script = join(dir, "walk.yaml");
+    writeFileSync(
+      script,
+      `title: Chart walkthrough
+output: out/walk.webm
+viewport: { width: 800, height: 480 }
+storybook: ${SITE}
+persist_storage: true
+subtitles: { burn: false }
+scenes:
+  - include: seg-one.yaml
+  - include: seg-two.yaml
+`,
+    );
+    const res = await run([script, "--no-voice"]);
+    expect(res.out).toContain("WebM: libvpx-vp9 video");
+    expect(res.code).toBe(0);
+
+    const out = join(dir, "out");
+    const info = streams(join(out, "walk.webm"));
+    expect(info).toMatch(/Input #0, matroska,webm/);
+    expect(info).toMatch(/Video: vp9/);
+    expect(info).not.toMatch(/Audio:/);
+    expect(info).not.toMatch(/Subtitle:/);
+    expect(info).toMatch(/title\s*: Zoom and select/);
+    expect(info).toMatch(/title\s*: Next visit/);
+    expect(info).toMatch(/title\s*: Framed chart/);
+
+    // One clock across both segments: every cue starts after the one before.
+    const vtt = readFileSync(join(out, "walk.vtt"), "utf8");
+    const starts = cueStarts(vtt);
+    expect(starts).toHaveLength(6);
+    expect(
+      starts.every((t, i) => i === 0 || t > (starts[i - 1] as number)),
+    ).toBe(true);
+    const transcript = readFileSync(join(out, "walk.md"), "utf8");
+    const headings = [
+      ...transcript.matchAll(/^## (\d)\. (.+) \[0:(\d\d\.\d)\]$/gm),
+    ];
+    expect(headings.map((m) => `${m[1]} ${m[2]}`)).toEqual([
+      "1 Zoom and select",
+      "2 Next visit",
+      "3 Framed chart",
+    ]);
+    const sceneTimes = headings.map((m) => Number(m[3]));
+    expect(sceneTimes[1]).toBeGreaterThan(sceneTimes[0] as number);
+    expect(sceneTimes[2]).toBeGreaterThan(sceneTimes[1] as number);
+    expect(starts[4]).toBeGreaterThan(sceneTimes[1] as number);
+    expect(starts[5]).toBeGreaterThan(sceneTimes[2] as number);
+
+    const seconds = Number(/Duration: 00:00:(\d+\.\d+)/.exec(info)?.[1]);
+    const played = await playInChromium(out, "walk.webm", "walk.vtt");
+    expect(played.cues).toBe(6);
+    expect(Math.abs(played.duration - seconds)).toBeLessThan(0.1);
+  }, 300_000);
+
+  test("without persist_storage each scene starts with empty storage", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+    const script = join(dir, "fresh.yaml");
+    writeFileSync(
+      script,
+      `title: Fresh
+output: fresh.mp4
+viewport: { width: 640, height: 360 }
+storybook: ${SITE}
+scenes:
+  - url: chart.html
+    steps: [{ do: wheel, target: "#chart", delta_y: -100 }, { do: highlight, target: "text=Zoom 2" }]
+  - url: chart.html
+    steps: [{ do: highlight, target: "text=Nothing stored" }]
+`,
+    );
+    const res = await run([script, "--no-voice"]);
+    expect(res.code).toBe(0);
+    expect(streams(join(dir, "fresh.mp4"))).toMatch(/Video: h264/);
+  }, 120_000);
 
   describe("with voice from a stand-in API", () => {
     let server: ReturnType<typeof Bun.serve>;
@@ -213,6 +388,31 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
       expect(third.out).toContain("0 clip(s) generated, 3 reused");
       expect(requests.length).toBe(3);
     }, 300_000);
+
+    test("--format webm writes Opus voice", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+      const script = join(dir, "voiced.yaml");
+      writeFileSync(
+        script,
+        `title: Voiced WebM
+output: out/v.mp4
+viewport: { width: 640, height: 360 }
+storybook: ${SITE}
+voice: { provider: elevenlabs, voice_id: DODLEQrClDo8wCz460ld }
+scenes:
+  - url: form.html
+    steps: [{ say: Type the case number to find it. }]
+`,
+      );
+      const res = await run(
+        [script, "--format", "webm", "--cache-dir", join(dir, "cache")],
+        { ELEVENLABS_API_KEY: SECRET, ELEVENLABS_API_URL: server.url.origin },
+      );
+      expect(res.code).toBe(0);
+      const info = streams(join(dir, "out", "v.webm"));
+      expect(info).toMatch(/Video: vp9/);
+      expect(info).toMatch(/Audio: opus, 48000 Hz, stereo/);
+    }, 120_000);
 
     test("without a key and an uncached line, the run stops before recording", async () => {
       const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));

@@ -2,17 +2,25 @@ import { describe, expect, test } from "bun:test";
 
 import { parseScript } from "../scripts/script.ts";
 import {
+  actionMs,
+  CURSOR_MS,
+  DRAG_HOLD_MS,
+  DRAG_STEP_MS,
+  DRAG_STEPS,
   estimateSpeechMs,
   formatPlan,
   MIN_READ_MS,
   MIN_STEP_MS,
   planTiming,
   readingMs,
+  RELOAD_MS,
   SCENE_LEAD_MS,
   SCENE_TAIL_MS,
+  SETTLE_MS,
   stepDuration,
   stepKey,
   VOICE_GAP_MS,
+  WHEEL_STEP_MS,
 } from "../scripts/timing.ts";
 
 describe("readingMs", () => {
@@ -114,5 +122,51 @@ scenes:
     expect(text).toContain("voice~");
     expect(text).toContain("Scene 2: Second");
     expect(text).toMatch(/Total: \d:\d\d\.\d/);
+  });
+});
+
+describe("action time", () => {
+  const travel = CURSOR_MS + SETTLE_MS;
+
+  test("a drag needs the cursor travel, two holds and its moves", () => {
+    expect(actionMs({ do: "drag" })).toBe(
+      travel + 2 * DRAG_HOLD_MS + DRAG_STEPS * DRAG_STEP_MS,
+    );
+    expect(actionMs({ do: "drag", steps: 50 })).toBe(
+      travel + 2 * DRAG_HOLD_MS + 50 * DRAG_STEP_MS,
+    );
+  });
+
+  test("a wheel needs the cursor travel and one gap per event", () => {
+    expect(actionMs({ do: "wheel" })).toBe(travel + WHEEL_STEP_MS);
+    expect(actionMs({ do: "wheel", steps: 4 })).toBe(
+      travel + 4 * WHEEL_STEP_MS,
+    );
+  });
+
+  test("a reload is planned at a fixed length; other actions add nothing", () => {
+    expect(actionMs({ do: "reload" })).toBe(RELOAD_MS);
+    expect(actionMs({ do: "click" })).toBe(0);
+    expect(actionMs({})).toBe(0);
+  });
+
+  test("a long drag sets the step length when nothing else is longer", () => {
+    const script = parseScript(`
+title: T
+output: o.mp4
+scenes:
+  - url: https://example.com/
+    steps:
+      - { say: Hi., do: drag, target: c, from: { x: 0, y: 0 }, to: { x: 1, y: 1 }, steps: 60 }
+      - { say: Hi., do: wheel, target: c, delta_y: -100 }
+`);
+    const [drag, wheel] = planTiming(script).scenes[0]?.steps ?? [];
+    expect(drag?.driver).toBe("action");
+    expect(drag?.durationMs).toBe(
+      travel + 2 * DRAG_HOLD_MS + 60 * DRAG_STEP_MS,
+    );
+    // One wheel event is shorter than the time to read the caption.
+    expect(wheel?.driver).toBe("reading");
+    expect(wheel?.durationMs).toBe(MIN_READ_MS);
   });
 });

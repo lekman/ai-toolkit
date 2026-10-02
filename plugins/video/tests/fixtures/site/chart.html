@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture chart</title>
+    <style>
+      body {
+        margin: 0;
+        font:
+          18px system-ui,
+          sans-serif;
+      }
+      main {
+        margin: 30px 40px;
+      }
+      svg {
+        background: #eef2f6;
+        touch-action: none;
+      }
+      p {
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg id="chart" width="400" height="200" role="img" aria-label="Chart">
+        <rect id="brush" y="0" height="200" width="0" fill="#ffb00055" />
+      </svg>
+      <p id="drag">No selection</p>
+      <p id="zoom">Zoom 1</p>
+      <p id="clicks">Not double-clicked</p>
+      <p id="stored"></p>
+    </main>
+    <script>
+      // Stands in for a chart with pointer, wheel and double-click handlers.
+      // The zoom level is kept in localStorage, so a reload restores it.
+      const chart = document.getElementById("chart");
+      const brush = document.getElementById("brush");
+      const text = (id, value) => {
+        document.getElementById(id).textContent = value;
+      };
+      const pct = (e) => {
+        const r = chart.getBoundingClientRect();
+        return Math.round(((e.clientX - r.left) / r.width) * 100);
+      };
+      const saved = localStorage.getItem("zoom");
+      text("stored", saved ? `Stored zoom ${saved}` : "Nothing stored");
+      let zoom = 1;
+      let start = null;
+      let moves = 0;
+      chart.addEventListener("pointerdown", (e) => {
+        chart.setPointerCapture(e.pointerId);
+        start = pct(e);
+        moves = 0;
+      });
+      chart.addEventListener("pointermove", (e) => {
+        if (start === null) return;
+        moves++;
+        const now = pct(e);
+        brush.setAttribute("x", String(Math.min(start, now) * 4));
+        brush.setAttribute("width", String(Math.abs(now - start) * 4));
+      });
+      chart.addEventListener("pointerup", (e) => {
+        if (start === null) return;
+        text("drag", `Dragged ${start}% to ${pct(e)}% in ${moves} moves`);
+        start = null;
+      });
+      chart.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          zoom += e.deltaY < 0 ? 1 : -1;
+          text("zoom", `Zoom ${zoom}`);
+          localStorage.setItem("zoom", String(zoom));
+        },
+        { passive: false },
+      );
+      chart.addEventListener("dblclick", (e) => {
+        text("clicks", `Double-clicked at ${pct(e)}%`);
+      });
+    </script>
+  </body>
+</html>

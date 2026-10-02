@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture story</title>
+    <style>
+      body {
+        margin: 0;
+        font:
+          20px system-ui,
+          sans-serif;
+        background: #f4f6f8;
+      }
+      .card {
+        margin: 60px auto;
+        width: 560px;
+        padding: 24px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        font: inherit;
+        padding: 8px 16px;
+      }
+      #status {
+        margin-top: 16px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="storybook-root"></div>
+    <script>
+      // Stands in for Storybook: renders the story named by ?id= after a short delay.
+      const id = new URLSearchParams(location.search).get("id");
+      setTimeout(() => {
+        document.getElementById("storybook-root").innerHTML =
+          '<div class="card"><h1>Case review</h1><p>Story: ' +
+          id +
+          "</p>" +
+          '<button type="button" id="approve">Approve</button>' +
+          '<p id="status">Waiting for review</p></div>';
+        document.getElementById("approve").addEventListener("click", () => {
+          document.getElementById("status").textContent = "Approved";
+        });
+      }, 150);
+    </script>
+  </body>
+</html>

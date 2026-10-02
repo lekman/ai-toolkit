@@ -1,0 +1,22 @@
+title: Fixture tour
+output: out/fixture-tour.mp4
+viewport: { width: 640, height: 360 }
+storybook: ./site
+subtitles: { burn: true }
+scenes:
+  - title: Approve a case
+    story: fixture--case-review
+    steps:
+      - say: This is the case review card.
+        do: highlight
+        target: .card
+      - say: Click Approve when the case is correct.
+        do: click
+        target: role=button[name="Approve"]
+  - title: Find a case
+    url: form.html
+    steps:
+      - say: Type the case number to find it.
+        do: type
+        target: "#q"
+        value: "1234"

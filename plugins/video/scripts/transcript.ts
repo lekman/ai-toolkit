@@ -1,0 +1,23 @@
+/**
+ * The written transcript: one heading per scene and the spoken lines in
+ * order. It doubles as a short written guide to the same task.
+ */
+
+import type { VideoScript } from "./script.ts";
+
+import { sceneLabel } from "./timing.ts";
+
+/** Markdown transcript for a script. Steps without `say` are left out. */
+export function toTranscript(script: VideoScript): string {
+  const out: string[] = [`# ${script.title}`, ""];
+  script.scenes.forEach((scene, i) => {
+    out.push(`## ${i + 1}. ${sceneLabel(scene, i)}`, "");
+    const lines = scene.steps.flatMap((s) => (s.say ? [s.say] : []));
+    if (lines.length === 0) out.push("_No narration in this scene._", "");
+    else {
+      lines.forEach((line, n) => out.push(`${n + 1}. ${line}`));
+      out.push("");
+    }
+  });
+  return out.join("\n");
+}

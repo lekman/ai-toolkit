@@ -14,6 +14,7 @@ path, or a spec.
 /plugin install obsidian@ai-toolkit
 /plugin install wrap@ai-toolkit
 /plugin install commander@ai-toolkit
+/plugin install video@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -94,3 +95,11 @@ Then invoke a skill, for example `/git:commit`.
   markdown structure. Pairs with the copyable [rule](../rules/tone.md) scoped
   to `**/*.md`. Blog posts stay with the `lekman-blog` skill. See
   [tone/README.md](tone/README.md).
+- **video**, [storybook](video/skills/storybook/SKILL.md): record a
+  narrated, subtitled tutorial video of a real interface from a YAML script.
+  Playwright opens each Storybook story or page, a drawn cursor and highlight
+  ring show each step, and ElevenLabs speaks each line, cached per line so a
+  re-run pays only for edits. Writes an MP4, SRT and WebVTT subtitles, and a
+  markdown transcript from one recorded timeline. Script text goes to
+  ElevenLabs, so scripts never hold patient data or secrets. See
+  [video/README.md](video/README.md).

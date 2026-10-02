@@ -51,10 +51,18 @@ async function run(
     stderr: "pipe",
     stdout: "pipe",
   });
-  const output = Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
+  // Collected as it arrives, so a run that is stopped still shows its log.
+  const chunks: string[] = [];
+  const collect = async (stream: ReadableStream<Uint8Array>): Promise<void> => {
+    const decoder = new TextDecoder();
+    const reader = stream.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      chunks.push(decoder.decode(value));
+    }
+  };
+  const output = Promise.all([collect(proc.stdout), collect(proc.stderr)]);
   let pipesClosed = false;
   void output.then(() => (pipesClosed = true));
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -65,19 +73,14 @@ async function run(
   clearTimeout(timer);
   if (done === "timeout") {
     const closedBefore = pipesClosed;
+    const exitedBefore = proc.exitCode !== null;
     proc.kill("SIGKILL");
-    const [out, err] = await Promise.race([
-      output,
-      new Promise<[string, string]>((r) =>
-        setTimeout(() => r(["(output still open after the kill)", ""]), 5000),
-      ),
-    ]);
     throw new Error(
-      `The CLI did not finish in ${limitMs} ms (its pipes were ${closedBefore ? "already closed" : "still open"}). Output:\n${out}${err}`,
+      `The CLI did not finish in ${limitMs} ms (pipes ${closedBefore ? "closed" : "open"}, process ${exitedBefore ? `exited with ${proc.exitCode}` : "running"}). Output so far:\n${chunks.join("")}`,
     );
   }
-  const [[out, err], code] = done;
-  return { code, out: `${out}${err}` };
+  const code = done[1];
+  return { code, out: chunks.join("") };
 }
 
 /** Start times of the cues in a WebVTT file, in seconds. */

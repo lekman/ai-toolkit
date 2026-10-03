@@ -54,13 +54,19 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((r) => setTimeout(r, Math.max(0, ms)));
 
 /**
- * Launch Chromium. Playwright's own build comes first; it honours
- * PLAYWRIGHT_BROWSERS_PATH. If that build is not installed, installed Google
- * Chrome is tried before giving up.
+ * Launch Chromium. Playwright's own full Chromium build comes first; it
+ * honours PLAYWRIGHT_BROWSERS_PATH. If that build is not installed,
+ * installed Google Chrome is tried before giving up.
+ *
+ * `channel: "chromium"` selects the full build in headless mode. Without
+ * it Playwright launches its lighter headless shell, which disconnected
+ * about 30 seconds after opening a page on macOS (Playwright 1.63, shell
+ * builds 1223 and 1243), so any scene longer than that failed with "Target
+ * page, context or browser has been closed". The full build stayed open.
  */
 export async function launchBrowser(headed: boolean): Promise<Browser> {
   try {
-    return await chromium.launch({ headless: !headed });
+    return await chromium.launch({ channel: "chromium", headless: !headed });
   } catch (first) {
     const message = first instanceof Error ? first.message : String(first);
     if (!/Executable doesn't exist|browserType\.launch/i.test(message))

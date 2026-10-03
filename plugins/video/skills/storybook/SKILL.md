@@ -69,8 +69,12 @@ ai-toolkit repository it is `plugins/video/scripts/cli.ts`.
    ```
 
 2. Make sure Playwright has a Chromium build for its pinned version (1.63.0).
-   Playwright honours `PLAYWRIGHT_BROWSERS_PATH`. When its own build is
-   missing, the tool tries installed Google Chrome before it gives up.
+   The tool runs the full Chromium build in headless mode, not Playwright's
+   lighter headless shell: on macOS the shell closed the browser about 30
+   seconds after opening a page, so a longer scene failed. The command below
+   installs both. Playwright honours `PLAYWRIGHT_BROWSERS_PATH`. When its own
+   build is missing, the tool tries installed Google Chrome before it gives
+   up.
 
    ```bash
    cd "${CLAUDE_PLUGIN_ROOT}" && bunx playwright install chromium

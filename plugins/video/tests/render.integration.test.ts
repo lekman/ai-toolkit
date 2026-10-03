@@ -176,6 +176,23 @@ describe.skipIf(!ffmpeg || !browserReady)("render", () => {
     );
   }, 60_000);
 
+  // The headless shell dropped the browser about 30 seconds in, which broke
+  // any longer scene; launchBrowser uses the full Chromium build instead.
+  test("a scene longer than 30 seconds records to the end", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
+    const script = join(dir, "long.yaml");
+    writeFileSync(
+      script,
+      `title: Long\noutput: long.mp4\nstorybook: ${SITE}\nscenes:\n  - url: form.html\n    steps:\n      - { say: Wait for a while., pause: 34 }\n      - { say: Still here., do: highlight, target: "#q" }\n`,
+    );
+    const res = run([script, "--no-voice"]);
+    expect(res.code).toBe(0);
+    const seconds = Number(
+      /Duration: 00:00:(\d+\.\d+)/.exec(streams(join(dir, "long.mp4")))?.[1],
+    );
+    expect(seconds).toBeGreaterThan(35);
+  }, 120_000);
+
   test("a WebM joined from two segments plays in Chromium, with storage kept across scenes", async () => {
     const dir = mkdtempSync(join(tmpdir(), "sbv-it-"));
     const frame = `'iframe[title="Chart"]'`;

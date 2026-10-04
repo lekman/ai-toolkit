@@ -152,6 +152,42 @@ Voice settings other than `voice_id` are optional: `model_id`,
 `output_format` (default `mp3_44100_128`), `stability`, `similarity_boost`,
 `style`, `speed` and `use_speaker_boost`. They go to ElevenLabs as they are.
 
+### Pronunciation
+
+When the voice says a product or company name wrong, fix it with an
+ElevenLabs pronunciation dictionary, not by respelling the line. The script
+and the captions keep the real spelling; only the voice changes.
+
+```yaml
+voice:
+  provider: elevenlabs
+  voice_id: DODLEQrClDo8wCz460ld
+  pronunciation_dictionaries: # up to 3, applied in this order
+    - { id: <dictionary id>, version_id: <version id> }
+```
+
+Create a dictionary once with the ElevenLabs API. A rule is either an alias,
+which reads the word as if it were spelled another way, or a phoneme rule in
+the International Phonetic Alphabet (IPA):
+
+```bash
+curl -s -X POST https://api.elevenlabs.io/v1/pronunciation-dictionaries/add-from-rules \
+  -H "xi-api-key: $ELEVENLABS_API_KEY" -H "Content-Type: application/json" \
+  -d '{"name": "Product names", "rules": [
+        {"type": "alias", "string_to_replace": "Acme", "alias": "Ack-mee"},
+        {"type": "phoneme", "string_to_replace": "Ziva", "phoneme": "ˈziːvə", "alphabet": "ipa"}]}'
+```
+
+The response holds the `id` and `version_id` for the script. Adding or
+changing a rule makes a new version, so put the new `version_id` in the
+script. The dictionaries are part of each clip's cache key, so changing them
+records the voice again. A script without them keeps its cached clips.
+
+Generate a test clip and listen to it before recording the whole video. An
+alias works with every model. ElevenLabs' documentation does not say which
+models apply phoneme rules; `eleven_multilingual_v2` accepted one without an
+error.
+
 ### Intro Card
 
 With an `intro` block, the video opens on a card with the logo, the script's

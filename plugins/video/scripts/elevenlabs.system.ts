@@ -8,7 +8,7 @@ import { execFile } from "node:child_process";
 import type { ISpeechClient } from "./interfaces.ts";
 import type { VoiceConfig } from "./script.ts";
 
-import { voiceSettings } from "./cache-key.ts";
+import { dictionaryLocators, voiceSettings } from "./cache-key.ts";
 
 const API = process.env.ELEVENLABS_API_URL ?? "https://api.elevenlabs.io";
 
@@ -56,8 +56,12 @@ export class ElevenLabsClient implements ISpeechClient {
   /** POST /v1/text-to-speech/{voice_id}; retries on 429 and 5xx. */
   async synthesize(text: string, voice: VoiceConfig): Promise<Uint8Array> {
     const url = `${API}/v1/text-to-speech/${encodeURIComponent(voice.voice_id)}?output_format=${encodeURIComponent(voice.output_format)}`;
+    const locators = dictionaryLocators(voice);
     const body = JSON.stringify({
       model_id: voice.model_id,
+      ...(locators.length > 0
+        ? { pronunciation_dictionary_locators: locators }
+        : {}),
       text,
       voice_settings: voiceSettings(voice),
     });

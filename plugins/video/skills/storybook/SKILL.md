@@ -168,14 +168,14 @@ voice:
 
 Create a dictionary once with the ElevenLabs API. A rule is either an alias,
 which reads the word as if it were spelled another way, or a phoneme rule in
-the International Phonetic Alphabet (IPA):
+the International Phonetic Alphabet (IPA). Prefer aliases; see below.
 
 ```bash
 curl -s -X POST https://api.elevenlabs.io/v1/pronunciation-dictionaries/add-from-rules \
   -H "xi-api-key: $ELEVENLABS_API_KEY" -H "Content-Type: application/json" \
   -d '{"name": "Product names", "rules": [
         {"type": "alias", "string_to_replace": "Acme", "alias": "Ack-mee"},
-        {"type": "phoneme", "string_to_replace": "Ziva", "phoneme": "ˈziːvə", "alphabet": "ipa"}]}'
+        {"type": "alias", "string_to_replace": "Ziva", "alias": "Zee-vah"}]}'
 ```
 
 The response holds the `id` and `version_id` for the script. Adding or
@@ -183,10 +183,15 @@ changing a rule makes a new version, so put the new `version_id` in the
 script. The dictionaries are part of each clip's cache key, so changing them
 records the voice again. A script without them keeps its cached clips.
 
-Generate a test clip and listen to it before recording the whole video. An
-alias works with every model. ElevenLabs' documentation does not say which
-models apply phoneme rules; `eleven_multilingual_v2` accepted one without an
-error.
+Use alias rules. With `eleven_multilingual_v2`, a phoneme rule is accepted
+without an error, but the word it covers comes out silent: the request
+succeeds and the clip simply skips the word. ElevenLabs' documentation does
+not say which models apply phoneme rules.
+
+Check a test clip before recording the whole video. Listening is the real
+test, but a silent word can also be caught without listening: transcribe the
+clip with ElevenLabs speech-to-text (`POST /v1/speech-to-text`, model
+`scribe_v1`) and look for the name in the text.
 
 ### Intro Card
 

@@ -175,7 +175,7 @@ curl -s -X POST https://api.elevenlabs.io/v1/pronunciation-dictionaries/add-from
   -H "xi-api-key: $ELEVENLABS_API_KEY" -H "Content-Type: application/json" \
   -d '{"name": "Product names", "rules": [
         {"type": "alias", "string_to_replace": "Acme", "alias": "Ack-mee"},
-        {"type": "phoneme", "string_to_replace": "Ziva", "phoneme": "ˈziːvə", "alphabet": "ipa"}]}'
+        {"type": "alias", "string_to_replace": "Ziva", "alias": "Zee-vah"}]}'
 ```
 
 The response holds the `id` and `version_id` for the script. Adding or

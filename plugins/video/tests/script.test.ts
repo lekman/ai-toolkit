@@ -31,6 +31,27 @@ describe("parseScript", () => {
     expect(script.voice).toBeUndefined();
   });
 
+  test("takes up to three pronunciation dictionaries", () => {
+    const dict = "{ id: d, version_id: v }";
+    const script = parseScript(
+      `${minimal}voice: { provider: elevenlabs, voice_id: abc, pronunciation_dictionaries: [${dict}] }\n`,
+    );
+    expect(script.voice?.pronunciation_dictionaries).toEqual([
+      { id: "d", version_id: "v" },
+    ]);
+    const four = Array(4).fill(dict).join(", ");
+    expect(
+      problems(
+        `${minimal}voice: { provider: elevenlabs, voice_id: abc, pronunciation_dictionaries: [${four}] }\n`,
+      ).join("\n"),
+    ).toMatch(/pronunciation_dictionaries/);
+    expect(
+      problems(
+        `${minimal}voice: { provider: elevenlabs, voice_id: abc, pronunciation_dictionaries: [{ id: d }] }\n`,
+      ).join("\n"),
+    ).toMatch(/version_id/);
+  });
+
   test("fills voice defaults", () => {
     const script = parseScript(
       `${minimal}voice: { provider: elevenlabs, voice_id: abc }\n`,

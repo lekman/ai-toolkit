@@ -176,9 +176,21 @@ const Scene = z
     }
   });
 
+/** An ElevenLabs pronunciation dictionary: its id and the version to use. */
+const PronunciationDictionary = z.strictObject({
+  id: z.string().trim().min(1),
+  version_id: z.string().trim().min(1),
+});
+
 const Voice = z.strictObject({
   model_id: z.string().default("eleven_multilingual_v2"),
   output_format: z.string().default("mp3_44100_128"),
+  // ElevenLabs applies at most 3 dictionaries to a request.
+  pronunciation_dictionaries: z
+    .array(PronunciationDictionary)
+    .min(1)
+    .max(3)
+    .optional(),
   provider: z.literal("elevenlabs"),
   similarity_boost: z.number().min(0).max(1).optional(),
   speed: z.number().min(0.7).max(1.2).optional(),

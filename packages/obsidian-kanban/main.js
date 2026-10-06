@@ -425,6 +425,32 @@ function prefixFor(column) {
   return column === "today" ? "" : "> ";
 }
 
+// Move one line to sit directly in front of another.
+//
+// `beforeIndex` is read from the board before anything moves, so when the line
+// came from above its destination, removing it shifts that destination up by
+// one. Getting this wrong puts the card one place below where it was dropped,
+// which looks like the board ignoring the gesture.
+function spliceBefore(lines, fromIndex, beforeIndex, text) {
+  lines.splice(fromIndex, 1);
+  const idx = fromIndex < beforeIndex ? beforeIndex - 1 : beforeIndex;
+  lines.splice(idx, 0, text);
+  return lines;
+}
+
+// Which card is the pointer above? Returns the card the drop should land in
+// front of, or null to put it last. The card being dragged is skipped — it is
+// about to leave the position it currently occupies, so it cannot be its own
+// neighbour.
+function cardAfterPoint(cell, y) {
+  const cards = Array.from(cell.querySelectorAll(".dk-card:not(.dk-dragging)"));
+  for (const card of cards) {
+    const box = card.getBoundingClientRect();
+    if (y < box.top + box.height / 2) return card;
+  }
+  return null;
+}
+
 // Locate the insertion point for a client group inside the target column.
 // Returns { index, created } where index is where the item line goes.
 function locateInsertPoint(lines, column, client) {
@@ -593,6 +619,11 @@ class KanbanView extends ItemView {
   async render() {
     const gen = ++this.renderGen;
     const root = this.contentEl;
+    // Every edit redraws the whole board, which would otherwise throw the
+    // reader back to the top of a long list each time they moved one card.
+    // `.dk-root` is the scroller, and it is also the element about to be
+    // emptied, so its offsets are read before that and put back after.
+    const scroll = { top: root.scrollTop, left: root.scrollLeft };
 
     const file = this.app.vault.getAbstractFileByPath(
       this.plugin.settings.dashboardPath,
@@ -658,10 +689,6 @@ class KanbanView extends ItemView {
       const isCollapsed = collapsed.has(client);
       const label = grid.createDiv({
         cls: "dk-rowhead" + (isCollapsed ? " dk-rowhead-collapsed" : ""),
-      });
-      label.createSpan({
-        cls: "dk-caret",
-        text: isCollapsed ? "\u25B8" : "\u25BE",
       });
       label.createSpan({ cls: "dk-rowhead-name", text: client });
       const open = visible.filter(
@@ -729,6 +756,16 @@ class KanbanView extends ItemView {
         }
       }
     }
+
+    this.restoreScroll(root, scroll);
+  }
+
+  // Put the reader back where they were. A shorter board clamps the offset on
+  // its own, so an item moving off the end cannot scroll past the content.
+  restoreScroll(root, scroll) {
+    if (!scroll.top && !scroll.left) return;
+    root.scrollTop = scroll.top;
+    root.scrollLeft = scroll.left;
   }
 
   async runAction(button, key) {
@@ -981,11 +1018,17 @@ class KanbanView extends ItemView {
     cell.addEventListener("dragover", (ev) => {
       ev.preventDefault();
       cell.addClass("dk-over");
+      this.markDrop(cell, cardAfterPoint(cell, ev.clientY));
     });
-    cell.addEventListener("dragleave", () => cell.removeClass("dk-over"));
+    cell.addEventListener("dragleave", () => {
+      cell.removeClass("dk-over");
+      this.clearDropMarks(cell);
+    });
     cell.addEventListener("drop", async (ev) => {
       ev.preventDefault();
+      const before = cardAfterPoint(cell, ev.clientY);
       cell.removeClass("dk-over");
+      this.clearDropMarks(cell);
       let payload;
       try {
         payload = JSON.parse(ev.dataTransfer.getData("text/plain"));
@@ -996,9 +1039,38 @@ class KanbanView extends ItemView {
         (x) => x.fileLine === payload.line,
       );
       if (!it) return;
-      if (it.column === column && it.client === client) return;
-      await this.move(it, column, client);
+
+      // Dropping a card back where it already sits would snapshot and rewrite
+      // the dashboard for no change, so say nothing happened instead.
+      const dragged = cell.querySelector(
+        '.dk-card[data-line="' + payload.line + '"]',
+      );
+      if (
+        dragged &&
+        (before === dragged || before === dragged.nextElementSibling)
+      )
+        return;
+
+      await this.move(
+        it,
+        column,
+        client,
+        before ? Number(before.dataset.line) : null,
+      );
     });
+  }
+
+  markDrop(cell, before) {
+    this.clearDropMarks(cell);
+    if (before) before.addClass("dk-drop-before");
+    else cell.addClass("dk-drop-end");
+  }
+
+  clearDropMarks(cell) {
+    cell.removeClass("dk-drop-end");
+    cell
+      .querySelectorAll(".dk-drop-before")
+      .forEach((el) => el.classList.remove("dk-drop-before"));
   }
 
   async toggle(it) {
@@ -1013,13 +1085,29 @@ class KanbanView extends ItemView {
     this.plugin.refreshViews();
   }
 
-  async move(it, column, client) {
+  // `beforeLine` is the file line of the card to land in front of, or null to
+  // append to the end of the client's run. A drop aimed between two cards keeps
+  // its aim; a drop into empty space falls back to the computed insert point,
+  // which is also what creates the client group when the cell is empty.
+  async move(it, column, client, beforeLine = null) {
+    const samePlace = it.column === column && it.client === client;
     const ok = await editDashboard(
       this.plugin,
       it.fileLine,
       it.raw,
       (lines) => {
         const body = it.raw.replace(/^>\s?/, "");
+
+        // Landing beside an existing card, so the day and the client heading
+        // are already there and only the line itself moves.
+        if (beforeLine !== null)
+          return spliceBefore(
+            lines,
+            it.fileLine,
+            beforeLine,
+            prefixFor(column) + body,
+          );
+
         lines.splice(it.fileLine, 1);
         const spot = locateInsertPoint(lines, column, client);
         if (!spot) {
@@ -1038,7 +1126,12 @@ class KanbanView extends ItemView {
         return lines;
       },
     );
-    if (ok) new Notice("Moved to " + column + " · " + client);
+    if (ok)
+      new Notice(
+        samePlace
+          ? "Reordered · " + client
+          : "Moved to " + column + " · " + client,
+      );
     this.plugin.refreshViews();
   }
 
@@ -1107,9 +1200,6 @@ class KanbanView extends ItemView {
 
     const roll = bar.createEl("button", { cls: "dk-btn", text: "Roll" });
     roll.addEventListener("click", () => this.runAction(roll, "roll"));
-
-    const refresh = bar.createEl("button", { cls: "dk-btn", text: "Refresh" });
-    refresh.addEventListener("click", () => this.render());
 
     const open = bar.createEl("button", { cls: "dk-btn", text: "Open file" });
     open.addEventListener("click", async () => {

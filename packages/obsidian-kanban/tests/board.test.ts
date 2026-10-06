@@ -169,3 +169,43 @@ test("items with no client heading fall under the no-client row", () => {
   const p = parseDashboard(orphaned);
   expect(p.items[0].client).toBe(NO_CLIENT);
 });
+
+/* ------------------------------------------------------ reordering a day */
+
+const { spliceBefore, cardAfterPoint } = loadPlugin();
+
+test("a card moved down lands in front of its target, not one below it", () => {
+  // Removing the line first shifts everything under it up by one, so the
+  // destination read from the board has to be corrected or the card lands late.
+  const lines = ["a", "b", "c", "d"];
+  expect(spliceBefore(lines, 0, 3, "a")).toEqual(["b", "c", "a", "d"]);
+});
+
+test("a card moved up needs no correction", () => {
+  const lines = ["a", "b", "c", "d"];
+  expect(spliceBefore(lines, 3, 1, "d")).toEqual(["a", "d", "b", "c"]);
+});
+
+test("a card dropped straight back where it was changes nothing", () => {
+  const lines = ["a", "b", "c"];
+  expect(spliceBefore(lines, 1, 1, "b")).toEqual(["a", "b", "c"]);
+});
+
+test("a reordered line keeps the band prefix it is given", () => {
+  const lines = ["> x", "> y"];
+  expect(spliceBefore(lines, 1, 0, "> y")).toEqual(["> y", "> x"]);
+});
+
+test("the drop lands before the first card whose middle is below the pointer", () => {
+  // The dragged card is excluded by the CSS selector, not by this function,
+  // so the stub only has to answer for geometry.
+  const card = (top: number, height: number) => ({
+    getBoundingClientRect: () => ({ top, height }),
+  });
+  const cards = [card(0, 20), card(20, 20), card(40, 20)];
+  const cell = { querySelectorAll: () => cards };
+
+  expect(cardAfterPoint(cell, 5)).toBe(cards[0]); // above the first midpoint
+  expect(cardAfterPoint(cell, 25)).toBe(cards[1]); // inside the second card
+  expect(cardAfterPoint(cell, 55)).toBe(null); // past them all, so last
+});

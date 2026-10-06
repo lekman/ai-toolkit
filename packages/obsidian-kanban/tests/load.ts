@@ -16,6 +16,8 @@ import { join } from "node:path";
 const EXPORTS = [
   "parseDashboard",
   "locateInsertPoint",
+  "spliceBefore",
+  "cardAfterPoint",
   "itemTitle",
   "itemBody",
   "itemLead",

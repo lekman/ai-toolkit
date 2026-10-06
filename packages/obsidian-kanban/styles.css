@@ -110,12 +110,6 @@
 .dk-rowhead:hover .dk-rowhead-name {
   color: var(--text-accent);
 }
-.dk-caret {
-  font-size: 10px;
-  color: var(--text-faint);
-  width: 9px;
-  flex: none;
-}
 .dk-rowhead-name {
   line-height: 1.3;
 }
@@ -131,7 +125,6 @@
 /* The intention sits under the client name, so the row head wraps. */
 .dk-rowhead-intent {
   flex-basis: 100%;
-  margin-left: 15px;
   padding-right: 4px;
   font-weight: 400;
   font-size: var(--font-ui-smaller);
@@ -160,6 +153,10 @@
 }
 
 .dk-cell {
+  /* The grid aligns items to the start so the row head sits at the top, but a
+     cell must fill the row: its empty space below the last card is a drop
+     target, and a cell that shrank to its content would not accept one. */
+  align-self: stretch;
   min-height: 48px;
   padding: 6px 4px 10px;
   border-top: 1px solid var(--background-modifier-border);
@@ -192,6 +189,19 @@
   margin: 0;
 }
 
+/* Where the card will land: a rule above the card it goes before, or along the
+   foot of the cell when it goes last. */
+.dk-card.dk-drop-before {
+  box-shadow: 0 -3px 0 0 var(--interactive-accent);
+}
+.dk-cell.dk-drop-end::after {
+  content: "";
+  display: block;
+  height: 3px;
+  margin-top: auto;
+  border-radius: 2px;
+  background: var(--interactive-accent);
+}
 .dk-card {
   background: var(--background-primary-alt);
   border: 1px solid var(--background-modifier-border);

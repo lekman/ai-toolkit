@@ -15,6 +15,7 @@ path, or a spec.
 /plugin install wrap@ai-toolkit
 /plugin install commander@ai-toolkit
 /plugin install video@ai-toolkit
+/plugin install share@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -89,6 +90,13 @@ Then invoke a skill, for example `/git:commit`.
   [calendar package](../packages/calendar/README.md), Office 365 over OAuth:
   meetings, admin-calendar checklists, and todo-style self-events. See
   [planner/README.md](planner/README.md).
+- **share**, [site](share/skills/site/SKILL.md) /
+  [files](share/skills/files/SKILL.md): put a local site such as Storybook on
+  the tailnet with `tailscale serve`, so it stays off the LAN and the internet,
+  and register or remove sets of temporary files on a small tailnet-only files
+  site. The site groups each set under the Claude Code session that shared it
+  and shows when it was shared and when it is removed. See
+  [share/README.md](share/README.md).
 - **tone**, [write](tone/skills/write/SKILL.md): the house documentation
   tone for markdown, Word, PDF, and HTML deliverables: plain language, banned
   filler and empty modifiers, UK English, title case headings, and export-safe

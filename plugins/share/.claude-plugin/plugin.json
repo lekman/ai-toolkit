@@ -1,0 +1,5 @@
+{
+  "name": "share",
+  "description": "Share over Tailscale: put a local site such as Storybook on the tailnet with its MagicDNS address (/share:site), and register or remove sets of temporary files on a small tailnet-only files site that shows which session shared each set and when (/share:files)",
+  "version": "0.1.0"
+}

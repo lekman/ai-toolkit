@@ -225,15 +225,27 @@ export function removeShares(
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const when = (iso: string) =>
-  new Date(iso).toLocaleString("en-GB", {
-    day: "numeric",
-    hour: "2-digit",
-    hour12: false,
-    minute: "2-digit",
-    month: "short",
-    weekday: "short",
-  });
+// Built by hand, so the text is the same on every machine: Intl's en-GB output differs between macOS and Linux.
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+const when = (iso: string) => {
+  const d = new Date(iso);
+  const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} at ${hm}`;
+};
 const bytes = (n: number) =>
   n < 1024
     ? `${n} B`

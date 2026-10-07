@@ -59,6 +59,13 @@
       "tags": ["planning", "tasks", "obsidian", "dashboard", "daily"]
     },
     {
+      "name": "share",
+      "source": "./plugins/share",
+      "description": "Share over Tailscale: put a local site such as Storybook on the tailnet (/share:site), and register or remove sets of temporary files on a tailnet-only files site that shows which session shared each set and when (/share:files)",
+      "category": "productivity",
+      "tags": ["tailscale", "share", "files", "storybook", "workflow"]
+    },
+    {
       "name": "tone",
       "source": "./plugins/tone",
       "description": "Documentation tone skill: plain language, banned filler and empty modifiers, UK English, and export-safe markdown structure for markdown, Word, PDF, and HTML deliverables, with a copyable **/*.md rule that points back to the skill",

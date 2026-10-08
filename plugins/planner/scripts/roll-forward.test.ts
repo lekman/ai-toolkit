@@ -425,3 +425,44 @@ test("a multi-line intention is filed whole, continuation lines included", () =>
   expect(workLog(r.path)).toContain("The rest moved to Thursday.");
   expect(r.out).toContain("promoted to today: Thursday 17 September");
 });
+
+/* ------------------------------------------------- band headers (6 Oct) */
+
+// On 6 Oct a wrapped line of the maintenance note began with the band's own
+// text, and the scripts took it for the Tomorrow band. A band header is the
+// whole line and nothing else.
+const PROSE_FIXTURE = FIXTURE.replace(
+  "> Prose that must never move.",
+  "> - **Three bands.** Tomorrow holds one day in a collapsed\n" +
+    "> [!note]- Tomorrow`, and stays even when empty.\n" +
+    "> Prose that must never move.",
+).replace(
+  "- [ ] Globex open thing",
+  "- [ ] Globex open thing\n\n> [!note]- Handover\n> Notes for the next session.",
+);
+
+test("a prose line that starts with the band text is not the Tomorrow band", () => {
+  const r = run(SCRIPT, PROSE_FIXTURE);
+  expect(r.code).toBe(0);
+  // The maintenance note is unchanged, wrapped line included.
+  expect(r.text).toContain(
+    "> [!note]- How to maintain this Focus log (for editors)\n>\n> - **Three bands.** Tomorrow holds one day in a collapsed\n> [!note]- Tomorrow`, and stays even when empty.\n> Prose that must never move.",
+  );
+  // The real Tomorrow band was used: Thursday became today, with the rolled
+  // items, and Friday moved up into Tomorrow.
+  const realBand = r.text.indexOf("\n> [!note]- Tomorrow\n");
+  expect(realBand).toBeGreaterThan(0);
+  const today = r.text.slice(r.text.search(/^### /m), realBand);
+  expect(today).toContain("### Thursday 17 September");
+  expect(today).toContain("- [ ] Globex open thing");
+  expect(r.text.slice(realBand)).toContain("> ### Friday 18 September");
+});
+
+test("a collapsed callout inside a day stays with that day", () => {
+  // Under the old prefix match, "> [!note]- Handover" ended the day, so the
+  // note was cut off from it. Now it belongs to the day and goes to the work
+  // log with it when the day is filed.
+  const r = run(SCRIPT, PROSE_FIXTURE);
+  expect(r.text).not.toContain("> [!note]- Handover");
+  expect(workLog(r.path)).toContain("Notes for the next session.");
+});

@@ -119,9 +119,13 @@ const stripQuotes = (l: string) => l.replace(/^(?:> ?)+/, "");
 const isAnyDayHeading = (l: string) =>
   /^#{2,3} [A-Z][a-z]+day \d{1,2} [A-Z][a-z]+/.test(stripQuotes(l));
 const isAnyClientHeading = (l: string) => /^#### /.test(stripQuotes(l));
-// `> [!note]- Tomorrow` opens a band; `> [!note] Intention:` does not. The
-// trailing `-` is the only thing separating them, so match on it exactly.
-const isBandStart = (l: string) => /^> \[!note\]- /.test(l);
+// A band starts at a line that is exactly `> [!note]- Tomorrow` or
+// `> [!note]- Future`. Other collapsed callouts (the editors' maintenance
+// note, a handover note) are not bands, and neither is a line of prose that
+// begins with that text: on 6 Oct a wrapped line starting
+// "> [!note]- Tomorrow`, and stays…" was taken for the band.
+const isBandStart = (l: string) =>
+  /^> \[!note\]- (Tomorrow|Future)\s*$/.test(l);
 // A boundary is any later day, any later group, or the start of a band.
 const endsDay = (l: string) => isAnyDayHeading(l) || isBandStart(l);
 const endsGroup = (l: string) => isAnyClientHeading(l) || endsDay(l);

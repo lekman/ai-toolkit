@@ -94,7 +94,11 @@ const isDatedHeading = (l: string) =>
   /^#{2,3} [A-Z][a-z]+day \d{1,2} [A-Z][a-z]+/.test(strip(l));
 const isAnyDayHeading = (l: string) => /^#{2,3} \S/.test(strip(l));
 const isClientHeading = (l: string) => /^#### /.test(strip(l));
-const isBandStart = (l: string) => /^> \[!note\]- /.test(l);
+// Exactly `> [!note]- Tomorrow` or `> [!note]- Future` and nothing else. A
+// line of prose that starts with that text is not a band; see archive-done.ts.
+const isTomorrowStart = (l: string) => /^> \[!note\]- Tomorrow\s*$/.test(l);
+const isFutureStart = (l: string) => /^> \[!note\]- Future\s*$/.test(l);
+const isBandStart = (l: string) => isTomorrowStart(l) || isFutureStart(l);
 const isItem = (l: string) => /^- \[[ x]\]/.test(strip(l));
 const isOpen = (l: string) => /^- \[ \]/.test(strip(l));
 const clientName = (l: string) =>
@@ -159,11 +163,10 @@ function layout(lines: string[]): Layout {
   }
 
   const tomorrowIndex = lines.findIndex(
-    (l, i) =>
-      i > focusStart && i < focusEnd && /^> \[!note\]- Tomorrow/.test(l),
+    (l, i) => i > focusStart && i < focusEnd && isTomorrowStart(l),
   );
   const futureIndex = lines.findIndex(
-    (l, i) => i > focusStart && i < focusEnd && /^> \[!note\]- Future/.test(l),
+    (l, i) => i > focusStart && i < focusEnd && isFutureStart(l),
   );
 
   return {

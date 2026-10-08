@@ -61,7 +61,14 @@ Three bands, so `--day` routes to one of three places — see
 Tomorrow is empty. Never create a second day inside Tomorrow.
 
 Locate or create the day heading inside the right band and write the item with
-the band's prefix.
+the band's prefix. Find a band by its whole header line (`> [!note]- Tomorrow`
+or `> [!note]- Future` and nothing else), never by matching that text inside a
+longer line. The maintenance note at the top of `## Focus` describes the bands
+in prose, and an edit anchored there splits it.
+
+For today, insert directly under today's day heading, inside today's section,
+anchored on the heading line or on the last item of the client group. Never
+anchor on band text or on the maintenance note.
 
 For today: look for `### <heading>` or `## <heading>` inside `## Focus`. If
 neither exists (check the Future block too — a day found there gets promoted

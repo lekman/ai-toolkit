@@ -54,6 +54,16 @@ Resolve in this order:
 So on a Friday with an empty weekend, tomorrow is Monday; on a Friday with
 Saturday tasks, tomorrow is Saturday.
 
+**A band header is the whole line, and nothing else on it.** The Tomorrow
+band starts at a line that is exactly `> [!note]- Tomorrow`, and Future at one
+that is exactly `> [!note]- Future`. A line that only contains or begins with
+that text, such as the maintenance note's description of the bands, is prose.
+Other collapsed callouts (`> [!note]- How to maintain…`, a handover note) are
+not bands either. When writing, anchor an insertion on a whole heading line,
+never on band text inside a longer line. On 6 Oct an insertion anchored on that
+text split the maintenance note mid-sentence, and the next roll-forward took
+the broken-off half for the Tomorrow band.
+
 **The Tomorrow callout stays in the file even when that day has no items.**
 An empty band is a stable anchor for the twelve skills that look for it; a
 conditional one is twelve places that each have to decide what its absence

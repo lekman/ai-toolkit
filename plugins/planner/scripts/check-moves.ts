@@ -113,11 +113,16 @@ function bands(lines: string[]) {
   const band: Record<string, string[]> = { Future: [], Tomorrow: [] };
   let inBand: null | string = null;
   for (const line of lines) {
-    // Any `> [!note]- …` opens a band; only Tomorrow and Future are counted.
-    // An unprefixed line, blank or not, closes it.
-    const open = line.match(/^> \[!note\]- (\S+)/);
+    // A band opens at a line that is exactly `> [!note]- Tomorrow` or
+    // `> [!note]- Future`. Any other collapsed callout closes the current
+    // band without opening one. An unprefixed line, blank or not, closes it.
+    const open = line.match(/^> \[!note\]- (Tomorrow|Future)\s*$/);
     if (open) {
-      inBand = open[1] in band ? open[1] : null;
+      inBand = open[1];
+      continue;
+    }
+    if (/^> \[!note\]-/.test(line)) {
+      inBand = null;
       continue;
     }
     if (!line.startsWith(">")) inBand = null;

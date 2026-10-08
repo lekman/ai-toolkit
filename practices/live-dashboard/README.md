@@ -51,11 +51,11 @@ flowchart LR
     PAGE -- "saves last result" --> DB
 ```
 
-| Route | Used for | Refresh | Why this route |
-| --- | --- | --- | --- |
-| Live connector | Calendars, monday.com, GitHub issues | Every 2–5 minutes and on "Refresh all" | The connector signs in as you; no secret reaches the page |
-| Scheduled sync | Notes worklist, `.ics` calendar feeds, Jira | Hourly on weekdays, or on demand from the page | Feed links and API tokens stay in files on your computer |
-| Local MCP server | Release status | Every 15 minutes while open in the desktop app | Plain code with your own `gh` login, no AI in the loop |
+| Route            | Used for                                    | Refresh                                        | Why this route                                            |
+| ---------------- | ------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| Live connector   | Calendars, monday.com, GitHub issues        | Every 2–5 minutes and on "Refresh all"         | The connector signs in as you; no secret reaches the page |
+| Scheduled sync   | Notes worklist, `.ics` calendar feeds, Jira | Hourly on weekdays, or on demand from the page | Feed links and API tokens stay in files on your computer  |
+| Local MCP server | Release status                              | Every 15 minutes while open in the desktop app | Plain code with your own `gh` login, no AI in the loop    |
 
 ## Decisions
 
@@ -137,12 +137,12 @@ flowchart LR
 
 ## Files
 
-| File | Purpose |
-| --- | --- |
-| `dashboard.html` | The page, with `EDIT:` markers for your clients and ids |
-| `sync/sync_tasks.py` | Notes file → worklist items (headline fields only) |
-| `sync/sync_events.py` | `.ics` feeds → events for the next two weeks |
-| `sync/sync_jira.py` | Jira tickets assigned to you that are not done |
-| `sync/dashboard_mcp.py` | Local MCP server (stdio, standard library) for the release check |
-| `sync/release_state.example.py` | The contract the release check implements |
-| `sync/*.example.json` | Config templates for clients, feeds and Jira |
+| File                            | Purpose                                                          |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `dashboard.html`                | The page, with `EDIT:` markers for your clients and ids          |
+| `sync/sync_tasks.py`            | Notes file → worklist items (headline fields only)               |
+| `sync/sync_events.py`           | `.ics` feeds → events for the next two weeks                     |
+| `sync/sync_jira.py`             | Jira tickets assigned to you that are not done                   |
+| `sync/dashboard_mcp.py`         | Local MCP server (stdio, standard library) for the release check |
+| `sync/release_state.example.py` | The contract the release check implements                        |
+| `sync/*.example.json`           | Config templates for clients, feeds and Jira                     |

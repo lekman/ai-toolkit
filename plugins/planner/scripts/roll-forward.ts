@@ -58,12 +58,19 @@ function fail(message: string): never {
   process.exit(1);
 }
 
+// The config names the vault. A run pointed at a fixture through
+// DASHBOARD_PATH does not read it, so the tests do not depend on the machine
+// they run on: on a CI runner there is no ~/.claude/obsidian.json (#88).
 const configPath = join(homedir(), ".claude", "obsidian.json");
 let config: Config;
-try {
-  config = JSON.parse(readFileSync(configPath, "utf8"));
-} catch (e) {
-  fail(`cannot read ${configPath}: ${(e as Error).message}`);
+if (process.env.DASHBOARD_PATH) {
+  config = { vault: "", dashboard: "" };
+} else {
+  try {
+    config = JSON.parse(readFileSync(configPath, "utf8"));
+  } catch (e) {
+    fail(`cannot read ${configPath}: ${(e as Error).message}`);
+  }
 }
 
 // DASHBOARD_PATH points the run at a fixture instead of the vault. The tests

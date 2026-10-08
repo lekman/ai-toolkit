@@ -1,0 +1,1001 @@
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: header + customer filter, status strip, customer tiles, then agenda (left) beside worklist / Monday (right); one column below 900px. */
+:root{
+  --bg:#F1F3F6; --panel:#FFFFFF; --ink:#18202B; --muted:#5B6676; --line:#DCE1E8;
+  --accent:#2C55C9; --warn:#B4531A; --bad:#B42333; --ok:#1F7A4D; --yellow:#C99A06;
+  --now:#E8EEFC; --hatch:rgba(120,128,140,.14);
+  --c-acme:#A83266; --c-globex:#0D7A83; --c-initech:#A86B12; --c-partner:#2F5BD3; --c-own:#6A4FCF; --c-other:#7A828E;
+  --f-sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F141A; --panel:#161D26; --ink:#E5E9EF; --muted:#94A0B0; --line:#263141;
+  --accent:#86A6FF; --warn:#F09A5E; --bad:#FF7B88; --ok:#5BD08F; --yellow:#F2C744;
+  --now:#1B2741; --hatch:rgba(160,170,185,.10);
+  --c-acme:#F07AAE; --c-globex:#43C6CF; --c-initech:#E7B054; --c-partner:#86A6FF; --c-own:#AE9BFF; --c-other:#9AA3AF;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0F141A; --panel:#161D26; --ink:#E5E9EF; --muted:#94A0B0; --line:#263141;
+  --accent:#86A6FF; --warn:#F09A5E; --bad:#FF7B88; --ok:#5BD08F; --yellow:#F2C744;
+  --now:#1B2741; --hatch:rgba(160,170,185,.10);
+  --c-acme:#F07AAE; --c-globex:#43C6CF; --c-initech:#E7B054; --c-partner:#86A6FF; --c-own:#AE9BFF; --c-other:#9AA3AF;
+  color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-sans);padding-inline:16px;padding-block:20px 32px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:14px}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
+h1{font-size:20px;font-weight:600;margin:0;letter-spacing:-.01em}
+h1 small{font-weight:400;color:var(--muted);font-size:14px;margin-left:8px}
+#syncState.warn{color:var(--warn)}
+#syncState.err{color:var(--bad)}
+.top .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 10px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+
+.strip{display:grid;grid-template-columns:2fr 1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.strip > div{background:var(--panel);padding:12px 16px;min-width:0}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500}
+.big{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.big small{font-size:12px;font-weight:500;color:var(--bad);margin-left:6px}
+.big .u{font-size:13px;font-weight:500;color:var(--muted);margin-left:4px}
+.big .sep{color:var(--line);margin:0 8px;font-weight:400}
+.strip.one{grid-template-columns:minmax(0,1fr)}
+.nextup .title{font-size:16px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+.nextup .when{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.nextup .when b{color:var(--accent);font-weight:500}
+
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:8px;padding:10px 12px;display:grid;gap:4px;min-width:0}
+.tile:hover{border-color:var(--c)}
+.tiles.single{grid-template-columns:minmax(0,1fr)}
+.tiles.single .tile .nums{gap:4px 20px}
+.tile[aria-pressed="true"]{outline:2px solid var(--c);outline-offset:-1px}
+.tile:focus-visible{outline:2px solid var(--accent)}
+.tile .nm{font-weight:600;display:flex;justify-content:space-between;gap:6px}
+.tile .nm span{font-size:11px;color:var(--muted);font-weight:400}
+.tile .nums{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile .nums b{color:var(--ink);font-weight:600}
+.tile .nums .hot b{color:var(--bad)}
+
+.cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
+.stack{display:grid;gap:14px;min-width:0}
+section.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.ph{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.ph h2{font-size:14px;font-weight:600;margin:0}
+.fresh{font-size:11px;color:var(--muted);font-family:var(--f-mono);padding:8px 16px 12px}
+
+.note{margin:10px 16px;padding:8px 12px;border-radius:6px;font-size:12px;border:1px solid var(--line);background:var(--hatch)}
+.note.err{border-color:var(--bad);color:var(--bad);background:transparent}
+.note.warn{border-color:var(--warn);color:var(--warn);background:transparent}
+
+.day{padding:4px 0 8px}
+.dayh{display:flex;justify-content:space-between;gap:8px;padding:10px 16px 4px;font-size:12px;color:var(--muted)}
+.dayh b{color:var(--ink);font-weight:600}
+.ev{display:grid;grid-template-columns:96px 4px minmax(0,1fr);gap:10px;padding:6px 16px;align-items:start}
+.ev .t{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}
+.ev .bar{align-self:stretch;border-radius:2px;background:var(--c);min-height:18px}
+.ev .body{min-width:0}
+.ev .name{font-weight:500;overflow-wrap:anywhere}
+.ev .name a,.task a{text-decoration:none}
+.ev .name a:hover,.task a:hover{text-decoration:underline}
+.sub{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.cust{color:var(--c);font-weight:500}
+.ev.past{opacity:.5}
+.ev.live{background:var(--now)}
+.ev.live .t{color:var(--accent)}
+.ev.sample{background-image:repeating-linear-gradient(135deg,var(--hatch) 0 6px,transparent 6px 12px)}
+.ev.sample .bar{background:repeating-linear-gradient(180deg,var(--c) 0 3px,transparent 3px 6px)}
+.tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid currentColor;border-radius:3px;padding:0 4px;font-weight:600;white-space:nowrap}
+.tag.sample{color:var(--warn)}
+.tag.now{color:var(--accent)}
+.tag.blocked{color:var(--bad)}
+.tag.active{color:var(--ok)}
+.tag.neutral{color:var(--muted)}
+.empty{padding:2px 16px 4px 122px;font-size:12px;color:var(--muted)}
+.blank{padding:16px;color:var(--muted);font-size:13px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:3px 10px;font-size:12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--panel)}
+
+.grp{padding:8px 16px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--c);font-weight:600;display:flex;justify-content:space-between}
+.grp span{color:var(--muted);font-weight:500}
+button.grp{all:unset;box-sizing:border-box;width:100%;cursor:pointer;padding:8px 16px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--c);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+button.grp:hover .nm{text-decoration:underline}
+button.grp:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+button.grp .nm{display:inline-flex;align-items:center;gap:6px;color:var(--c)}
+button.grp .chev{display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;transition:transform .15s}
+button.grp[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+.wctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.more{all:unset;cursor:pointer;margin:2px 16px 6px 34px;font-size:12px;color:var(--accent)}
+.more:hover{text-decoration:underline}
+.more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer}
+.task{display:grid;grid-template-columns:10px minmax(0,1fr);gap:8px;padding:5px 16px}
+.task .pri{width:8px;height:8px;border-radius:50%;margin-top:6px;border:1px solid var(--muted)}
+.task .pri.high{background:var(--bad);border-color:var(--bad)}
+.task .pri.medium{background:var(--warn);border-color:var(--warn)}
+.task .pri.low{background:transparent}
+.task .ti{overflow-wrap:anywhere}
+.task.done .ti{text-decoration:line-through;color:var(--muted)}
+.key{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+
+.ago{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.skel{height:14px;margin:12px 16px;border-radius:4px;background:var(--hatch)}
+
+.rel{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 16px;font-size:13px}
+.rel .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+.rel .dot.ok{background:var(--ok)}
+.rel .dot.warn{background:var(--warn)}
+.rel .dot.bad{background:var(--bad)}
+.rel .dot.yellow{background:var(--yellow)}
+.rel b{font-weight:600}
+.rel .meta{color:var(--muted);font-size:12px;font-family:var(--f-mono)}
+.relgrid{border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 24px;padding:6px 16px 8px}
+.relcell{display:flex;align-items:center;gap:8px;min-width:0;font-family:var(--f-mono);font-size:12px;padding:2px 0}
+.relcell .ball{width:8px;height:8px;border-radius:50%;flex:none;background:var(--yellow)}
+.relcell .ball.bad{background:var(--bad)}
+.relcell .ball.busy{background:var(--accent)}
+.relcell .rn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.relcell .ra{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.relcell .rx{color:var(--muted);font-family:var(--f-sans);font-size:10px;font-weight:600;letter-spacing:.06em;white-space:nowrap}
+.relhint{padding:0 16px 8px;font-size:11px;color:var(--muted)}
+@media (max-width:380px){.relgrid{grid-template-columns:minmax(0,1fr)}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{all:unset;cursor:pointer;padding:8px 14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
+.tab .n{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted);margin-left:6px}
+
+@media (max-width:1000px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:620px){
+  .strip{grid-template-columns:1fr 1fr}.strip .nextup{grid-column:1/-1}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ev{grid-template-columns:72px 4px minmax(0,1fr)}.empty{padding-left:98px}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Dashboard <small id="today"></small></h1>
+    <div class="meta"><span id="liveState">Connecting…</span><span id="syncState"></span><button class="btn" id="refresh" type="button" title="Re-fetch the live calendars, Monday and GitHub now, and start the Mac sync for Dashboard.md, the calendar feeds and Jira, and re-runs the release check">Refresh all</button></div>
+  </header>
+
+  <div class="strip" aria-live="polite">
+    <div class="nextup"><div class="label" id="nextLabel">Next up</div><div class="title" id="nextTitle">—</div><div class="when" id="nextWhen"></div></div>
+    <div><div class="label">Work</div><div class="big" id="workSum">—</div></div>
+    <div id="srcCard"><div class="label" id="srcLabel">Release</div><div class="big" id="srcSum">—</div></div>
+  </div>
+
+  <div class="tiles" id="tiles" role="group" aria-label="Filter by customer"></div>
+
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button type="button" class="tab" role="tab" id="tabWork" aria-controls="viewWork" aria-selected="true">Worklist<span class="n" id="nWork"></span></button>
+    <button type="button" class="tab" role="tab" id="tabAgenda" aria-controls="viewAgenda" aria-selected="false" tabindex="-1">Next 7 days<span class="n" id="nAgenda"></span></button>
+    <button type="button" class="tab" role="tab" id="tabMonday" aria-controls="viewMonday" aria-selected="false" tabindex="-1"><span class="lbl">Globex</span><span class="n" id="nMonday"></span></button>
+    <button type="button" class="tab" role="tab" id="tabRelease" aria-controls="viewRelease" aria-selected="false" tabindex="-1" hidden><span class="lbl">Release</span><span class="n" id="nRelease"></span></button>
+    <button type="button" class="tab" role="tab" id="tabJira" aria-controls="viewJira" aria-selected="false" tabindex="-1"><span class="lbl">Acme</span><span class="n" id="nJira"></span></button>
+    <button type="button" class="tab" role="tab" id="tabGithub" aria-controls="viewGithub" aria-selected="false" tabindex="-1"><span class="lbl">Initech</span><span class="n" id="nGithub"></span></button>
+  </div>
+
+  <div id="viewWork" role="tabpanel" aria-labelledby="tabWork">
+      <section class="panel" aria-labelledby="workH">
+        <div class="ph">
+          <h2 id="workH">Worklist</h2>
+          <div class="wctl">
+            <label class="chk" for="showDone"><input type="checkbox" id="showDone"> Show done</label>
+            <div class="seg" role="group" aria-label="Worklist range">
+              <button type="button" id="bToday" aria-pressed="true">Today</button>
+              <button type="button" id="bTomorrow" aria-pressed="false">Tomorrow</button>
+              <button type="button" id="bBacklog" aria-pressed="false">Backlog</button>
+            </div>
+          </div>
+        </div>
+        <div id="workNotes"></div>
+        <div id="work"><div class="skel"></div><div class="skel"></div></div>
+        <div class="fresh" id="workFresh"></div>
+      </section>
+  </div>
+
+  <div id="viewJira" role="tabpanel" aria-labelledby="tabJira" hidden>
+    <section class="panel" aria-labelledby="jiraH">
+      <div class="ph"><h2 id="jiraH">Acme · Jira, assigned to me</h2><span class="sub" id="jiraCount"></span></div>
+      <div id="jiraNotes"></div>
+      <div id="jira"><div class="skel"></div></div>
+      <div class="fresh" id="jiraFresh"></div>
+    </section>
+  </div>
+
+  <div id="viewGithub" role="tabpanel" aria-labelledby="tabGithub" hidden>
+    <section class="panel" aria-labelledby="ghH">
+      <div class="ph"><h2 id="ghH">Initech · GitHub issues</h2>
+        <div class="seg" role="group" aria-label="Initech issue filter">
+          <button type="button" id="ghMine" aria-pressed="false">Assigned to me</button>
+          <button type="button" id="ghAll" aria-pressed="true">All open</button>
+        </div>
+      </div>
+      <div id="ghNotes"></div>
+      <div id="gh"><div class="skel"></div></div>
+      <div class="fresh" id="ghFresh"></div>
+    </section>
+  </div>
+
+  <div id="viewRelease" role="tabpanel" aria-labelledby="tabRelease" hidden></div>
+
+  <div id="viewMonday" role="tabpanel" aria-labelledby="tabMonday" hidden>
+    <section class="panel" id="relPanel" aria-label="Globex release status" style="margin-bottom:14px">
+      <div class="rel" id="relHead"><span class="dot"></span><b>Release status</b><span class="meta">checking…</span></div>
+      <div id="relBody"></div>
+    </section>
+      <section class="panel" id="mondayPanel" aria-labelledby="mondayH">
+        <div class="ph"><h2 id="mondayH">Globex · Tech board, mine</h2><span class="sub" id="mondayCount"></span></div>
+        <div id="mondayNotes"></div>
+        <div id="monday"><div class="skel"></div></div>
+        <div class="fresh" id="mondayFresh"></div>
+      </section>
+  </div>
+
+  <div id="viewAgenda" role="tabpanel" aria-labelledby="tabAgenda" hidden>
+  <section class="panel" aria-labelledby="agendaH">
+    <div class="ph"><h2 id="agendaH">Next 7 days</h2><span class="sub" id="agendaScope"></span></div>
+    <div id="calNotes"></div>
+    <div id="agenda"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+  </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const LON = "Europe/London";
+  const CUST = {
+    acme: { name: "Acme", kw: /\b(acme)\b/i },       // EDIT: client names and words that mark its meetings
+    globex: { name: "Globex", kw: /\b(globex)\b/i },
+    initech: { name: "Initech", kw: /\b(initech)\b/i },
+    partner: { name: "Partner", kw: null },
+    own: { name: "My Company", kw: null },
+    other: { name: "Other", kw: null }
+  };
+  const ORDER = ["acme", "globex", "initech", "partner", "own"];
+  const colorOf = c => `var(--c-${CUST[c] ? c : "other"})`;
+  const SYNC_TRIGGER = "trig_REPLACE_ME"; // EDIT: id of your "Dashboard sync" scheduled task
+  const SYNC_TIMEOUT = 6 * 60000;
+  const MONDAY_BOARD = 0, MONDAY_ME = "person-0"; // EDIT: board id and your monday.com person id
+  const S = {
+    cal: { nb: null, lk: null }, calErr: { nb: null, lk: null }, calAt: { nb: null, lk: null },
+    monday: null, mondayMore: false, mondayErr: null, mondayAt: null,
+    tasks: null, tasksMeta: null, tasksErr: null, jira: null, rel: null, relErr: null, relCached: null, gh: null, ghErr: null, ghAt: null, ghMe: null, ghMine: false,
+    feeds: null, feedsMeta: null,
+    focus: "all", band: "today",
+    dayKey: null, mcp: undefined, db: undefined
+  };
+  const load = (k, ok) => { try { const v = localStorage.getItem(k); return ok(v) ? v : null; } catch (e) { return null; } };
+  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  S.focus = load("db.focus", v => v === "all" || ORDER.includes(v)) || "all";
+  S.band = load("db.band", v => ["today", "tomorrow", "backlog"].includes(v)) || "today";
+  S.showDone = load("db.showDone", v => v === "1" || v === "0") === "1";
+  S.collapsed = new Set();
+  S.ghMine = load("db.ghMine", v => v === "1" || v === "0") === "1";
+  const loadSet = k => { const st = new Set(); try { JSON.parse(localStorage.getItem(k) || "null")?.forEach(x => st.add(x)); } catch (e) {} return st; };
+  const hasSaved = k => { try { return localStorage.getItem(k) !== null; } catch (e) { return false; } };
+  S.jCollapsed = hasSaved("db.jCollapsed") ? loadSet("db.jCollapsed") : new Set(["cat:new"]);
+  S.gCollapsed = loadSet("db.gCollapsed");
+  const hashView = (location.hash || "").replace("#", "");
+  const VIEWS = [{ id: "worklist", tab: "tabWork", panel: "viewWork" }, { id: "agenda", tab: "tabAgenda", panel: "viewAgenda" }, { id: "globex", tab: "tabMonday", panel: "viewMonday", client: "globex", label: ["Globex", "Monday"] },
+    { id: "release", tab: "tabRelease", panel: "viewRelease", client: "globex", focusOnly: true, label: ["Release", "Release"] }, { id: "acme", tab: "tabJira", panel: "viewJira", client: "acme", label: ["Acme", "Jira"] }, { id: "initech", tab: "tabGithub", panel: "viewGithub", client: "initech", label: ["Initech", "GitHub"] }];
+  const isView = v => VIEWS.some(x => x.id === v);
+  const ALIAS = { jira: "acme", monday: "globex", github: "initech" };
+  const savedView = load("db.view", v => isView(v) || v in ALIAS);
+  S.view = isView(hashView) ? hashView : ALIAS[hashView] || (savedView && (ALIAS[savedView] || savedView)) || "worklist";
+  S.expanded = new Set(); // customers showing their full list (this page load only)
+  const CAP = 5;
+  try { JSON.parse(localStorage.getItem("db.collapsed") || "[]").forEach(c => S.collapsed.add(c)); } catch (e) {}
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v; else el.setAttribute(k, v);
+    }
+    for (const k of kids.flat()) if (k != null && k !== false) el.append(k.nodeType ? k : document.createTextNode(String(k)));
+    return el;
+  }
+  const safeUrl = u => (typeof u === "string" && /^https:\/\//i.test(u)) ? u : null;
+  const linkOr = (url, text) => url ? h("a", { href: url, target: "_blank", rel: "noopener" }, text) : text;
+  const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const fmtT = d => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const fmtDay = d => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  function dur(ms) {
+    const m = Math.max(0, Math.round(ms / 60000));
+    if (m < 60) return `${m} min`;
+    const hh = Math.floor(m / 60), mm = m % 60;
+    if (hh < 24) return mm ? `${hh} h ${mm} min` : `${hh} h`;
+    const dd = Math.floor(hh / 24); return `${dd} day${dd > 1 ? "s" : ""}`;
+  }
+  function ago(d) {
+    const m = Math.round((Date.now() - d) / 60000);
+    if (m < 1) return "now"; if (m < 60) return `${m}m`;
+    const hh = Math.round(m / 60); if (hh < 24) return `${hh}h`;
+    const dd = Math.round(hh / 24); return dd < 7 ? `${dd}d` : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
+  const inFocus = c => S.focus === "all" || S.focus === c;
+  const classify = (title, fallback) => {
+    for (const k of ["initech", "globex", "acme"]) if (CUST[k].kw.test(title || "")) return k;
+    return fallback;
+  };
+
+  // Time zones: Outlook gives wall-clock time plus a Windows zone name.
+  const WIN_TZ = { "GMT Standard Time": "Europe/London", "Greenwich Standard Time": "Atlantic/Reykjavik", "W. Europe Standard Time": "Europe/Berlin",
+    "Romance Standard Time": "Europe/Paris", "Central Europe Standard Time": "Europe/Budapest", "Central European Standard Time": "Europe/Warsaw",
+    "Eastern Standard Time": "America/New_York", "Pacific Standard Time": "America/Los_Angeles" };
+  function tzOffsetMs(date, tz) {
+    const p = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(date);
+    const g = k => +p.find(x => x.type === k).value;
+    return Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute"), g("second")) - date.getTime();
+  }
+  function wallToDate(s, tzName) {
+    let tz = WIN_TZ[tzName] || tzName || LON;
+    try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); } catch (e) { tz = LON; }
+    const guess = new Date(s + "Z"); if (isNaN(guess)) return null;
+    return new Date(guess.getTime() - tzOffsetMs(guess, tz));
+  }
+  function parseOutlookTime(t) {
+    if (!t || !t.dateTime) return null;
+    const s = String(t.dateTime).replace(/\.\d+$/, "").replace(/Z$/, "");
+    if (/^(utc|coordinated universal time)$/i.test(t.timeZone || "")) return new Date(s + "Z");
+    return wallToDate(s, t.timeZone);
+  }
+  // Microsoft 365 tools answer with one JSON text block per item.
+  function textItems(res) {
+    const out = [];
+    for (const b of (res && res.content) || []) if (b && b.type === "text") { try { const j = JSON.parse(b.text); Array.isArray(j) ? out.push(...j) : out.push(j); } catch (e) {} }
+    if (!out.length && res && res.payload) { const p = res.payload; Array.isArray(p) ? out.push(...p) : Array.isArray(p.value) ? out.push(...p.value) : out.push(p); }
+    return out.filter(x => x && typeof x === "object" && x.id);
+  }
+
+  // ---------- event sources ----------
+  function fromGoogle(payload) {
+    const out = [];
+    for (const e of (payload && Array.isArray(payload.events)) ? payload.events : []) {
+      if (e.status === "cancelled") continue;
+      const me = (e.attendees || []).find(a => a.self);
+      if (me && me.responseStatus === "declined") continue;
+      const allDay = !!(e.start && e.start.date && !e.start.dateTime);
+      const start = allDay ? new Date(e.start.date + "T00:00:00") : new Date(e.start && e.start.dateTime);
+      const end = allDay ? new Date((e.end && e.end.date || e.start.date) + "T00:00:00") : new Date(e.end && e.end.dateTime);
+      if (isNaN(start)) continue;
+      out.push({ cust: classify(e.summary, "partner"), via: "Partner calendar", title: e.summary || "(no title)", start, end: isNaN(end) ? start : end, allDay,
+        link: safeUrl(e.htmlLink), join: safeUrl(e.conferenceUrl || e.hangoutLink), where: e.location || null, who: (e.attendees || []).length });
+    }
+    return out;
+  }
+  function fromOutlookCal(res) {
+    const out = [];
+    for (const e of textItems(res)) {
+      if (e.isCancelled) continue;
+      const start = parseOutlookTime(e.start), end = parseOutlookTime(e.end);
+      if (!start) continue;
+      const loc = e.location && (typeof e.location === "string" ? e.location : e.location.displayName);
+      out.push({ cust: classify(e.subject, "own"), via: "My Company calendar", title: e.subject || "(no title)", start, end: end || start, allDay: !!e.isAllDay,
+        link: safeUrl(e.webLink), where: loc || null, who: Array.isArray(e.attendees) ? e.attendees.length : 0 });
+    }
+    return out;
+  }
+  // Customer calendar feeds, written to the store by the sync task.
+  function fromFeeds() {
+    if (!Array.isArray(S.feeds)) return [];
+    return S.feeds.map(e => {
+      const start = new Date(e.start), end = new Date(e.end || e.start);
+      if (isNaN(start)) return null;
+      const base = CUST[e.customer] ? e.customer : "other";
+      // The Partner feed mixes company and client work (Initech has no feed of its own).
+      const cust = base === "partner" ? classify(e.title, "partner") : base;
+      return { cust, via: `${(CUST[e.customer] || CUST.other).name} feed`, title: String(e.title || "(no title)"),
+        start, end: isNaN(end) ? start : end, allDay: !!e.allDay, link: safeUrl(e.link), where: e.location ? String(e.location) : null };
+    }).filter(Boolean);
+  }
+  // 📅 entries the planner writes into Dashboard.md.
+  function fromVaultMeetings() {
+    if (!Array.isArray(S.tasks)) return [];
+    return S.tasks.filter(t => t.meeting && t.day).map(t => {
+      const start = wallToDate(`${t.day}T${t.meeting.start.padStart(5, "0")}:00`, LON);
+      const end = wallToDate(`${t.day}T${t.meeting.end.padStart(5, "0")}:00`, LON);
+      return start ? { cust: t.customer, via: "Dashboard.md", title: t.title, start, end: end || start, allDay: false } : null;
+    }).filter(Boolean);
+  }
+  function sampleEvents() {
+    const t0 = startOfDay(new Date()), out = [];
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(t0, i), wd = d.getDay();
+      if (wd === 0 || wd === 6) continue;
+      const at = (h0, m0) => { const x = new Date(d); x.setHours(h0, m0, 0, 0); return x; };
+      out.push({ cust: "acme", sample: true, via: "sample", title: "Team stand-up", start: at(9, 30), end: at(9, 45) });
+      if (wd === 2) out.push({ cust: "acme", sample: true, via: "sample", title: "Platform sync", start: at(11, 0), end: at(11, 45) });
+      if (wd === 4) out.push({ cust: "acme", sample: true, via: "sample", title: "Sprint review", start: at(14, 0), end: at(15, 0) });
+    }
+    return out;
+  }
+  function allEvents() {
+    const real = [...(S.cal.nb || []), ...(S.cal.lk || []), ...fromFeeds(), ...fromVaultMeetings()];
+    const seen = new Set(), evs = [];
+    for (const e of real) {
+      const k = `${+e.start}|${e.title.toLowerCase().replace(/\W+/g, "")}`;
+      if (seen.has(k)) continue; seen.add(k); evs.push(e);
+    }
+    if (!evs.some(e => e.cust === "acme")) evs.push(...sampleEvents());
+    return evs.sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start));
+  }
+  const usingSample = () => allEvents().some(e => e.sample);
+
+  // ---------- other sources ----------
+  const STATUS_ORDER = ["Stuck", "Working on it", "In Review", "Not started", "Postponed"];
+  function fromMonday(payload) {
+    const items = (payload && Array.isArray(payload.items)) ? payload.items : [];
+    S.mondayMore = !!(payload && payload.pagination && payload.pagination.has_more);
+    return items.map(i => {
+      const cv = i.column_values || {};
+      return { name: i.name || "(untitled)", url: safeUrl(i.url), status: cv.status_col || "No status", priority: cv.priority_col || null,
+        key: cv.item_id_col ? `ITEM-${cv.item_id_col}` : null, group: i.group && i.group.title, updated: new Date(i.updated_at) };
+    }).filter(i => i.status !== "Done");
+  }
+
+  // ---------- error copy ----------
+  const AUTHZ = new Set(["needs_reauth", "server_not_connected", "blocked_by_policy", "approval_required", "not_in_manifest", "selection_required", "not_granted", "capability_disabled", "capability_removed"]);
+  function errCopy(err, server) {
+    const c = err && err.code;
+    switch (c) {
+      case "needs_reauth": return `${server} needs reconnecting. Reconnect it in claude.ai Settings → Connectors.`;
+      case "server_not_connected": return `${server} isn't connected for you. Add it in claude.ai Settings → Connectors.`;
+      case "selection_required": return `You have more than one ${server} connector. Pick one in the prompt above the page.`;
+      case "not_in_manifest": return `${server} is turned off for this page. Allow it from the page's Permissions menu.`;
+      case "blocked_by_policy": return `Your organisation's policy blocks ${server} here.`;
+      case "approval_required": return `${server} needs per-call approval, which this page can't request.`;
+      case "server_unavailable": case "rate_limited": return `${server} didn't answer. Showing the last data received; it tries again on the next refresh.`;
+      case "tool_error": return `${server} reported an error: ${err.message || "no details"}.`;
+      case "not_granted": case "capability_disabled": case "capability_removed": return `Live connectors aren't available in this view.`;
+      default: return `${server} returned an unexpected error${err && err.message ? `: ${err.message}` : ""}.`;
+    }
+  }
+  const noteFor = (err, server, prefix) => h("div", { class: "note " + (err.code === "server_unavailable" ? "warn" : "err") }, (prefix ? prefix + ": " : "") + errCopy(err, server));
+
+  // ---------- task helpers ----------
+  const todayKey = () => ymd(new Date()), tomorrowKey = () => ymd(addDays(new Date(), 1));
+  function tasksFor(band) {
+    if (!Array.isArray(S.tasks)) return [];
+    const tk = todayKey(), mk = tomorrowKey();
+    return S.tasks.filter(t => !t.meeting).filter(t =>
+      band === "today" ? (t.band === "today" || t.day === tk) && (t.day ? t.day <= tk : true) :
+      band === "tomorrow" ? t.day === mk || (t.band === "tomorrow" && t.day !== tk) :
+      (t.band === "unscheduled" || (t.band === "future" && t.day !== mk)) && !t.done);
+  }
+  const PRANK = { high: 0, medium: 1, low: 2 };
+
+  // ---------- rendering ----------
+  function renderTiles() {
+    const box = $("tiles"); box.textContent = "";
+    box.classList.toggle("single", S.focus !== "all");
+    const now = new Date(), t1 = addDays(startOfDay(now), 1), evs = allEvents(), today = tasksFor("today");
+    for (const c of ORDER) {
+      if (S.focus !== "all" && S.focus !== c) continue; // a chosen client hides the others
+      const meet = evs.filter(e => e.cust === c && !e.allDay && e.end > now && e.start < t1);
+      const open = today.filter(t => t.customer === c && !t.done);
+      const hot = open.filter(t => t.priority === "high").length;
+      const blocked = open.filter(t => (t.flags || []).includes("blocked")).length;
+      const nums = h("div", { class: "nums" },
+        h("span", null, h("b", null, meet.length), meet.some(e => e.sample) ? " mtg*" : " mtg"),
+        h("span", null, h("b", null, S.tasks ? open.length : "—"), " open"),
+        hot ? h("span", { class: "hot" }, h("b", null, hot), " high") : null,
+        blocked ? h("span", null, h("b", null, blocked), " blocked") : null,
+        c === "globex" && S.monday ? h("span", null, h("b", null, S.monday.length), " Monday") : null,
+        c === "globex" && (S.rel || S.relCached) && (S.rel || S.relCached).drifted.length ? h("span", { class: "hot" }, h("b", null, (S.rel || S.relCached).drifted.length), " drifted") : null,
+        c === "acme" && S.jira && S.jira.ok ? h("span", null, h("b", null, S.jira.items.length), " Jira") : null,
+        c === "initech" && S.gh ? h("span", null, h("b", null, S.gh.total), " issues") : null);
+      const b = h("button", { type: "button", class: "tile", style: `--c:${colorOf(c)}`, "aria-pressed": String(S.focus === c), title: S.focus === c ? "Show all clients" : `Show only ${CUST[c].name}` },
+        h("div", { class: "nm" }, CUST[c].name, null), nums);
+      b.addEventListener("click", () => { S.focus = S.focus === c ? "all" : c; save("db.focus", S.focus); renderAll(); });
+      box.append(b);
+    }
+  }
+
+  function renderAgenda() {
+    const notes = $("calNotes"); notes.textContent = "";
+    if (usingSample() && inFocus("acme"))
+      notes.append(h("div", { class: "note warn" }, h("span", { class: "tag sample" }, "sample"), " Acme meetings are placeholders until its calendar feed is added. Rows marked * in the tiles include them."));
+    if (S.calErr.nb) notes.append(noteFor(S.calErr.nb, "Google Calendar", "Partner calendar"));
+    if (S.calErr.lk) notes.append(noteFor(S.calErr.lk, "Microsoft 365", "My Company calendar"));
+    $("agendaScope").textContent = S.focus === "all" ? "All customers" : CUST[S.focus].name + " only";
+    const box = $("agenda");
+    if (S.mcp === undefined || (S.mcp && S.cal.nb === null && S.cal.lk === null && !S.calErr.nb && !S.calErr.lk)) return;
+    box.textContent = "";
+    const now = new Date(), t0 = startOfDay(now), evs = allEvents().filter(e => inFocus(e.cust));
+    for (let i = 0; i < 7; i++) {
+      const d0 = addDays(t0, i), d1 = addDays(t0, i + 1);
+      const todays = evs.filter(e => (e.start < d1 && e.end > d0) || (+e.start === +e.end && e.start >= d0 && e.start < d1));
+      const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : d0.toLocaleDateString("en-GB", { weekday: "long" });
+      const timed = todays.filter(e => !e.allDay);
+      const mins = timed.reduce((a, e) => a + Math.max(0, (Math.min(e.end, d1) - Math.max(e.start, d0)) / 60000), 0);
+      const day = h("div", { class: "day" }, h("div", { class: "dayh" }, h("span", null, h("b", null, label), " · ", fmtDay(d0)),
+        h("span", null, timed.length ? `${timed.length} event${timed.length > 1 ? "s" : ""} · ${dur(mins * 60000)}` : "")));
+      if (!todays.length) day.append(h("div", { class: "empty" }, "Nothing scheduled"));
+      for (const e of todays) {
+        const live = !e.allDay && e.start <= now && e.end > now, past = !e.allDay && e.end <= now;
+        const sub = h("div", { class: "sub" }, h("span", { class: "cust", style: `--c:${colorOf(e.cust)}` }, (CUST[e.cust] || CUST.other).name));
+        if (e.sample) sub.append(h("span", { class: "tag sample" }, "sample"));
+        if (live) sub.append(h("span", { class: "tag now" }, "now"));
+        if (e.where) sub.append(h("span", null, e.where));
+        if (e.who > 1) sub.append(h("span", null, `${e.who} people`));
+        if (e.join) sub.append(h("a", { href: e.join, target: "_blank", rel: "noopener" }, "Join call"));
+        if (!e.sample) sub.append(h("span", null, e.via));
+        day.append(h("div", { class: "ev" + (live ? " live" : "") + (past ? " past" : "") + (e.sample ? " sample" : ""), style: `--c:${colorOf(e.cust)}` },
+          h("div", { class: "t" }, e.allDay ? "All day" : `${fmtT(e.start)}–${fmtT(e.end)}`), h("div", { class: "bar" }),
+          h("div", { class: "body" }, h("div", { class: "name" }, linkOr(e.link, e.title)), sub)));
+      }
+      box.append(day);
+    }
+  }
+
+  function renderWork() {
+    for (const [id, b] of [["bToday", "today"], ["bTomorrow", "tomorrow"], ["bBacklog", "backlog"]]) $(id).setAttribute("aria-pressed", String(S.band === b));
+    const notes = $("workNotes"), box = $("work"); notes.textContent = "";
+    if (S.tasksErr) notes.append(h("div", { class: "note err" }, S.tasksErr));
+    if (S.db === undefined) return;
+    box.textContent = "";
+    if (S.db === null) { box.append(h("div", { class: "blank" }, "The vault worklist needs the page's data store, which isn't available in this view.")); return; }
+    if (S.tasks === null) { box.append(h("div", { class: "blank" }, "No sync from Dashboard.md yet. The scheduled sync fills this in.")); return; }
+    $("showDone").checked = S.showDone;
+    const list = tasksFor(S.band).filter(t => inFocus(t.customer)).filter(t => S.showDone || !t.done);
+    if (!list.length) box.append(h("div", { class: "blank" }, S.band === "today" ? "Nothing on today's list for this view." : "Nothing here."));
+    for (const c of [...ORDER, "other"]) {
+      const rows = list.filter(t => t.customer === c);
+      if (!rows.length) continue;
+      rows.sort((a, b) => (a.done - b.done) || ((PRANK[a.priority] ?? 3) - (PRANK[b.priority] ?? 3)) || (a.order - b.order));
+      const open = rows.filter(t => !t.done).length;
+      const allDone = tasksFor(S.band).filter(t => t.customer === c && t.done).length;
+      const closed = S.collapsed.has(c);
+      const hdr = h("button", { type: "button", class: "grp", style: `--c:${colorOf(c)}`, "aria-expanded": String(!closed), title: closed ? `Expand ${CUST[c].name}` : `Collapse ${CUST[c].name}` },
+        h("span", { class: "nm" }, h("i", { class: "chev", "aria-hidden": "true" }), CUST[c].name),
+        h("span", null, `${open} open${allDone ? ` · ${allDone} done${S.showDone ? "" : " hidden"}` : ""}`));
+      hdr.addEventListener("click", () => {
+        S.collapsed.has(c) ? S.collapsed.delete(c) : S.collapsed.add(c);
+        save("db.collapsed", JSON.stringify([...S.collapsed])); renderWork();
+      });
+      box.append(hdr);
+      if (closed) continue;
+      const full = S.expanded.has(c) || rows.length <= CAP;
+      for (const t of full ? rows : rows.slice(0, CAP)) {
+        const meta = h("div", { class: "sub" });
+        if (t.key) meta.append(h("span", { class: "key" }, t.key));
+        for (const f of t.flags || []) meta.append(h("span", { class: "tag " + (f === "blocked" ? "blocked" : f === "active" ? "active" : "neutral") }, f === "active" ? "in progress" : f));
+        if (S.band !== "today" && t.day) meta.append(h("span", null, fmtDay(new Date(t.day + "T12:00:00"))));
+        box.append(h("div", { class: "task" + (t.done ? " done" : "") },
+          h("span", { class: "pri " + (t.priority || ""), title: t.priority ? `${t.priority} priority` : "no priority" }),
+          h("div", { style: "min-width:0" }, h("div", { class: "ti" }, linkOr(t.link, t.title)), meta.childNodes.length ? meta : null)));
+      }
+      if (rows.length > CAP) {
+        const more = h("button", { type: "button", class: "more", "aria-expanded": String(full) },
+          full ? "Show top 5 only" : `Show ${rows.length - CAP} more`);
+        more.addEventListener("click", () => { S.expanded.has(c) ? S.expanded.delete(c) : S.expanded.add(c); renderWork(); });
+        box.append(more);
+      }
+    }
+    const m = S.tasksMeta;
+    $("workFresh").textContent = m ? `From Dashboard.md · synced ${fmtDay(new Date(m.syncedAt))} ${fmtT(new Date(m.syncedAt))}` + (m.sourceModifiedAt ? ` · file edited ${fmtT(new Date(m.sourceModifiedAt))}` : "") : "";
+  }
+
+  const JIRA_ERR = {
+    not_configured: "Jira isn't set up yet. On your Mac, add your Acme email and Jira API token to _Dashboard Sync/jira.json in the vault; the next sync fills this in.",
+    http_401: "Jira rejected the credentials (401). Check the email and token in _Dashboard Sync/jira.json; tokens expire.",
+    http_403: "Jira refused access (403). The token works but isn't allowed to search; check with your Jira admin.",
+    http_429: "Jira asked the sync to slow down (429). The next sync tries again."
+  };
+  // A collapsible group header shared by the Jira and GitHub tabs.
+  function foldHeader(set, storeKey, key, label, count, color, rerender) {
+    const closed = set.has(key);
+    const b = h("button", { type: "button", class: "grp", style: `--c:${color}`, "aria-expanded": String(!closed) },
+      h("span", { class: "nm" }, h("i", { class: "chev", "aria-hidden": "true" }), label), h("span", null, count));
+    b.addEventListener("click", () => { set.has(key) ? set.delete(key) : set.add(key); save(storeKey, JSON.stringify([...set])); rerender(); });
+    return { el: b, closed };
+  }
+  function issueRow(pr, titleUrl, title, metaKids) {
+    return h("div", { class: "task" }, h("span", { class: "pri " + pr }),
+      h("div", { style: "min-width:0" }, h("div", { class: "ti" }, linkOr(safeUrl(titleUrl), title)), h("div", { class: "sub" }, ...metaKids)));
+  }
+  const STATUS_RANK = s => /block/i.test(s) ? 0 : /progress/i.test(s) ? 1 : /review/i.test(s) ? 2 : /test/i.test(s) ? 3 : 4;
+  function renderJira() {
+    const notes = $("jiraNotes"), box = $("jira"); notes.textContent = "";
+    if (S.db === undefined) return;
+    box.textContent = "";
+    const j = S.jira;
+    if (!j) { box.append(h("div", { class: "blank" }, "No Jira sync yet. The Mac sync fills this in.")); return; }
+    if (!j.ok) notes.append(h("div", { class: "note " + (j.error === "not_configured" ? "warn" : "err") }, JIRA_ERR[j.error] || `The last Jira sync failed (${j.error || "unknown error"}). The next sync tries again.`));
+    const items = j.ok ? j.items : [];
+    $("jiraCount").textContent = j.ok ? `${items.length} not done` : "";
+    if (j.ok && !items.length) box.append(h("div", { class: "blank" }, "Nothing assigned to you that isn't done."));
+    const today = todayKey();
+    for (const [cat, label] of [["indeterminate", "In progress"], ["new", "To do"], ["other", "Other"]]) {
+      const rows = items.filter(i => cat === "other" ? !["indeterminate", "new"].includes(i.category) : i.category === cat);
+      if (!rows.length) continue;
+      const hd = foldHeader(S.jCollapsed, "db.jCollapsed", "cat:" + cat, label, rows.length, cat === "indeterminate" ? "var(--warn)" : "var(--muted)", renderJira);
+      box.append(hd.el);
+      if (hd.closed) continue;
+      rows.sort((a, b) => (STATUS_RANK(a.status) - STATUS_RANK(b.status)) || String(a.status).localeCompare(String(b.status)) || String(b.updated).localeCompare(String(a.updated)));
+      for (const i of rows) {
+        const pr = /highest|high|blocker|critical/i.test(i.priority || "") ? "high" : /medium/i.test(i.priority || "") ? "medium" : i.priority ? "low" : "";
+        const overdue = i.due && i.due < today;
+        box.append(issueRow(pr, i.url, i.summary || i.key, [
+          h("span", { class: "key" }, i.key), h("span", { class: "tag " + (/block/i.test(i.status || "") ? "blocked" : "neutral") }, i.status || "no status"),
+          i.type ? h("span", null, i.type) : null, i.priority ? h("span", null, i.priority) : null,
+          i.due ? h("span", { class: overdue ? "tag blocked" : null }, `${overdue ? "overdue" : "due"} ${fmtDay(new Date(i.due + "T12:00:00"))}`) : null,
+          i.updated ? h("span", null, `updated ${ago(new Date(i.updated))} ago`) : null]));
+      }
+    }
+    $("jiraFresh").textContent = j.syncedAt ? `From Jira via the Mac sync · ${fmtDay(new Date(j.syncedAt))} ${fmtT(new Date(j.syncedAt))}` : "";
+  }
+
+  const GH_REPO = { owner: "your-org", repo: "your-repo" }; // EDIT: repository whose issues fill the GitHub tab
+  // GitHub connector: label names may arrive as strings or as {name} objects.
+  const labelName = l => typeof l === "string" ? l : (l && l.name) || "";
+  function fromGithub(payload) {
+    const list = payload && Array.isArray(payload.issues) ? payload.issues : [];
+    return {
+      total: payload && typeof payload.totalCount === "number" ? payload.totalCount : list.length,
+      more: !!(payload && payload.pageInfo && payload.pageInfo.hasNextPage),
+      items: list.map(i => ({
+        number: i.number, title: String(i.title || "(no title)"),
+        url: `https://github.com/${GH_REPO.owner}/${GH_REPO.repo}/issues/${encodeURIComponent(i.number)}`,
+        labels: (i.labels || []).map(labelName).filter(Boolean).slice(0, 6),
+        assignees: (i.assignees || []).map(a => typeof a === "string" ? a : (a && a.login) || "").filter(Boolean),
+        updated: i.updated_at
+      }))
+    };
+  }
+  function renderGithub() {
+    $("ghMine").setAttribute("aria-pressed", String(S.ghMine)); $("ghAll").setAttribute("aria-pressed", String(!S.ghMine));
+    const notes = $("ghNotes"), box = $("gh"); notes.textContent = "";
+    if (S.ghErr) notes.append(noteFor(S.ghErr, "GitHub"));
+    if (!S.gh) { if (S.ghErr || S.mcp === null) box.textContent = ""; return; }
+    box.textContent = "";
+    const me = S.ghMe;
+    if (S.ghMine && !me) notes.append(h("div", { class: "note warn" }, "Couldn't tell which GitHub user you are yet, so this shows all open issues."));
+    const mine = S.ghMine && me;
+    const items = S.gh.items.filter(i => !mine || i.assignees.includes(me));
+    if (!items.length) box.append(h("div", { class: "blank" }, mine ? "No open issues assigned to you." : "No open issues."));
+    // Group by first label; issues without labels go last.
+    const keyOf = i => i.labels[0] || "";
+    const groups = [...new Set(items.map(keyOf))].sort((a, b) => (a === "") - (b === "") || a.localeCompare(b));
+    const single = groups.length === 1 && groups[0] === "";
+    for (const g of groups) {
+      const rows = items.filter(i => keyOf(i) === g).sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
+      if (!single) {
+        const hd = foldHeader(S.gCollapsed, "db.gCollapsed", "lb:" + g, g || "No label", rows.length, "var(--c-initech)", renderGithub);
+        box.append(hd.el);
+        if (hd.closed) continue;
+      }
+      for (const i of rows) {
+        const hot = i.labels.some(l => /p0|p1|critical|urgent|bug/i.test(l));
+        box.append(issueRow(hot ? "high" : "", i.url, i.title, [
+          h("span", { class: "key" }, `#${i.number}`),
+          ...i.labels.slice(single ? 0 : 1).map(l => h("span", { class: "tag neutral" }, l)),
+          h("span", null, i.assignees.length ? i.assignees.join(", ") : "unassigned"),
+          i.updated ? h("span", null, `updated ${ago(new Date(i.updated))} ago`) : null]));
+      }
+    }
+    if (S.gh.more) box.append(h("div", { class: "blank" }, `Showing the 100 most recently updated of ${S.gh.total} open issues.`));
+    $("ghFresh").textContent = S.ghAt ? `Live from GitHub (${GH_REPO.owner}/${GH_REPO.repo}) · updated ${fmtT(new Date(S.ghAt))} · refreshes every 5 min` : "";
+  }
+
+
+
+  // Release status: compact; only drifted repositories are listed.
+  function shortReason(t) {
+    const env = e => e === "production" ? "prod" : e;
+    let m;
+    if ((m = /^main is (\d+) commit\(s\), (\d+) file\(s\) ahead/.exec(t))) return { text: `main ahead · ${m[2]} file${m[2] === "1" ? "" : "s"}`, cls: "neutral", ahead: true };
+    if ((m = /^(staging|production) deploying/.exec(t))) return { text: `${env(m[1])} deploying`, cls: "active" };
+    if ((m = /^(staging|production) last deploy failed/.exec(t))) return { text: `${env(m[1])} deploy failed`, cls: "blocked" };
+    if ((m = /^(staging|production) runs `([^`]*)`/.exec(t))) return { text: `${env(m[1])} ≠ release head`, cls: "neutral" };
+    if (/different commits/.test(t)) return { text: "staging ≠ prod", cls: "neutral" };
+    if (/release branch missing/.test(t)) return { text: "no release branch", cls: "blocked" };
+    if (/^could not read/.test(t)) return { text: "check failed", cls: "blocked" };
+    return { text: t.length > 40 ? t.slice(0, 39) + "…" : t, cls: "neutral" };
+  }
+  function renderRelease() {
+    const head = $("relHead"), body = $("relBody");
+    head.textContent = ""; body.textContent = "";
+    const r = S.rel || S.relCached, live = !!S.rel;
+    const dot = h("span", { class: "dot" });
+    head.append(dot, h("b", null, "Release status"));
+    if (!r) {
+      const msg = S.relErr ? (S.relErr.code === "server_not_connected" || S.relErr.code === "not_in_manifest" || S.relErr.code === "not_granted"
+        ? "runs only in the Claude desktop app on your Mac, with the local \"dashboard\" server installed"
+        : `check failed: ${S.relErr.message || S.relErr.code}`) : "checking…";
+      if (S.relErr) dot.classList.add("warn");
+      head.append(h("span", { class: "meta" }, msg));
+      return;
+    }
+    const n = r.drifted.length, bad = r.drifted.some(d => d.reasons.some(x => /failed|missing|could not read/.test(x)));
+    dot.classList.add(n ? (bad ? "bad" : "yellow") : "ok");
+    dot.setAttribute("aria-label", n ? "drifted" : "all synced");
+    head.append(h("span", { class: "key" }, r.branch),
+      h("span", null, n ? `${n} of ${r.total} drifted` : `all ${r.total} synced`),
+      h("span", { class: "meta" }, `checked ${fmtT(new Date(r.checkedAt))}${live ? "" : ` · saved result, ${ago(new Date(r.checkedAt))} old`}`));
+    if (S.rel === null && S.relErr && S.relErr.code === "tool_error") head.append(h("span", { class: "meta", style: "color:var(--bad)" }, "· last check failed"));
+    if (!n) return;
+    const grid = h("div", { class: "relgrid" });
+    let ahead = false;
+    for (const d of r.drifted) {
+      const tags = d.reasons.map(shortReason);
+      const m = d.reasons.map(x => /^main is (\d+) commit/.exec(x)).find(Boolean);
+      if (m) ahead = true;
+      const other = tags.filter(t => !t.ahead);
+      const sev = other.some(t => t.cls === "blocked") ? "bad" : other.some(t => t.cls === "active") ? "busy" : "";
+      grid.append(h("div", { class: "relcell", title: `${d.repo}: ${d.reasons.join("; ")}` },
+        h("span", { class: "ball " + sev, "aria-hidden": "true" }),
+        h("span", { class: "rn" }, d.repo),
+        other.length ? h("span", { class: "rx" }, "DRIFT") : null,
+        m ? h("span", { class: "ra", "aria-label": `main ${m[1]} commits ahead` }, `↑${m[1]}`) : null));
+    }
+    body.append(grid);
+    if (ahead) body.append(h("div", { class: "relhint" }, "↑ commits on main not yet in the release branch. A release run fixes it."));
+  }
+
+  function renderMonday() {
+    const notes = $("mondayNotes"), box = $("monday"); notes.textContent = "";
+    if (S.mondayErr) notes.append(noteFor(S.mondayErr, "monday.com"));
+    if (!S.monday) { if (S.mondayErr || S.mcp === null) box.textContent = ""; return; }
+    box.textContent = "";
+    $("mondayCount").textContent = `${S.monday.length} not done${S.mondayMore ? " (first 100)" : ""}`;
+    const groups = [...STATUS_ORDER, ...new Set(S.monday.map(i => i.status).filter(s => !STATUS_ORDER.includes(s)))];
+    for (const st of groups) {
+      const rows = S.monday.filter(i => i.status === st);
+      if (!rows.length) continue;
+      box.append(h("div", { class: "grp", style: `--c:${st === "Stuck" ? "var(--bad)" : st === "Working on it" ? "var(--warn)" : "var(--muted)"}` }, st, h("span", null, rows.length)));
+      for (const i of rows.sort((a, b) => b.updated - a.updated)) {
+        const pr = /critical|high/i.test(i.priority || "") ? "high" : /medium/i.test(i.priority || "") ? "medium" : i.priority ? "low" : "";
+        box.append(h("div", { class: "task" }, h("span", { class: "pri " + pr, title: i.priority || "no priority" }),
+          h("div", { style: "min-width:0" }, h("div", { class: "ti" }, linkOr(i.url, i.name)),
+            h("div", { class: "sub" }, i.key ? h("span", { class: "key" }, i.key) : null, i.priority ? h("span", null, i.priority) : null, h("span", null, `updated ${ago(i.updated)} ago`)))));
+      }
+    }
+    $("mondayFresh").textContent = S.mondayAt ? `Assigned to you, not Done · updated ${fmtT(new Date(S.mondayAt))} · refreshes every 5 min` : "";
+  }
+
+
+  function renderStrip() {
+    const now = new Date(), t1 = addDays(startOfDay(now), 1);
+    const evs = allEvents().filter(e => !e.allDay && inFocus(e.cust));
+    const live = evs.find(e => e.start <= now && e.end > now), next = evs.find(e => e.start > now), pick = live || next;
+    $("nextLabel").textContent = live ? "In progress" : "Next up";
+    $("nextTitle").textContent = pick ? pick.title + (pick.sample ? " (sample)" : "") : (S.cal.nb || S.cal.lk ? "Nothing in the next 7 days" : "—");
+    const w = $("nextWhen"); w.textContent = "";
+    if (pick) w.append(h("b", null, live ? `ends in ${dur(pick.end - now)}` : `in ${dur(pick.start - now)}`),
+      ` · ${pick.start >= t1 ? fmtDay(pick.start) + " " : ""}${fmtT(pick.start)}–${fmtT(pick.end)} · ${(CUST[pick.cust] || CUST.other).name}`);
+    // Work: today's Dashboard.md items for the chosen client(s).
+    const today = tasksFor("today").filter(t => inFocus(t.customer));
+    const ws = $("workSum"); ws.textContent = "";
+    if (S.tasks) ws.append(String(today.filter(t => t.done).length), h("span", { class: "u" }, "done"), h("span", { class: "sep" }, "·"),
+      String(today.filter(t => !t.done).length), h("span", { class: "u" }, "open"));
+    else ws.textContent = "—";
+    // Third card: the client's own source. Globex (and all clients): release drift, or Monday when nothing has drifted.
+    const card = $("srcCard"), lab = $("srcLabel"), val = $("srcSum"); val.textContent = "";
+    const num = (n, unit) => val.append(String(n), h("span", { class: "u" }, unit));
+    let shown = true;
+    if (S.focus === "all") {
+      lab.textContent = "Backlog";
+      val.append(S.monday ? String(S.monday.length) : "—", h("span", { class: "u" }, "Monday"), h("span", { class: "sep" }, "·"),
+        S.jira && S.jira.ok ? String(S.jira.items.length) : "—", h("span", { class: "u" }, "Jira"));
+    } else if (S.focus === "globex") {
+      const rel = S.rel || S.relCached;
+      if (rel && rel.drifted.length) { lab.textContent = "Release"; num(rel.drifted.length, rel.drifted.length === 1 ? "repo" : "repos"); }
+      else { lab.textContent = "Monday"; S.monday ? num(S.monday.length, S.monday.length === 1 ? "task" : "tasks") : (val.textContent = "—"); }
+    } else if (S.focus === "acme") {
+      lab.textContent = "Jira"; S.jira && S.jira.ok ? num(S.jira.items.length, "open") : (val.textContent = "—");
+    } else if (S.focus === "initech") {
+      lab.textContent = "GitHub"; S.gh ? num(S.gh.total, "open") : (val.textContent = "—");
+    } else shown = false;
+    card.hidden = !shown;
+    const strip = $("workSum").closest(".strip"), single = !shown;
+    $("nextTitle").closest(".nextup").hidden = single; // Partner / My Company: Work alone is enough
+    strip.classList.toggle("one", single);
+  }
+
+  function renderLiveState() {
+    const el = $("liveState");
+    if (S.mcp === null) { el.textContent = "Live connectors unavailable in this view"; return; }
+    if (S.mcp === undefined) { el.textContent = "Connecting…"; return; }
+    const stamps = [S.calAt.nb, S.calAt.lk, S.mondayAt, S.ghAt].filter(Boolean);
+    el.textContent = stamps.length ? `Live · oldest source ${fmtT(new Date(Math.min(...stamps)))}` : "Loading…";
+  }
+
+  function renderSyncState() {
+    const el = $("syncState"), sy = S.sync || {};
+    el.className = "";
+    const last = S.tasksMeta && S.tasksMeta.syncedAt ? new Date(S.tasksMeta.syncedAt) : null;
+    if (sy.pending) {
+      if (Date.now() - sy.pending > SYNC_TIMEOUT) { el.className = "warn"; el.textContent = "· Mac sync hasn't reported back. Is the Mac awake with the Claude app open?"; }
+      else el.textContent = `· Mac sync running (started ${fmtT(new Date(sy.pending))})…`;
+      return;
+    }
+    if (sy.error) { el.className = "err"; el.textContent = "· Mac sync didn't start: " + sy.error; return; }
+    el.textContent = last ? `· Mac sync ${fmtDay(last) === fmtDay(new Date()) ? "" : fmtDay(last) + " "}${fmtT(last)}` : "";
+  }
+
+  function renderTabs() {
+    // Client tabs follow the client filter: only the chosen client's tab stays.
+    // In focus mode client tabs are named after their source (Monday, Jira, GitHub) and Globex's
+    // release status gets its own tab; with all clients shown it sits above the Monday board.
+    const focused = S.focus !== "all";
+    for (const v of VIEWS) {
+      $(v.tab).hidden = !!((v.client && focused && v.client !== S.focus) || (v.focusOnly && !focused));
+      if (v.label) $(v.tab).querySelector(".lbl").textContent = v.label[focused ? 1 : 0];
+    }
+    const relPanel = $("relPanel"), relHome = S.focus === "globex" ? $("viewRelease") : $("viewMonday");
+    if (relPanel.parentNode !== relHome) relHome.prepend(relPanel);
+    relPanel.style.marginBottom = S.focus === "globex" ? "0" : "14px";
+    const cur = VIEWS.find(v => v.id === S.view);
+    if (cur && $(cur.tab).hidden) {
+      const parent = !focused && cur.client ? VIEWS.find(v => v.client === cur.client && !v.focusOnly) : null;
+      S.view = (parent || VIEWS.find(v => v.client === S.focus) || VIEWS[0]).id;
+    }
+    for (const v of VIEWS) {
+      const on = S.view === v.id;
+      $(v.tab).setAttribute("aria-selected", String(on)); $(v.tab).tabIndex = on ? 0 : -1; $(v.panel).hidden = !on;
+    }
+    $("nMonday").textContent = S.monday ? String(S.monday.length) : "";
+    const relNow = S.rel || S.relCached;
+    $("nRelease").textContent = relNow ? (relNow.drifted.length ? String(relNow.drifted.length) : "✓") : "";
+    $("nJira").textContent = S.jira && S.jira.ok ? String(S.jira.items.length) : "";
+    $("nGithub").textContent = S.gh ? String(S.gh.total) : "";
+    const open = tasksFor(S.band).filter(t => !t.done && inFocus(t.customer)).length;
+    $("nWork").textContent = S.tasks ? String(open) : "";
+    const now = new Date(), t7 = addDays(startOfDay(now), 7);
+    const evs = allEvents().filter(e => inFocus(e.cust) && !e.allDay && e.end > now && e.start < t7).length;
+    $("nAgenda").textContent = (S.cal.nb || S.cal.lk || S.feeds) ? String(evs) : "";
+  }
+  function setView(v, focusTab) {
+    S.view = v; save("db.view", v); renderTabs();
+    if (focusTab) $(VIEWS.find(x => x.id === v).tab).focus();
+  }
+
+  function renderAll() {
+    $("today").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    renderTiles(); renderTabs(); renderAgenda(); renderStrip(); renderWork(); renderRelease(); renderMonday(); renderJira(); renderGithub(); renderLiveState(); renderSyncState();
+  }
+
+  // ---------- live connectors ----------
+  let unsubs = [];
+  const stamp = res => (res && res.cache && res.cache.storedAt) || Date.now();
+  function watcher(onData, setErr, retract) {
+    return ev => {
+      if (ev.type === "data") { try { onData(ev.result); setErr(null); } catch (e) { setErr({ code: "tool_error", message: "the response could not be read" }); } }
+      else { const err = ev.error || { code: "upstream_error" }; setErr(err); if (AUTHZ.has(err.code)) retract(); }
+      renderAll();
+    };
+  }
+  function register() {
+    const mcp = S.mcp; if (!mcp) return;
+    unsubs.forEach(u => { try { u(); } catch (e) {} }); unsubs = [];
+    const t0 = startOfDay(new Date()), t7 = addDays(t0, 7);
+    S.dayKey = ymd(t0);
+    const cache = { staleTime: 60000, gcTime: 6 * 3600000 };
+    unsubs.push(mcp.watchTool("Google Calendar", "list_events", { startTime: t0.toISOString(), endTime: t7.toISOString(), orderBy: "startTime", pageSize: 100 },
+      watcher(r => { S.cal.nb = fromGoogle(r.payload); S.calAt.nb = stamp(r); }, e => { S.calErr.nb = e; if (e && S.cal.nb === null) S.cal.nb = []; }, () => { S.cal.nb = []; }),
+      { cache, refetchInterval: 5 * 60000 }));
+    unsubs.push(mcp.watchTool("Microsoft 365", "outlook_calendar_search", { query: "*", afterDateTime: ymd(t0), beforeDateTime: ymd(t7), order: "oldest", limit: 25 },
+      watcher(r => { S.cal.lk = fromOutlookCal(r); S.calAt.lk = stamp(r); }, e => { S.calErr.lk = e; if (e && S.cal.lk === null) S.cal.lk = []; }, () => { S.cal.lk = []; }),
+      { cache, refetchInterval: 5 * 60000 }));
+    unsubs.push(mcp.watchTool("monday.com", "get_board_items_page", {
+        boardId: MONDAY_BOARD, includeColumns: true, limit: 100,
+        columnIds: ["status_col", "priority_col", "timeline_col", "item_id_col"],
+        filters: [{ columnId: "person_col", compareValue: [MONDAY_ME], operator: "any_of" }, { columnId: "status_col", compareValue: [1], operator: "not_any_of" }]
+      },
+      watcher(r => { S.monday = fromMonday(r.payload); S.mondayAt = stamp(r); }, e => { S.mondayErr = e; }, () => { S.monday = null; }),
+      { cache, refetchInterval: 5 * 60000 }));
+    unsubs.push(mcp.watchTool("GitHub", "list_issues", { ...GH_REPO, state: "OPEN", perPage: 100, orderBy: "UPDATED_AT", direction: "DESC",
+        fields: ["number", "title", "labels", "assignees", "updated_at"] },
+      watcher(r => { S.gh = fromGithub(r.payload); S.ghAt = stamp(r); }, e => { S.ghErr = e; }, () => { S.gh = null; }),
+      { cache, refetchInterval: 5 * 60000 }));
+    unsubs.push(mcp.watchTool("host:dashboard", "release_status", null, ev => {
+      if (ev.type === "data") {
+        const p = ev.result && (ev.result.structuredContent || ev.result.payload);
+        if (p && Array.isArray(p.drifted)) {
+          S.rel = p; S.relErr = null;
+          // Save the newest result so other devices can show it, once per new check.
+          if (S.db && (!S.relCached || S.relCached.checkedAt !== p.checkedAt)) S.db.doc("board/release").set(p).catch(() => {});
+        } else S.relErr = { code: "tool_error", message: "unexpected answer from the local server" };
+      } else {
+        S.relErr = ev.error || { code: "upstream_error" };
+        if (AUTHZ.has(S.relErr.code)) S.rel = null;
+      }
+      renderRelease(); renderTiles(); renderTabs(); renderStrip();
+    }, { cache: { staleTime: 60000, gcTime: 86400000 }, refetchInterval: 15 * 60000 }));
+    unsubs.push(mcp.watchTool("GitHub", "get_me", null,
+      watcher(r => { S.ghMe = r.payload && r.payload.login || null; }, () => {}, () => { S.ghMe = null; }),
+      { cache: { staleTime: 300000, gcTime: 86400000 }, refetchInterval: 60 * 60000 }));
+  }
+
+  // ---------- data store (vault sync) ----------
+  function subscribeStore(db) {
+    db.doc("board/release").onSnapshot(snap => {
+      const d = snap.exists ? snap.data() : null;
+      S.relCached = d && Array.isArray(d.drifted) ? d : null;
+      renderRelease(); renderTiles(); renderStrip();
+    }, () => {});
+    db.doc("board/tasks").onSnapshot(snap => {
+      const d = snap.exists ? snap.data() : null;
+      S.tasks = d && Array.isArray(d.items) ? d.items : null;
+      S.tasksMeta = d ? { syncedAt: d.syncedAt, sourceModifiedAt: d.sourceModifiedAt } : null;
+      S.tasksErr = null;
+      if (S.sync && S.sync.pending && d && Date.parse(d.syncedAt) >= S.sync.pending - 5000) S.sync = { done: Date.now() };
+      renderAll();
+    }, err => { S.tasksErr = "The worklist store stopped answering. Reload the page to reconnect."; renderAll(); });
+    db.doc("board/jira").onSnapshot(snap => {
+      const d = snap.exists ? snap.data() : null;
+      S.jira = d ? { ok: !!d.ok, error: d.error || null, syncedAt: d.syncedAt, items: Array.isArray(d.items) ? d.items : [] } : null;
+      renderAll();
+    }, () => {});
+    db.doc("board/events").onSnapshot(snap => {
+      const d = snap.exists ? snap.data() : null;
+      S.feeds = d && Array.isArray(d.items) ? d.items : null;
+      S.feedsMeta = d ? { syncedAt: d.syncedAt } : null; renderAll();
+    }, () => {});
+  }
+
+  // ---------- controls ----------
+  const setBand = b => () => { S.band = b; save("db.band", b); renderWork(); renderTabs(); };
+  $("bToday").addEventListener("click", setBand("today"));
+  $("bTomorrow").addEventListener("click", setBand("tomorrow"));
+  $("bBacklog").addEventListener("click", setBand("backlog"));
+  VIEWS.forEach((v, i) => {
+    $(v.tab).addEventListener("click", () => setView(v.id));
+    $(v.tab).addEventListener("keydown", e => {
+      const vis = VIEWS.filter(x => !$(x.tab).hidden), n = vis.length, j = vis.indexOf(v), k = e.key;
+      const to = k === "ArrowRight" ? (j + 1) % n : k === "ArrowLeft" ? (j + n - 1) % n : k === "Home" ? 0 : k === "End" ? n - 1 : -1;
+      if (to >= 0) { e.preventDefault(); setView(vis[to].id, true); }
+    });
+  });
+  $("ghMine").addEventListener("click", () => { S.ghMine = true; save("db.ghMine", "1"); renderGithub(); });
+  $("ghAll").addEventListener("click", () => { S.ghMine = false; save("db.ghMine", "0"); renderGithub(); });
+  $("showDone").addEventListener("change", e => { S.showDone = e.target.checked; save("db.showDone", S.showDone ? "1" : "0"); renderWork(); renderTiles(); });
+  $("refresh").addEventListener("click", async () => {
+    if (!S.mcp) return;
+    const b = $("refresh"); b.disabled = true; b.textContent = "Refreshing…";
+    S.mcp.invalidate().catch(() => register());
+    // Start the Mac sync once; while one is running, a second click only refreshes the live sources.
+    if (!(S.sync && S.sync.pending && Date.now() - S.sync.pending < SYNC_TIMEOUT)) {
+      S.sync = { pending: Date.now() }; renderSyncState();
+      try {
+        await S.mcp.callTool("Claude Code Remote", "fire_trigger", { trigger_id: SYNC_TRIGGER }, { cache: false });
+      } catch (err) {
+        // A failed start is not proof nothing ran, so no automatic retry; the next click tries again.
+        S.sync = { error: err && err.code === "tool_error" ? (err.message || "the scheduled task refused") : errCopy(err, "Claude Code Remote") };
+      }
+      renderSyncState();
+    }
+    setTimeout(() => { b.disabled = false; b.textContent = "Refresh all"; }, 1500);
+  });
+  setInterval(() => { if (S.mcp && S.dayKey !== ymd(new Date())) register(); renderAll(); }, 30000);
+
+  renderAll();
+  const use = name => (window.claude && window.claude.use ? window.claude.use(name) : Promise.resolve(null)).catch(() => null);
+  use("db").then(db => { S.db = db; if (db) subscribeStore(db); renderAll(); });
+  use("mcp").then(mcp => {
+    S.mcp = mcp;
+    if (!mcp) { S.cal.nb = []; S.cal.lk = []; const e = { code: "not_granted" }; S.calErr.nb = S.calErr.lk = S.mondayErr = S.ghErr = e; }
+    else register();
+    renderAll();
+  });
+})();
+</script>

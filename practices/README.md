@@ -152,6 +152,17 @@ three times.
   agent layer underneath, and the cautions (iCloud races, secrets, client
   separation as a contractual matter).
 
+## A Live Work Dashboard
+
+The vault holds the plan; a dashboard shows it next to what each client's own
+systems say, and keeps itself current. It is a Claude artifact, so most of it
+refreshes from page code with no AI run in the loop.
+
+- [live-dashboard/README.md](live-dashboard/README.md): a per-client page of
+  meetings, worklist and trackers, fed three ways: live connectors, a
+  scheduled sync that keeps secrets on your computer, and a local MCP server
+  for code-only checks such as release drift.
+
 ## Observability
 
 Isolation and orchestration decide what the agent may do and who holds the plan.

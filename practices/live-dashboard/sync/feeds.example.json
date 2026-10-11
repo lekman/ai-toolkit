@@ -1,0 +1,6 @@
+{
+  "_note": "Calendar feed URLs per client. These are secret links: anyone with one can read that calendar. Keep the real file out of git and shared folders. Leave a client as null until you have its feed.",
+  "acme": "https://outlook.office365.com/owa/calendar/<id>@example.com/<token>/calendar.ics",
+  "globex": null,
+  "partner": null
+}

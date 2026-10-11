@@ -1,0 +1,6 @@
+{
+  "_note": "Jira Cloud API token for the dashboard. Secret: keep the real file out of git and shared folders.",
+  "site": "https://your-site.atlassian.net",
+  "email": "",
+  "token": ""
+}

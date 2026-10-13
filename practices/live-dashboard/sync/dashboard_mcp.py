@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Local MCP server for the Dashboard artifact (stdio, standard library only).
 
-Tool: release_status - runs your release check (release_state.py, same folder; see README) and
-returns only what the Dashboard needs: the release branch, the drifted repositories with their
-reasons, and how many are synced. Read-only: it only calls `gh api` GET endpoints.
+Tools:
+- release_status: runs your release check (release_state.py, same folder; see README) and
+  returns only what the Dashboard needs: the release branch, the drifted repositories with their
+  reasons, and how many are synced. Read-only: it only calls `gh api` GET endpoints.
+- sync_now: runs the three sync scripts and returns their documents for the page to store. This
+  is the page's Refresh button. It is tied to this computer, not to a claude.ai account.
 
 Register in Claude desktop (Settings > Developer > Edit Config) under "mcpServers" as "dashboard".
 """
@@ -11,7 +14,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -72,7 +78,56 @@ def cached_report() -> dict:
         return value
 
 
+# EDIT: sync_events.py needs icalendar and recurring-ical-events. Point this at a Python that has
+# them, or at a runner that adds them, for example
+# ["uv", "run", "--no-project", "--with", "icalendar", "--with", "recurring-ical-events", "python"].
+EVENTS_PYTHON = [sys.executable]
+VAULT = os.path.dirname(HERE)  # the sync folder sits inside the notes vault, beside Dashboard.md
+_sync_lock = threading.Lock()
+
+
+def run_script(cmd: list, out_name: str, tmp: str) -> dict:
+    """Run one sync script that writes JSON to a file; return {ok, doc} or {ok: False, error}."""
+    out = os.path.join(tmp, out_name)
+    try:
+        p = subprocess.run(cmd + [out], capture_output=True, text=True, timeout=150, cwd=tmp)
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "timed out"}
+    if p.returncode != 0 or not os.path.exists(out):
+        # stderr may quote a feed URL, so only its last line goes back, with URLs removed
+        tail = (p.stderr.strip().splitlines() or ["no output"])[-1]
+        log(out_name, "failed:", tail)
+        return {"ok": False, "error": re.sub(r"\S+://\S+", "<url>", tail)[:160]}
+    with open(out, encoding="utf-8") as f:
+        return {"ok": True, "doc": json.load(f)}
+
+
+def sync_now() -> dict:
+    if not _sync_lock.acquire(blocking=False):
+        raise RuntimeError("a sync is already running")
+    try:
+        script = lambda name: os.path.join(HERE, name)
+        jobs = {
+            "tasks": ([sys.executable, script("sync_tasks.py"), VAULT], "tasks.json"),
+            "events": (EVENTS_PYTHON + [script("sync_events.py"), script("feeds.json")], "events.json"),
+            "jira": ([sys.executable, script("sync_jira.py"), script("jira.json")], "jira.json"),
+        }
+        with tempfile.TemporaryDirectory(prefix="dashboard-sync-") as tmp, ThreadPoolExecutor(max_workers=3) as pool:
+            futures = {k: pool.submit(run_script, cmd, out, tmp) for k, (cmd, out) in jobs.items()}
+            return {k: f.result() for k, f in futures.items()}
+    finally:
+        _sync_lock.release()
+
+
 TOOLS = [{
+    "name": "sync_now",
+    "title": "Sync the dashboard now",
+    "description": "Read the notes worklist, the calendar feeds and Jira now, the same as the scheduled sync. "
+                   "Returns {tasks, events, jira}, each {ok, doc} or {ok: false, error}; the caller stores the docs. "
+                   "Changes nothing on disk.",
+    "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    "annotations": {"readOnlyHint": True, "openWorldHint": True},
+}, {
     "name": "release_status",
     "title": "Release status",
     "description": "Which release-matrix repositories have drifted from the release branch "
@@ -95,6 +150,14 @@ def handle(msg: dict):
         return {"tools": TOOLS}
     if method == "tools/call":
         name = (msg.get("params") or {}).get("name")
+        if name == "sync_now":
+            try:
+                result = sync_now()
+                text = json.dumps({k: (v["ok"] if v["ok"] else v["error"]) for k, v in result.items()})
+                return {"content": [{"type": "text", "text": text}], "structuredContent": result, "isError": False}
+            except Exception as ex:
+                log("sync_now failed:", ex)
+                return {"content": [{"type": "text", "text": str(ex)[:300]}], "isError": True}
         if name != "release_status":
             raise LookupError(f"unknown tool {name}")
         try:

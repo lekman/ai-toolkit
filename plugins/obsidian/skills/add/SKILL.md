@@ -70,7 +70,10 @@ For today, insert directly under today's day heading, inside today's section,
 anchored on the heading line or on the last item of the client group. Never
 anchor on band text or on the maintenance note.
 
-For today: look for `### <heading>` or `## <heading>` inside `## Focus`. If
+For today: look for `### <heading>` or `## <heading>` inside `## Focus`,
+unprefixed and above the Tomorrow band. A heading with today's date inside a
+band, or below one, is not today; the guard in Step 2 refuses a dashboard
+that has one below the bands. If
 neither exists (check the Future block too — a day found there gets promoted
 per `/planner:today` Step 2b rather than duplicated):
 
@@ -103,7 +106,11 @@ discovery inline; it is never written to the file.
 
 Insert `- [ ] <text>` as the last checkbox line in the target group — before
 the next `####` heading, the next `##`-or-`###` heading, or the end of
-`## Focus`, whichever comes first.
+`## Focus`, whichever comes first. Inside a band the group also ends where the
+callout ends, at the first line without `"> "`: the last group in Future ends
+at the band's last prefixed line, not at whatever heading follows it. Write
+the item with the band's prefix (`> - [ ] <text>`). An item placed after the
+callout's end lands outside every day.
 
 Never append after a trailing prose paragraph inside the group: a paragraph
 frames the run of checkboxes beneath it, so an item placed under the wrong
@@ -112,6 +119,9 @@ ends in prose, open a new checkbox run after it.
 
 Leave intention callouts (`> [!note] Intention: …`) and every other prose
 line untouched.
+
+Then run the guard's `--check` (Step 3 of the write protocol). It fails when
+the item landed outside its band.
 
 ## Step 6: Report
 

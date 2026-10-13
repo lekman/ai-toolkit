@@ -40,6 +40,8 @@ import {
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { shapeFailure, shapeProblems } from "./dashboard-shape";
+
 interface Config {
   vault: string;
   dashboard: string;
@@ -557,6 +559,11 @@ try {
   );
 }
 const original = before.split("\n");
+
+// A second unprefixed day, or lines spilled below the bands, means this script
+// would read the wrong day as today. Stop before acting on it.
+const misshapen = shapeProblems(original);
+if (misshapen.length) fail(shapeFailure(misshapen));
 
 // A today later than the calendar date means the page already turned, for
 // example a second end-of-day run. Rolling again would push tomorrow's work a

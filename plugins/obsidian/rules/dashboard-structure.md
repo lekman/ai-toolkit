@@ -141,7 +141,13 @@ scheduled for that date; it never changes an item, a word, or an order.
 
 ## Rules
 
-- **Never create a second unprefixed day.** One today, always.
+- **Never create a second unprefixed day.** One today, always, above the
+  Tomorrow band. Every line below the first band header carries `"> "`. The
+  write guard (`dashboard-guard.sh`) and the planner scripts
+  (`dashboard-shape.ts`) refuse a dashboard that breaks either rule. On 12 Oct
+  a session wrote days unprefixed below Future, the next morning's
+  roll-forward took the stray copy of today for today, and the real one
+  stayed in Tomorrow.
 - **Never put two days in Tomorrow.** A second day belongs in Future.
 - **Never remove the Tomorrow callout**, empty or not.
 - **Never write to a past day.** A day that has happened is a record.

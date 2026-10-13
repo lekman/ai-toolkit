@@ -203,3 +203,17 @@ test("says which dashboard is missing rather than failing on the read", () => {
   expect(proc.exitCode).toBe(1);
   expect(proc.stderr.toString()).toContain("no dashboard at");
 });
+
+test("refuses a second unprefixed day and changes nothing", () => {
+  // The archive treats every unprefixed day as one to file, so a stray future
+  // day below the bands would lose its ticked items to the work log.
+  const stray = FIXTURE.replace(
+    "\n## Initiatives",
+    "\n### Thursday 17 September\n\n#### **Acme**\n\n- [x] Ticked in a stray day\n\n## Initiatives",
+  );
+  const r = run(stray);
+  expect(r.code).toBe(1);
+  expect(r.dashboard).toBe(stray);
+  expect(r.log).toBe("");
+  expect(r.err).toContain("unprefixed day headings in ## Focus");
+});

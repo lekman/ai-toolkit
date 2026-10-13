@@ -39,6 +39,8 @@ import {
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { shapeFailure, shapeProblems } from "./dashboard-shape";
+
 interface Config {
   vault: string;
   dashboard: string;
@@ -115,6 +117,11 @@ try {
   );
 }
 const lines = before.split("\n");
+
+// A second unprefixed day, or lines spilled below the bands, means this script
+// would read the wrong day as today. Stop before acting on it.
+const misshapen = shapeProblems(lines);
+if (misshapen.length) fail(shapeFailure(misshapen));
 
 // A day inside the Tomorrow/Future callouts is `> ### …` and a group is
 // `> #### …`. The *processing* rules below still only touch the unprefixed

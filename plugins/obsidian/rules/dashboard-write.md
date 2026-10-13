@@ -28,6 +28,11 @@ Run [`scripts/dashboard-guard.sh`](../scripts/dashboard-guard.sh). It:
 - **refuses** when an iCloud conflict copy exists (`Dashboard 2.md` and
   friends) and exits non-zero — two writers have already diverged, and writing
   now picks a winner silently;
+- **refuses** when `## Focus` is not in [the three-band
+  shape](dashboard-structure.md): a second unprefixed day heading, or any
+  unprefixed line below the first band header. Skills find today as the
+  unprefixed heading with today's date, so a stray copy of that heading takes
+  the writes meant for today;
 - **copies** the current file to
   `~/.claude/dashboard-snapshots/Dashboard-<timestamp>.md`, outside the vault
   so the snapshot is neither synced nor able to become a conflict copy itself;
@@ -43,7 +48,17 @@ surrounding context that another session may have changed under you.
 
 ### 3. Verify, after writing
 
-Re-read the lines you wrote and confirm they are there. If they are not,
+Check the shape you left behind, then re-read the lines you wrote:
+
+```bash
+"<obsidian-plugin-dir>/scripts/dashboard-guard.sh" --check
+```
+
+A non-zero exit means your edit broke the layout, most often a day or an item
+written outside its band without its `"> "` prefix. Fix it from the snapshot
+before reporting success.
+
+Confirm the lines you wrote are there. If they are not,
 another session wrote over you between your read and your write. Say so, and
 recover from the snapshot rather than guessing at what was lost:
 
@@ -56,6 +71,9 @@ diff "$SNAPSHOT" "$DASHBOARD"
 - **Never write without the guard.** Not for one character, not for a claim
   marker.
 - **Never write while a conflict copy exists.** Resolving it is the operator's.
+- **Never write into a misshapen dashboard.** The repair comes first. A write
+  that _is_ the repair runs the guard with `--repair`, which snapshots and
+  warns instead of refusing, and only with the operator's go.
 - **Never edit the operator's prose.** Intention callouts, framing paragraphs
   and item wording are theirs. Skills add and remove checkboxes, markers and
   claims — not sentences.

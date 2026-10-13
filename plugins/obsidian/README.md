@@ -28,9 +28,11 @@ lost.
 [`rules/dashboard-write.md`](rules/dashboard-write.md) is the protocol every
 writing skill follows, and [`scripts/dashboard-guard.sh`](scripts/dashboard-guard.sh)
 is what they run before touching the file. It refuses when an iCloud conflict
-copy exists, copies the dashboard to `~/.claude/dashboard-snapshots/` — outside
-the vault, so the snapshot cannot sync or become a conflict copy itself — and
-prunes anything older than 14 days.
+copy exists or when `## Focus` has a second unprefixed day or lines spilled
+below the bands, copies the dashboard to `~/.claude/dashboard-snapshots/` —
+outside the vault, so the snapshot cannot sync or become a conflict copy
+itself — and prunes anything older than 14 days. After writing, skills run it
+again with `--check` to confirm the shape they left.
 
 The rule is written once and referenced by all nine writing skills. The same
 rule copied into nine files is nine rules that drift, which is how the client

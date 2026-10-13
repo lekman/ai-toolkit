@@ -466,3 +466,52 @@ test("a collapsed callout inside a day stays with that day", () => {
   expect(r.text).not.toContain("> [!note]- Handover");
   expect(workLog(r.path)).toContain("Notes for the next session.");
 });
+
+/* ------------------------------------------------------------- stray days */
+
+// 13 Oct: a session wrote days unprefixed below the Future callout. The roll
+// took the stray Wednesday for today and left the real one where it was.
+const STRAY_FIXTURE = FIXTURE.replace(
+  "## Initiatives",
+  `### Wednesday 16 September
+
+#### **Acme**
+
+- [ ] Stray item written as today
+
+### Thursday 17 September
+
+#### **Acme**
+
+- [ ] Stray item written as tomorrow
+
+## Initiatives`,
+);
+
+test("refuses a second unprefixed day and changes nothing", () => {
+  const r = run(SCRIPT, STRAY_FIXTURE);
+  expect(r.code).toBe(1);
+  expect(r.text).toBe(STRAY_FIXTURE);
+  expect(r.err).toContain("3 unprefixed day headings in ## Focus");
+  expect(r.err).toMatch(/line \d+: ### Wednesday 16 September/);
+});
+
+test("--dry-run refuses the same layout", () => {
+  const r = run(SCRIPT, STRAY_FIXTURE, ["--dry-run"]);
+  expect(r.code).toBe(1);
+  expect(r.out).not.toContain("DRY RUN");
+});
+
+test("refuses an item spilled below the bands", () => {
+  const spilled = FIXTURE.replace(
+    "## Initiatives",
+    "- [ ] Item that lost its prefix\n\n## Initiatives",
+  );
+  const r = run(SCRIPT, spilled);
+  expect(r.code).toBe(1);
+  expect(r.text).toBe(spilled);
+  expect(r.err).toContain(
+    '1 lines below the Tomorrow and Future callouts have no "> " prefix',
+  );
+  expect(r.err).toContain("Item that lost its prefix");
+});

@@ -14,6 +14,10 @@ Scan the Junk Email folder, rescue false positives, delete the rest. The one
 dangerous edge is deletion, so the run has exactly one gate and it sits in
 front of it. Deletes are recoverable (Deleted Items, ~30 days) by design.
 
+A scheduled run with nobody watching cannot pass a gate. It follows
+[Unattended Runs](#unattended-runs) instead, which trades the gate for a
+stricter rescue bias and drops the two steps that act outside the mailbox.
+
 ## Prerequisites
 
 - A cached Graph device-code token with `Mail.ReadWrite` — the helper finds
@@ -98,6 +102,37 @@ their own storage; the skill never rewrites existing lines.
 
 Report one line: `junk: <n> rescued, <m> deleted (read, recoverable),
 sweep: <a>+<d> marked read, rules: <k> added`.
+
+## Unattended Runs
+
+A scheduled task (for example a desktop-app routine at fixed times) has no
+operator to approve the gate. The operator authorises it once, when they set
+the schedule up, and every run then follows these rules instead of Steps 2,
+3 and 6:
+
+- **No gate.** Classify as in Step 1 and act straight away: `rescue`, then
+  `delete`, then the Step 5 read-sweep.
+- **Rescue anything that is not clearly junk.** Rules decide first. Without a
+  rule, delete only clear bulk marketing, cold outreach, spam and phishing.
+  Receipts, invoices, calendar invites, account or security notices, replies
+  to the operator's threads and anyone who could be a real correspondent are
+  rescued. A wrong rescue costs one glance in the Inbox; a wrong delete may
+  never be noticed.
+- **No unsubscribe.** Step 3 is skipped: an unattended request to an
+  unsubscribe URL can confirm the address to a sender nobody has vetted.
+- **No rules-file edits.** Step 6 becomes a suggestion log. Append one line
+  per proposed rule to `~/.config/mail/rule-suggestions.md` (create it if
+  missing), skipping suggestions already there:
+  `- YYYY-MM-DD HH:MM  sender contains: <x>  -> rescue|delete  (reason)`.
+  The operator moves the ones they agree with into the rules file.
+- **Counts still gate the run.** A rescue or delete count that disagrees with
+  the classification stops the job, as in Failure Modes, and is reported.
+- **No login.** Without a cached token, report it and stop; device-code
+  login needs a person.
+
+Report the usual one line, plus `suggestions: <k> logged`. The caller decides
+whether to notify; a rescued message or any failure is worth a notification,
+a run that only deleted junk is not.
 
 ## Failure Modes
 

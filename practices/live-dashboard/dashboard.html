@@ -980,7 +980,6 @@
     };
     const ORDER = ["acme", "globex", "initech", "partner", "own"];
     const colorOf = (c) => `var(--c-${CUST[c] ? c : "other"})`;
-    const SYNC_TRIGGER = "trig_REPLACE_ME"; // EDIT: id of your "Dashboard sync" scheduled task
     const SYNC_TIMEOUT = 6 * 60000;
     const MONDAY_BOARD = 0,
       MONDAY_ME = "person-0"; // EDIT: board id and your monday.com person id
@@ -2461,7 +2460,7 @@
       }
       if (sy.error) {
         el.className = "err";
-        el.textContent = "· Mac sync didn't start: " + sy.error;
+        el.textContent = "· Mac sync didn't finish: " + sy.error;
         return;
       }
       el.textContent = last
@@ -2890,7 +2889,9 @@
       b.disabled = true;
       b.textContent = "Refreshing…";
       S.mcp.invalidate().catch(() => register());
-      // Start the Mac sync once; while one is running, a second click only refreshes the live sources.
+      // Sync through the local server, which belongs to the computer and not to a claude.ai account.
+      // The server returns the documents and the page stores them; while one runs, a second click
+      // only refreshes the live sources.
       if (!(
         S.sync &&
         S.sync.pending &&
@@ -2899,19 +2900,35 @@
         S.sync = { pending: Date.now() };
         renderSyncState();
         try {
-          await S.mcp.callTool(
-            "Claude Code Remote",
-            "fire_trigger",
-            { trigger_id: SYNC_TRIGGER },
+          const res = await S.mcp.callTool(
+            "host:dashboard",
+            "sync_now",
+            {},
             { cache: false },
           );
+          const out = (res && (res.structuredContent || res.payload)) || {},
+            failed = [];
+          for (const k of ["tasks", "events", "jira"]) {
+            const r = out[k];
+            // A source that failed keeps its last good copy in the store.
+            if (r && r.ok && r.doc) {
+              if (S.db) await S.db.doc("board/" + k).set(r.doc);
+            } else failed.push(`${k}: ${(r && r.error) || "no answer"}`);
+          }
+          S.sync = failed.length
+            ? { error: failed.join("; ") }
+            : { done: Date.now() };
         } catch (err) {
-          // A failed start is not proof nothing ran, so no automatic retry; the next click tries again.
+          const c = err && err.code;
           S.sync = {
             error:
-              err && err.code === "tool_error"
-                ? err.message || "the scheduled task refused"
-                : errCopy(err, "Claude Code Remote"),
+              c === "tool_error"
+                ? err.message || "the local server refused"
+                : c === "server_not_connected" ||
+                    c === "not_in_manifest" ||
+                    c === "not_granted"
+                  ? "it runs in the Claude desktop app on your computer. The scheduled sync keeps this view current."
+                  : errCopy(err, "The local dashboard server"),
           };
         }
         renderSyncState();

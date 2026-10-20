@@ -40,7 +40,7 @@ flowchart LR
     end
     subgraph mac["Your computer"]
         SYNC["Scheduled sync<br/>notes, calendar feeds, Jira"]
-        MCP["Local MCP server<br/>release check"]
+        MCP["Local MCP server<br/>release check, sync now"]
     end
     DB[("Artifact data store")]
     PAGE["Dashboard page"]
@@ -54,8 +54,12 @@ flowchart LR
 | Route            | Used for                                    | Refresh                                        | Why this route                                            |
 | ---------------- | ------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
 | Live connector   | Calendars, monday.com, GitHub issues        | Every 2–5 minutes and on "Refresh all"         | The connector signs in as you; no secret reaches the page |
-| Scheduled sync   | Notes worklist, `.ics` calendar feeds, Jira | Hourly on weekdays, or on demand from the page | Feed links and API tokens stay in files on your computer  |
-| Local MCP server | Release status                              | Every 15 minutes while open in the desktop app | Plain code with your own `gh` login, no AI in the loop    |
+| Scheduled sync   | Notes worklist, `.ics` calendar feeds, Jira | Hourly on weekdays                             | Feed links and API tokens stay in files on your computer  |
+| Local MCP server | Release status, and the Refresh button      | Every 15 minutes while open in the desktop app | Plain code with your own `gh` login, no AI in the loop    |
+
+The Refresh button runs the same three sync scripts through the local server and
+writes the results to the store from the page. It needs no scheduled task id, so
+it keeps working when you switch claude.ai accounts.
 
 ## Decisions
 
@@ -69,10 +73,16 @@ flowchart LR
    `{ "path": "", "read": "interact", "write": "owner" }`, so sharing the page
    as view-only does not expose the worklist.
 4. **Read-only GitHub, enforced twice.** Use a GitHub App you own with only
-   Issues: Read on one repository, and connect it to
-   `https://api.githubcopilot.com/mcp/readonly` with the request header
-   `X-MCP-Toolsets: issues,context`. The app limits what GitHub allows; the
-   URL limits what the server offers.
+   Issues: Read on one repository, with the callback URL
+   `https://claude.ai/api/mcp/auth_callback`. Add it as a custom connector
+   named `GitHub` at `https://api.githubcopilot.com/mcp/x/issues/readonly`,
+   with the app's client id and secret under Advanced settings. The app
+   limits what GitHub allows; the URL limits what the server offers. The
+   claude.ai dialog has no field for request headers, and this URL offers
+   six read-only issue tools without `get_me`, so "Assigned to me" falls back
+   to all open issues. Where a client accepts headers,
+   `https://api.githubcopilot.com/mcp/readonly` with
+   `X-MCP-Toolsets: issues,context` keeps `get_me`.
 5. **Meetings are tagged by title.** A client without its own calendar is
    picked out of a shared one by keywords in the meeting title, and the same
    meeting seen in two calendars is shown once.
@@ -86,8 +96,9 @@ flowchart LR
    (`#### **Acme**`) and checkbox items, with later days inside
    `> [!note]- Tomorrow` and `> [!note]- Future` callouts.
 2. **Edit the `EDIT:` lines in `dashboard.html`:** client names and title
-   keywords, the GitHub repository, the monday.com board, person and column
-   ids, and later the scheduled task id.
+   keywords, the GitHub repository, and the monday.com board, person and
+   column ids. In `dashboard_mcp.py`, set `EVENTS_PYTHON` to a Python that has
+   `icalendar` and `recurring-ical-events`, or a `uv run --with …` command.
 3. **Ask Claude to publish `dashboard.html` as an artifact** with these
    capabilities, trimmed to the connectors you use:
 
@@ -99,22 +110,23 @@ flowchart LR
          { "server": "Microsoft 365", "tools": ["outlook_calendar_search"] },
          { "server": "monday.com", "tools": ["get_board_items_page"] },
          { "server": "GitHub", "tools": ["list_issues", "get_me"] },
-         { "server": "Claude Code Remote", "tools": ["fire_trigger"] },
-         { "server": "host:dashboard", "tools": ["release_status"] }
+         { "server": "host:dashboard", "tools": ["release_status", "sync_now"] }
        ]
      },
      "db": { "rules": [{ "path": "", "read": "interact", "write": "owner" }] }
    }
    ```
 
-4. **Create the scheduled sync** as a Cowork scheduled task that needs your
-   computer, with the vault folder attached. Its prompt runs the three scripts,
-   stages their output, and writes each file to the store with `ArtifactData`
-   `set`, pinned to the version it just read. Put its id in `SYNC_TRIGGER`.
-5. **Optional: the release check.** Copy `release_state.example.py` to
-   `release_state.py` and implement it, then add the server under
-   `mcpServers` in the Claude desktop config (Settings → Developer → Edit
-   Config) and restart the app:
+4. **Create the scheduled sync** as a scheduled task on your computer. Put the
+   artifact URL in `artifact.json` beside the scripts (`{ "url": "…" }`) and
+   have the prompt read it from there, so the prompt holds no account-specific
+   value. The prompt runs the three scripts, stages their output, and writes
+   each file to the store with `ArtifactData` `set`, pinned to the version it
+   just read.
+5. **Add the local server** under `mcpServers` in the Claude desktop config
+   (Settings → Developer → Edit Config) and restart the app. It runs the
+   Refresh button. For the release check as well, copy
+   `release_state.example.py` to `release_state.py` and implement it.
 
    ```json
    "dashboard": {
@@ -122,6 +134,25 @@ flowchart LR
      "args": ["/path/to/_Dashboard Sync/dashboard_mcp.py"]
    }
    ```
+
+## Switching claude.ai Accounts
+
+The page, its data store, the connectors and their sign-ins belong to one
+claude.ai account. The sync scripts, the config files, the local server and the
+desktop config belong to the computer, and keep working after a switch. On the
+new account:
+
+1. **Publish the page again.** Ask Claude to publish `dashboard.html` with the
+   capabilities from step 3. The new artifact has a new URL and an empty store.
+2. **Point the sync at it.** Put the new URL in `artifact.json`. Click Refresh
+   once in the desktop app to fill the store, or run the scheduled task.
+3. **Connect the connectors** in Settings → Connectors. The same GitHub App
+   works for every account, because the callback URL is the same. GitHub does
+   not show a client secret twice, so generate a new one unless you kept it.
+4. **Open the page in the desktop app** and allow each connector.
+
+The old artifact keeps its last data and stops updating. Delete it from the old
+account when you no longer need it.
 
 ## Pitfalls Seen in Practice
 
@@ -143,6 +174,6 @@ flowchart LR
 | `sync/sync_tasks.py`            | Notes file → worklist items (headline fields only)               |
 | `sync/sync_events.py`           | `.ics` feeds → events for the next two weeks                     |
 | `sync/sync_jira.py`             | Jira tickets assigned to you that are not done                   |
-| `sync/dashboard_mcp.py`         | Local MCP server (stdio, standard library) for the release check |
+| `sync/dashboard_mcp.py`         | Local MCP server (stdio, stdlib only): release check and Refresh |
 | `sync/release_state.example.py` | The contract the release check implements                        |
 | `sync/*.example.json`           | Config templates for clients, feeds and Jira                     |

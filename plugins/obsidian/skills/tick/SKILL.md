@@ -2,7 +2,7 @@
 name: tick
 description: Mark a Dashboard.md task done by substring match against open items in the active client's tasks under today's heading. Use when the user says "/obsidian:tick <substring>", "mark X done", or "tick the X task".
 user-invocable: true
-allowed-tools: Read, Edit, Bash, AskUserQuestion
+allowed-tools: Read, Edit, Bash, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_complete
 ---
 
 # Tick a Task
@@ -12,6 +12,24 @@ Find an open `- [ ]` item that contains the supplied substring, rewrite it to `-
 ## Step 1: Resolve Config and Active Client
 
 Same as the `dashboard` skill.
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, tick in the database and skip every step below:
+
+1. `task_search` with the `clientId` and the substring as `text`. With
+   `--all`, search every moved client.
+2. **Exactly one match**: `task_get` it for its `revision`, then
+   `task_complete` with `by`, the `id` and that `revision`. Report
+   `ticked: <title> (<id>)`. Completing clears the claim, so there is no
+   marker to drop.
+3. **Several**: present them with `AskUserQuestion` and complete the chosen
+   one.
+4. **None**: list the client's open items scheduled for today
+   (`task_search` with `scheduledTo` today) so the user can pick a better
+   substring. Write nothing.
 
 ## Step 2: Guard the Write
 

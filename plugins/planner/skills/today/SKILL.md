@@ -97,6 +97,18 @@ structure: create the empty band above `> [!note]- Future` and carry on. The
 first skill to touch the file migrates it, so there is no separate migration
 step to forget.
 
+## Step 2c: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For moved clients, Step 3 lists the plate from the database: `task_search`
+per moved client with `scheduledTo` the target day (overdue items included),
+plus `states: ["doing", "review"]` for work under way. Show each item's title,
+its tracker key, and its claim when it has one. The All-done rule applies:
+a moved client with nothing open shows as `<Client>: All done ✅`. The
+dashboard steps for meetings (4 to 4c) are unchanged, because calendar lines
+stay in `Dashboard.md`.
+
 ## Step 3: List the Plate
 
 Dashboard structure: day headings are `##` or `###`; **client groups are

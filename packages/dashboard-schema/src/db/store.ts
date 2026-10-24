@@ -212,6 +212,8 @@ export async function getItem(
 /** Filters for searchItems. Every field is optional; together they narrow with AND. */
 export interface ItemFilter {
   clientId?: string;
+  /** Any of these clients. Combines with clientId by AND. */
+  clientIds?: string[];
   states?: State[];
   workstreamId?: string;
   /** Claimed by this agent. `null` means not claimed by anyone. */
@@ -241,6 +243,7 @@ export async function searchItems(
   const t = schema.dashboardItem;
   const where = [
     filter.clientId ? eq(t.clientId, filter.clientId) : undefined,
+    filter.clientIds ? inArray(t.clientId, filter.clientIds) : undefined,
     filter.states?.length ? inArray(t.state, filter.states) : undefined,
     filter.workstreamId ? eq(t.workstreamId, filter.workstreamId) : undefined,
     filter.claimedBy === null ? isNull(t.claimBy) : undefined,

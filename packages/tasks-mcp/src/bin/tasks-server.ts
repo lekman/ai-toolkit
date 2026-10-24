@@ -9,8 +9,10 @@
  * another, and refuses to start when there is none.
  */
 
+import { readFileSync } from "node:fs";
+
 import { connect, databaseUrl } from "../db.ts";
-import { serve } from "../http.ts";
+import { parseScopedTokens, serve } from "../http.ts";
 import { findTailnetAddress } from "../tailnet.ts";
 
 const DEFAULT_PORT = 7450;
@@ -34,6 +36,13 @@ if (!host) {
   process.exit(4);
 }
 
+// TASKS_MCP_SCOPED_TOKENS names a JSON file of tokens limited to some
+// clients, held as SHA-256 hashes only. See the README.
+const scopedFile = process.env.TASKS_MCP_SCOPED_TOKENS;
+const scopedTokens = scopedFile
+  ? parseScopedTokens(readFileSync(scopedFile, "utf8"))
+  : [];
+
 const { db, close } = connect(databaseUrl());
 const running = await serve(
   {
@@ -41,10 +50,13 @@ const running = await serve(
     now: () => new Date(),
     timeZone: process.env.TASKS_TIME_ZONE ?? "Europe/London",
   },
-  { host, port, token },
+  { host, port, scopedTokens, token },
 );
 console.error(
-  `tasks-server listening on http://${running.address.host}:${String(running.address.port)}/mcp`,
+  `tasks-server listening on http://${running.address.host}:${String(running.address.port)}/mcp` +
+    (scopedTokens.length
+      ? `, scoped tokens: ${scopedTokens.map((t) => t.name).join(", ")}`
+      : ""),
 );
 
 const shutdown = () => {

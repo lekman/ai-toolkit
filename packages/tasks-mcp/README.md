@@ -64,6 +64,40 @@ address unless `--host` names one, and refuses a token under 32 characters.
 Then, on each machine, put the token in the Keychain, set `TASKS_MCP_URL` and
 install the plugin, as in [plugins/tasks](../../plugins/tasks/README.md).
 
+## Tokens Limited to Some Clients
+
+The main token (`TASKS_MCP_TOKEN`) reads and writes every client. A machine
+that must see only some clients, such as a laptop a client controls, gets a
+scoped token instead. With it, client_list, search and every write are
+limited to the named clients, and an item outside them behaves as if it did
+not exist.
+
+The server holds only each token's SHA-256, in a JSON file named by
+`TASKS_MCP_SCOPED_TOKENS` (add the line to the deploy `.env`):
+
+```json
+[
+  {
+    "name": "acme-laptop",
+    "sha256": "<64 hex characters>",
+    "clients": ["acme"]
+  }
+]
+```
+
+To issue one on the server, without the token passing through a file or the
+screen:
+
+```bash
+TOKEN=$(openssl rand -hex 32)
+HASH=$(printf %s "$TOKEN" | shasum -a 256 | cut -d' ' -f1)
+# add {"name": …, "sha256": "$HASH", "clients": […]} to the scoped tokens file
+# store $TOKEN in the password manager, then: unset TOKEN
+```
+
+Restart the server after changing the file; it lists the scoped tokens' names
+when it starts. To revoke one, remove its entry and restart.
+
 ## Test
 
 ```bash

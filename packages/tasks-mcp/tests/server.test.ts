@@ -3,13 +3,15 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 
-import { serve } from "../src/http.ts";
+import { parseScopedTokens, serve } from "../src/http.ts";
 import {
   assertSafeBindHost,
   isTailnetAddress,
   UnsafeBindError,
 } from "../src/tailnet.ts";
+import * as tasks from "../src/tasks.ts";
 import { registerTaskTools, TOOL_NAMES } from "../src/tools.ts";
 import { fixture } from "./setup.ts";
 
@@ -184,6 +186,131 @@ describe("http", () => {
       });
       expect(payload(listed).text).toContain("acme-delivery");
       await client.close();
+    } finally {
+      await running.close();
+    }
+  });
+});
+
+describe("scoped tokens", () => {
+  const SCOPED = "s".repeat(40);
+  const sha = createHash("sha256").update(SCOPED).digest("hex");
+
+  test("the token file is checked before the server starts", () => {
+    expect(
+      parseScopedTokens(
+        JSON.stringify([{ name: "laptop", sha256: sha, clients: ["acme"] }]),
+      ),
+    ).toHaveLength(1);
+    expect(() =>
+      parseScopedTokens(
+        JSON.stringify([{ name: "laptop", sha256: "abc", clients: ["acme"] }]),
+      ),
+    ).toThrow(/64-hex/);
+    expect(() =>
+      parseScopedTokens(
+        JSON.stringify([{ name: "laptop", sha256: sha, clients: [] }]),
+      ),
+    ).toThrow();
+    expect(() => parseScopedTokens("{}")).toThrow(/array/);
+  });
+
+  test("a scoped token sees and changes only its clients; the main token sees all", async () => {
+    const ctx = await fixture();
+    const mine = await tasks.add(ctx, "a", "acme", { title: "Acme work" });
+    const theirs = await tasks.add(ctx, "a", "globex", {
+      title: "Globex work",
+    });
+    const running = await serve(ctx, {
+      host: "127.0.0.1",
+      port: 0,
+      scopedTokens: [{ name: "laptop", sha256: sha, clients: ["acme"] }],
+      token: TOKEN,
+    });
+    const connect = async (token: string) => {
+      const client = new Client({ name: "test", version: "0" });
+      await client.connect(
+        new StreamableHTTPClientTransport(
+          new URL(`http://127.0.0.1:${running.address.port}/mcp`),
+          {
+            requestInit: { headers: { authorization: `Bearer ${token}` } },
+          },
+        ),
+      );
+      return client;
+    };
+    const call = async (
+      client: Client,
+      name: string,
+      args: Record<string, unknown>,
+    ) => payload(await client.callTool({ name, arguments: args }));
+    try {
+      const scoped = await connect(SCOPED);
+      expect(
+        JSON.parse((await call(scoped, "client_list", {})).text).map(
+          (c: { id: string }) => c.id,
+        ),
+      ).toEqual(["acme"]);
+      const found = JSON.parse((await call(scoped, "task_search", {})).text);
+      expect(found.items.map((i: { id: string }) => i.id)).toEqual([mine.id]);
+      expect(
+        JSON.parse(
+          (await call(scoped, "task_search", { clientId: "globex" })).text,
+        ).count,
+      ).toBe(0);
+      const hidden = await call(scoped, "task_get", { id: theirs.id });
+      expect(hidden.isError).toBe(true);
+      expect(hidden.text).toContain("no item");
+      expect(
+        (await call(scoped, "task_claim", { by: "laptop", id: theirs.id }))
+          .isError,
+      ).toBe(true);
+      expect(
+        (
+          await call(scoped, "task_log", {
+            by: "laptop",
+            id: theirs.id,
+            status: "doing",
+            note: "x",
+          })
+        ).isError,
+      ).toBe(true);
+      expect(
+        (
+          await call(scoped, "task_add", {
+            by: "laptop",
+            clientId: "globex",
+            title: "x",
+          })
+        ).text,
+      ).toContain("no client globex");
+      expect(
+        (await call(scoped, "task_claim", { by: "laptop", id: mine.id }))
+          .isError,
+      ).toBe(false);
+      await scoped.close();
+
+      const full = await connect(TOKEN);
+      expect(
+        JSON.parse((await call(full, "client_list", {})).text),
+      ).toHaveLength(2);
+      expect(JSON.parse((await call(full, "task_search", {})).text).count).toBe(
+        2,
+      );
+      await full.close();
+
+      const anonymous = await fetch(
+        `http://127.0.0.1:${running.address.port}/mcp`,
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${"z".repeat(40)}`,
+            "content-type": "application/json",
+          },
+          body: "{}",
+        },
+      );
+      expect(anonymous.status).toBe(401);
     } finally {
       await running.close();
     }

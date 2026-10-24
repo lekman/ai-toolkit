@@ -81,6 +81,27 @@ describe("search", () => {
     expect(all.items.map((i) => i.id)).toEqual([done.id]);
   });
 
+  test("a summary carries the done day, kind and tracker link", async () => {
+    const ctx = await fixture();
+    const item = await tasks.add(ctx, "a", "acme", {
+      title: "Ship",
+      kind: "admin",
+      tracker: {
+        system: "github",
+        key: "acme/app#7",
+        url: "https://github.com/acme/app/issues/7",
+      },
+    });
+    await tasks.complete(ctx, "a", item.id, 1);
+    const [found] = (await tasks.search(ctx, { states: ["done"] })).items;
+    expect(found).toMatchObject({
+      doneOn: "2026-10-24",
+      kind: "admin",
+      trackerKey: "acme/app#7",
+      trackerUrl: "https://github.com/acme/app/issues/7",
+    });
+  });
+
   test("unclaimed leaves out claimed items", async () => {
     const ctx = await fixture();
     const a = await tasks.add(ctx, "a", "acme", { title: "One" });

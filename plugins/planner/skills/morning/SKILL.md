@@ -69,8 +69,8 @@ for the day structure, day notes and calendar lines.
 - **Roll**: open items scheduled before today count as today's; Step 2 places
   them. Nothing is carried by hand.
 - **Plan**: candidates are the client's open items scheduled from today
-  (overdue included) through Sunday: `task_search` with the `clientId`,
-  `scheduledTo` Sunday. Unscheduled items stay unscheduled. Leave blocked and
+  (overdue included) through the end of the planning window (Step 2):
+  `task_search` with the `clientId` and that day as `scheduledTo`. Unscheduled items stay unscheduled. Leave blocked and
   claimed items where they are, and count none of their hours.
 - **Hours** come from `effort`: XS 0.5, S 1, M 3, L 6, XL 12. An unsized item
   counts `default_item_hours`. Calendar lines still reduce the day's capacity.
@@ -120,11 +120,18 @@ step makes by hand.
 
 ## Step 2: Plan
 
+**The planning window** runs from today through Sunday. On a Saturday or
+Sunday it runs through the following Sunday instead, so a weekend run plans
+the coming working week, the same way `/planner:today` moves a weekend to
+Monday. "Sunday" below means the end of this window. Without it, a weekend run
+fits a week's open work into two days that usually have no hours, and sends
+the rest to Unscheduled (24 Oct: about 64 items in a dry run).
+
 Read only `## Focus`, with a script that prints each item line's number,
 client, day and markers. `Dashboard.md` is over 100 KB, and a plain read
 truncates. For each client with capacity:
 
-1. **Hours per day**, today through Sunday. Take the configured capacity and
+1. **Hours per day**, for each day of the planning window. Take the configured capacity and
    subtract that client's `📅 HH:MM–HH:MM` calendar entries on that day.
 2. **Candidates** are the client's open items on those days. Unscheduled
    items are never candidates: the operator holds them back on purpose, and

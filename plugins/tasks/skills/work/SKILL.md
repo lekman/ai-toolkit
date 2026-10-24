@@ -15,6 +15,26 @@ Every write takes `by`: your session name, exactly as other sessions address
 you (for example `Builder` or `Commander`). Use the same name every time. It
 is how a claim is recognised as yours.
 
+## Without the MCP Tools
+
+A session started before the tasks plugin was installed or updated has no
+`tasks` MCP tools until it restarts. Use the `tasks` command from Bash
+instead. It calls the same server, so the same checks, claims and history
+apply:
+
+```bash
+tasks --by <your session name> search --client <id> --unclaimed
+tasks --by <your session name> claim <id>
+tasks --by <your session name> start <id> --note "picked up"
+tasks --by <your session name> log <id> "halfway"
+tasks --by <your session name> done <id> --note "merged"
+tasks --by <your session name> add --client <id> --title "…" --day tomorrow --owner <who> --waiting-on <who>
+```
+
+`tasks --help` lists every command, and `--json` prints the server's answer.
+If `tasks` is not found, install it once:
+`python3 ~/.claude/plugins/cache/ai-toolkit/tasks/*/scripts/tasks install`.
+
 ## Find Work
 
 1. `client_list` once per session, for the client and workstream ids.

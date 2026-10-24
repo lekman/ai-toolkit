@@ -44,7 +44,7 @@ Extract rows from `## In Progress`, `## Backlog`, and `## Done` sections. For ea
 
 ## Step 4b: Clients in the Task Database
 
-A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one. If this session has no `tasks` MCP tools loaded (a session started before the plugin was installed or updated), run the same operations with the `tasks` command from Bash instead: `tasks --help` lists them, and `--by` takes your session name. If `tasks` is not found, install it once with `python3 ~/.claude/plugins/cache/ai-toolkit/tasks/*/scripts/tasks install`.
 
 For a moved client, Steps 5 to 7 match and write against the database: find
 each row's item with `task_search` (`clientId`, a few words as `text`, or the

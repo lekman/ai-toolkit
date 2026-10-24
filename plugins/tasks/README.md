@@ -58,3 +58,38 @@ TASKS_MCP_URL` for `plugin:tasks:tasks`.
 Check with `claude mcp list`: `plugin:tasks:tasks` should show Connected. A
 401 means the Keychain token is wrong; a connection error means the URL is
 wrong or the machine is not on the tailnet.
+
+## Command Line
+
+[`scripts/tasks`](scripts/tasks) does the same from Bash, for a session that
+has no `tasks` MCP tools loaded yet. Plugins load their MCP servers when a
+session starts, and only the operator can restart a session, so without it
+every session started before an install or update would relay its task writes
+through another session.
+
+Install it once per machine. It writes a launcher to `~/.local/bin/tasks`
+that runs the newest installed copy, so running sessions can use it at once
+and plugin updates keep it current:
+
+```bash
+python3 ~/.claude/plugins/cache/ai-toolkit/tasks/*/scripts/tasks install
+```
+
+| Command                                                                                             | Does                                                        |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `tasks clients`                                                                                     | Clients and their workstreams                               |
+| `tasks search [--client ID] [--text …] [--unclaimed] [--claimed-by NAME] [--blocked] [--until DAY]` | Open items, most important first                            |
+| `tasks show ID`                                                                                     | One item with its log                                       |
+| `tasks claim ID` / `tasks release ID [--force]`                                                     | Hold an item, or give it up                                 |
+| `tasks start ID [--note …]` / `tasks state ID STATE [--note …]`                                     | Set the state, with an optional note                        |
+| `tasks done ID [--note …] [--on DAY]`                                                               | Mark it done                                                |
+| `tasks move ID DAY`                                                                                 | Schedule it: `YYYY-MM-DD`, `today`, `tomorrow` or `backlog` |
+| `tasks log ID [--status S] NOTE`                                                                    | Append a progress note                                      |
+| `tasks add --client ID --title … [--day DAY] [--owner WHO] [--waiting-on WHO]`                      | Add an item                                                 |
+
+Writes need `--by <session name>` or `TASKS_BY`. Add `--json` for the
+server's answer. The address comes from `TASKS_MCP_URL` or the `env` block of
+`~/.claude/settings.json`; the token from `TASKS_MCP_TOKEN` or the Keychain,
+and it is never printed or put on a command line. Exit codes: 1 refused by
+the server, 2 usage, 3 configuration (address or token), 4 server not
+reachable.

@@ -201,3 +201,25 @@ describe("registry.json", () => {
     );
   });
 });
+
+test("a PR closed without merging gives closed, keyed by its head SHA", async () => {
+  const f = files();
+  await runPoll(config, source([pr({ id: "PR_9", number: 9 })]), f);
+  await runPoll(
+    config,
+    source([], [pr({ id: "PR_9", number: 9, state: "CLOSED" })]),
+    f,
+  );
+  const [line] = readFileSync(f.events, "utf8")
+    .trim()
+    .split("\n")
+    .map((l) => JSON.parse(l));
+  expect(line).toEqual(
+    expect.objectContaining({
+      event: "closed",
+      key: `acme/api#9:closed:${"a".repeat(40)}`,
+      kind: "pr",
+    }),
+  );
+  expect(registry(f.registry).items).toEqual([]);
+});

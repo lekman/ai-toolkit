@@ -5,8 +5,8 @@ Brings GitHub pull request and issue state to this Mac as two local files:
 - `registry.json`: every PR and issue currently monitored, with its state,
   rewritten after each poll.
 - `events.jsonl`: an append-only log of changes. The events are `approved`,
-  `ci_failed`, `conflict` and `merged` for PRs, and `issue_assigned` and
-  `issue_closed` for issues.
+  `ci_failed`, `conflict`, `merged` and `closed` for PRs, and `issue_assigned`
+  and `issue_closed` for issues.
 
 It only notifies. Nothing runs in response to an event, and no model reads the
 GitHub data. A consumer, such as a dashboard, reads the two files.
@@ -61,8 +61,9 @@ GitHub GraphQL ──(outbound HTTPS)──▶ guard ──▶ diff ──▶ ev
   `mergeable` was still `UNKNOWN` at the baseline stores its first computed
   value without an event.
 - **Merges and closes are found by absence.** An item that leaves the open
-  search is looked up by node id. A merged PR or a closed issue gives an
-  event. A closed PR, a deleted item or one no longer in scope gives nothing.
+  search is looked up by node id. A merged PR, a PR closed without merging
+  or a closed issue gives an event. A deleted item, or one no longer in
+  scope, gives nothing.
 - **No repeats.** Each event has a key, and a key is never written twice.
 
 ## Setup

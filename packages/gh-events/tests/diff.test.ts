@@ -92,15 +92,15 @@ describe("settling", () => {
 });
 
 describe("diffGone", () => {
-  test("a merged PR and a closed issue are events", () => {
+  test("a merged PR, a closed PR and a closed issue are events", () => {
     expect(diffGone(pr({ state: "MERGED" }))).toEqual(["merged"]);
+    expect(diffGone(pr({ state: "CLOSED" }))).toEqual(["closed"]);
     expect(
       diffGone(issue({ closedAt: "2026-01-02T03:04:05Z", state: "CLOSED" })),
     ).toEqual(["issue_closed"]);
   });
 
   test("anything else is dropped without an event", () => {
-    expect(diffGone(pr({ state: "CLOSED" }))).toEqual([]);
     expect(diffGone(pr({ state: "OPEN" }))).toEqual([]);
     expect(diffGone(issue())).toEqual([]);
     expect(diffGone(null)).toEqual([]);

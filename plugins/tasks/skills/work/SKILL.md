@@ -1,11 +1,11 @@
 ---
-name: tasks
-description: How an agent works with dashboard items through the Atlas MCP tools — find work, claim it, record progress, finish it, and add new items — without editing Dashboard.md. Use whenever a session picks up, updates, adds or completes a task, or asks what is open for a client.
+name: work
+description: How an agent works with dashboard items through the tasks MCP tools — find work, claim it, record progress, finish it, and add new items — without editing Dashboard.md. Use whenever a session picks up, updates, adds or completes a task, or asks what is open for a client.
 ---
 
-# Work With Atlas Tasks
+# Work With Tasks
 
-The `atlas` MCP server holds every client's work items in one database. Use
+The `tasks` MCP server holds every client's work items in one database. Use
 its tools instead of editing `Dashboard.md`. Every write names you, lands in
 the item's history, and is checked against what you last read.
 
@@ -63,13 +63,13 @@ know them; until both are set, the stored `priority` is used.
 
 ## When a Write Is Refused
 
-| Refusal                | What to do                                                                        |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| "is not at revision N" | Someone wrote first. `task_get`, check what changed, retry.                       |
-| "is claimed by X"      | Leave it. Pick another item or ask X.                                             |
-| "no item"              | The id is wrong. Find it with `task_search`.                                      |
-| "item is not valid"    | The message names the field and the rule. Fix the value.                          |
-| HTTP 401               | `ATLAS_MCP_TOKEN` is missing or wrong on this machine. Report it to the operator. |
+| Refusal                     | What to do                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| "is not at revision N"      | Someone wrote first. `task_get`, check what changed, retry.                          |
+| "is claimed by X"           | Leave it. Pick another item or ask X.                                                |
+| "no item"                   | The id is wrong. Find it with `task_search`.                                         |
+| "item is not valid"         | The message names the field and the rule. Fix the value.                             |
+| HTTP 401, or no tasks tools | The token in this machine's Keychain is missing or wrong. Report it to the operator. |
 
 Never retry a refused write unchanged, and never edit `Dashboard.md` to get
 round a refusal.

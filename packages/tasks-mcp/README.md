@@ -1,17 +1,17 @@
-# atlas-mcp
+# tasks-mcp
 
 The MCP server agents use to work with dashboard items, in place of editing
 `Dashboard.md`. It reads and writes the Postgres database defined in
 [dashboard-schema](../dashboard-schema), and every machine's sessions reach it
-through the [atlas plugin](../../plugins/atlas).
+through the [tasks plugin](../../plugins/tasks).
 
 | Path                                               | What it is                                                                |
 | -------------------------------------------------- | ------------------------------------------------------------------------- |
 | [src/tasks.ts](src/tasks.ts)                       | The operations: search, read, add, update, claim, complete                |
 | [src/tools.ts](src/tools.ts)                       | The MCP tools over those operations, one registration for both transports |
 | [src/http.ts](src/http.ts)                         | Streamable HTTP at `/mcp`, bearer token, `GET /health`                    |
-| [src/bin/atlas-server.ts](src/bin/atlas-server.ts) | The HTTP server for the tailnet                                           |
-| [src/bin/atlas-mcp.ts](src/bin/atlas-mcp.ts)       | The same tools over stdio, for one local session                          |
+| [src/bin/tasks-server.ts](src/bin/tasks-server.ts) | The HTTP server for the tailnet                                           |
+| [src/bin/tasks-mcp.ts](src/bin/tasks-mcp.ts)       | The same tools over stdio, for one local session                          |
 | [deploy/](deploy/)                                 | A launchd agent for the server                                            |
 
 ## Rules the Tools Keep
@@ -31,7 +31,7 @@ through the [atlas plugin](../../plugins/atlas).
 - **Search order is computed**: priority from business value against effort,
   then urgency from the due date, as in
   [priority.ts](../dashboard-schema/src/priority.ts). "Today" is the day in
-  `ATLAS_TIME_ZONE` (default Europe/London).
+  `TASKS_TIME_ZONE` (default Europe/London).
 
 ## Run It on the Mac Mini
 
@@ -44,24 +44,25 @@ address unless `--host` names one, and refuses a token under 32 characters.
 
    ```bash
    cd packages/dashboard-schema/deploy
-   printf 'ATLAS_MCP_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env
+   printf 'TASKS_MCP_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env
    ```
 
-   Store the same token in the password manager; every machine needs it.
+   Store the same token in the password manager; every machine's Keychain
+   needs it.
 
 2. Try it in the foreground:
 
    ```bash
-   bun --env-file=packages/dashboard-schema/deploy/.env packages/atlas-mcp/src/bin/atlas-server.ts
+   bun --env-file=packages/dashboard-schema/deploy/.env packages/tasks-mcp/src/bin/tasks-server.ts
    curl -s http://<tailnet address>:7450/health    # ok
    ```
 
-3. Install [deploy/com.lekman.atlas-mcp.plist](deploy/com.lekman.atlas-mcp.plist)
+3. Install [deploy/com.lekman.tasks-mcp.plist](deploy/com.lekman.tasks-mcp.plist)
    as a launchd agent, with the three paths filled in, so it starts at login
    and restarts if it stops.
 
-Then set `ATLAS_MCP_URL` and `ATLAS_MCP_TOKEN` on each machine and install the
-plugin, as in [plugins/atlas](../../plugins/atlas/README.md).
+Then, on each machine, put the token in the Keychain, set `TASKS_MCP_URL` and
+install the plugin, as in [plugins/tasks](../../plugins/tasks/README.md).
 
 ## Test
 

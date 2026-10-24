@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 /**
- * The Atlas task MCP server over HTTP, for every agent on the tailnet.
+ * The task MCP server over HTTP, for every agent on the tailnet.
  *
- *   bun --env-file=<env> src/bin/atlas-server.ts [--port 7450] [--host <addr>]
+ *   bun --env-file=<env> src/bin/tasks-server.ts [--port 7450] [--host <addr>]
  *
- * Reads ATLAS_MCP_TOKEN, and DATABASE_URL or DASHBOARD_DB_PASSWORD, from the
+ * Reads TASKS_MCP_TOKEN, and DATABASE_URL or DASHBOARD_DB_PASSWORD, from the
  * environment. Binds to this machine's Tailscale address unless --host names
  * another, and refuses to start when there is none.
  */
@@ -20,15 +20,15 @@ const arg = (name: string): string | undefined => {
   return index >= 0 ? process.argv[index + 1] : undefined;
 };
 
-const token = process.env.ATLAS_MCP_TOKEN;
+const token = process.env.TASKS_MCP_TOKEN;
 if (!token) {
   console.error(
-    "ATLAS_MCP_TOKEN is not set: generate one with openssl rand -hex 32",
+    "TASKS_MCP_TOKEN is not set: generate one with openssl rand -hex 32",
   );
   process.exit(3);
 }
-const port = Number(arg("port") ?? process.env.ATLAS_MCP_PORT ?? DEFAULT_PORT);
-const host = arg("host") ?? process.env.ATLAS_MCP_HOST ?? findTailnetAddress();
+const port = Number(arg("port") ?? process.env.TASKS_MCP_PORT ?? DEFAULT_PORT);
+const host = arg("host") ?? process.env.TASKS_MCP_HOST ?? findTailnetAddress();
 if (!host) {
   console.error("no Tailscale address on this machine: refusing to start");
   process.exit(4);
@@ -39,12 +39,12 @@ const running = await serve(
   {
     db,
     now: () => new Date(),
-    timeZone: process.env.ATLAS_TIME_ZONE ?? "Europe/London",
+    timeZone: process.env.TASKS_TIME_ZONE ?? "Europe/London",
   },
   { host, port, token },
 );
 console.error(
-  `atlas-server listening on http://${running.address.host}:${String(running.address.port)}/mcp`,
+  `tasks-server listening on http://${running.address.host}:${String(running.address.port)}/mcp`,
 );
 
 const shutdown = () => {

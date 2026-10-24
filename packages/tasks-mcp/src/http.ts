@@ -63,7 +63,7 @@ export async function serve(
           .end("missing or wrong bearer token");
         return;
       }
-      const server = new McpServer({ name: "atlas", version: "0.1.0" });
+      const server = new McpServer({ name: "tasks", version: "0.1.0" });
       registerTaskTools(server, ctx);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,

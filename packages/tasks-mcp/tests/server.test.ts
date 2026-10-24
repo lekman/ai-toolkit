@@ -17,7 +17,7 @@ const TOKEN = "t".repeat(40);
 
 async function inMemoryClient() {
   const ctx = await fixture();
-  const server = new McpServer({ name: "atlas", version: "0.1.0" });
+  const server = new McpServer({ name: "tasks", version: "0.1.0" });
   registerTaskTools(server, ctx);
   const [a, b] = InMemoryTransport.createLinkedPair();
   await server.connect(a);

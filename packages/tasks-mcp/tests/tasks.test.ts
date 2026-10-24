@@ -231,7 +231,13 @@ describe("log", () => {
   test("appends without changing the revision", async () => {
     const ctx = await fixture();
     const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });
-    await tasks.log(ctx, "builder", item.id, "blocked", "waiting for the token");
+    await tasks.log(
+      ctx,
+      "builder",
+      item.id,
+      "blocked",
+      "waiting for the token",
+    );
     const read = await tasks.read(ctx, item.id);
     expect(read.revision).toBe(1);
     expect(read.log).toHaveLength(1);

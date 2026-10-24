@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "tasks": {
+      "type": "http",
+      "url": "${TASKS_MCP_URL}",
+      "headersHelper": "printf '{\"Authorization\":\"Bearer %s\"}' \"$(security find-generic-password -s tasks-mcp-token -w)\""
+    }
+  }
+}

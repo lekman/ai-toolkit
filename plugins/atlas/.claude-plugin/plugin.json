@@ -1,5 +1,0 @@
-{
-  "name": "atlas",
-  "description": "Atlas task MCP for every agent: search, read, add, claim, update, log and complete dashboard items in the shared Postgres dashboard database, over the tailnet. Replaces editing Dashboard.md by hand, with claims so two agents never work the same item, and revision checks so a stale write is refused",
-  "version": "0.1.0"
-}

@@ -1,5 +1,5 @@
 {
-  "name": "@lekman/atlas-mcp",
+  "name": "@lekman/tasks-mcp",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "echo 'atlas-mcp: nothing to build'",
+    "build": "echo 'tasks-mcp: nothing to build'",
     "typecheck": "bun --bun tsc --noEmit",
     "test": "bun test",
     "check": "bun run typecheck && bun test"

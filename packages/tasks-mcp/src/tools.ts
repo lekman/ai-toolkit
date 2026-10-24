@@ -40,7 +40,7 @@ const by = z
   .min(1)
   .max(96)
   .describe(
-    "Who is acting: your session name, for example Builder or Commander. Recorded in the history.",
+    "Who is acting: your session name, for example Builder or Commander. Stored in lower case with hyphens (Self-hosted runners becomes self-hosted-runners) and recorded in the history.",
   );
 const revision = z
   .number()
@@ -140,7 +140,10 @@ function failure(error: unknown) {
     message = `${error.message}. Find the id with task_search.`;
   } else if (error instanceof InvalidItem) {
     message = error.message;
-  } else if (error instanceof tasks.NothingToChange) {
+  } else if (
+    error instanceof tasks.NothingToChange ||
+    error instanceof tasks.InvalidActor
+  ) {
     message = error.message;
   } else {
     message = error instanceof Error ? error.message : String(error);

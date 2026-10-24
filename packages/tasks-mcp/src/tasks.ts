@@ -130,6 +130,34 @@ export function today(ctx: Context): string {
   }).format(ctx.now());
 }
 
+/** Thrown when `by` has nothing left once normalised. */
+export class InvalidActor extends Error {
+  constructor(readonly by: string) {
+    super(
+      `"${by}" is not usable as a name: give your session name, for example Builder`,
+    );
+  }
+}
+
+/**
+ * The stored form of an agent's name: lower case, with anything other than
+ * letters, digits and hyphens turned into hyphens, and an optional
+ * `:qualifier` kept (`claude:atlas`). "Self-hosted runners" becomes
+ * `self-hosted-runners`. The schema's identifier rule needs this form, and
+ * normalising here means a session can pass its name as other sessions
+ * address it.
+ */
+export function actor(by: string): string {
+  const [head = "", ...rest] = by.trim().toLowerCase().split(":");
+  const name = head.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const tail = rest
+    .join(":")
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!name) throw new InvalidActor(by);
+  return tail ? `${name}:${tail}` : name;
+}
+
 function stamp(ctx: Context): string {
   return ctx
     .now()
@@ -258,7 +286,7 @@ export async function add(
       revision: 1,
       createdAt: at,
       updatedAt: at,
-      history: [{ kind: "added", on: today(ctx), at, by }],
+      history: [{ kind: "added", on: today(ctx), at, by: actor(by) }],
     },
     fields,
     today(ctx),
@@ -317,14 +345,20 @@ async function change(
 ): Promise<number> {
   const current = await getItem(ctx.db, id);
   if (!current) throw new ItemNotFound(id);
-  if (current.claim && current.claim.by !== by && !options.force) {
+  const who = actor(by);
+  if (current.claim && actor(current.claim.by) !== who && !options.force) {
     throw new ClaimConflict(id, current.claim.by);
   }
   const day = today(ctx);
   const next = mutate(current, day);
-  const changes = history(current, next, day, stamp(ctx), by);
+  const changes = history(current, next, day, stamp(ctx), who);
   if (changes.length === 0 && !options.note) throw new NothingToChange(id);
-  validateItem(next);
+  // Stored log and history entries are append-only records, checked when they
+  // were written; validate the item's own fields and this change's entries.
+  const fields: DashboardItem = { ...next };
+  delete fields.log;
+  delete fields.history;
+  validateItem(changes.length ? { ...fields, history: changes } : fields);
   return ctx.db.transaction(async (tx) => {
     const t = tx as unknown as Db;
     const nextRevision = await updateItem(t, next, revision);
@@ -346,7 +380,7 @@ async function change(
         at: stamp(ctx),
         status: next.state,
         note: options.note,
-        by,
+        by: who,
       });
     }
     return nextRevision;
@@ -355,7 +389,7 @@ async function change(
 
 /** Claim an item. Returns the new revision. */
 export function claim(ctx: Context, by: string, id: string): Promise<number> {
-  return claimItem(ctx.db, id, by, stamp(ctx));
+  return claimItem(ctx.db, id, actor(by), stamp(ctx));
 }
 
 /** Release a claim; `force` releases another agent's. Returns the new revision. */
@@ -365,7 +399,7 @@ export function release(
   id: string,
   force = false,
 ): Promise<number> {
-  return releaseItem(ctx.db, id, by, stamp(ctx), force);
+  return releaseItem(ctx.db, id, actor(by), stamp(ctx), force);
 }
 
 /** Add a progress note. It does not change the item or its revision. */
@@ -377,7 +411,7 @@ export async function log(
   note: string,
 ): Promise<void> {
   if (!(await getItem(ctx.db, id))) throw new ItemNotFound(id);
-  await appendLog(ctx.db, id, { at: stamp(ctx), status, note, by });
+  await appendLog(ctx.db, id, { at: stamp(ctx), status, note, by: actor(by) });
 }
 
 /** The item with `fields` applied. Null clears a field; undefined leaves it. */

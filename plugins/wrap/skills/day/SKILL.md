@@ -2,7 +2,7 @@
 name: day
 description: End-of-work-day wrap for the active client — reconcile the Obsidian dashboard against real state (TODO.md, GitHub PRs), roll open items to the next working day, archive the finished day, prune merged git branches and stale worktrees, then report the day. Use only when the user asks for it — "/wrap:day", "wrap up the day", "end of day". Never start it on your own initiative, including when a session looks finished.
 user-invocable: true
-allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion
+allowed-tools: Read, Edit, Write, Grep, Glob, Bash, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_add, mcp__plugin_tasks_tasks__task_update, mcp__plugin_tasks_tasks__task_complete, mcp__plugin_tasks_tasks__task_release
 ---
 
 # Wrap the Day
@@ -44,6 +44,25 @@ means stripping one `"> "` level; writing one means producing it.
 
 Today's section is the unprefixed one; items this skill rolls forward go into
 the Tomorrow callout, prefixed, and days beyond it stay in Future untouched.
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, Steps 2 to 4 work on the database:
+
+- **Reconcile**: compare the evidence (Step 2) with the client's open items
+  from `task_search`. Complete what the evidence shows is done with
+  `task_complete`. A PR merged today with no item: `task_add` it with
+  `scheduledFor` today and complete it, so the day's record is whole. Never
+  reopen a done item silently; ask.
+- **Roll**: for each open item scheduled for today or earlier, `task_update`
+  its `scheduledFor` to the next working day (Monday after a Friday). Release
+  claims this session holds with `task_release`; a rolled item is no longer
+  held by a session that has ended. The history records each move.
+- **Archive**: nothing to do for the client. The database keeps done items
+  and their history. Step 4 still archives the dashboard's day notes once no
+  client has open items in today's section.
 
 ## Step 2: Reconcile the Dashboard Against Real State
 

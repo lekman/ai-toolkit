@@ -2,7 +2,7 @@
 name: add
 description: Append a new task as a checkbox under today's heading in Dashboard.md's Focus section, inside the active client's group. Use when the user says "/obsidian:add <text>", "add task X", or "remind me to X".
 user-invocable: true
-allowed-tools: Read, Edit, Bash
+allowed-tools: Read, Edit, Bash, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_add
 ---
 
 # Add a Task
@@ -36,6 +36,25 @@ Both tags are the **only** signal for their state: nothing infers
 times a day cannot afford a guess that disagrees with itself between sessions.
 Combine them with `--client` and `--day` freely; the tag goes at the front of
 the text, before any severity marker.
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, add the item to the database and stop; skip every step
+below:
+
+1. `task_search` with the `clientId` and a few words of the text, so the same
+   work is not added twice. If it is already there, say so and stop.
+2. `task_add` with `by`, the `clientId`, and the text as the `title`, stated
+   as an outcome and without markers. Map the flags:
+   - `--day` → `scheduledFor` as `YYYY-MM-DD`; today when no `--day` is given
+   - `--admin` → `kind: "admin"`
+   - `--blocked` → `blocked: true`, with `blockedOn` (`since` today,
+     `waitingFor` who or what) when you know it
+   - `--due` → `due`
+   - a severity marker → `priority`: 🔴 high, 🟡 normal, 🟢 and ⚪ low
+3. Report `added: <title> (<client>, <day or unscheduled>, <id>)`.
 
 ## Step 2: Guard the Write
 

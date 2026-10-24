@@ -2,7 +2,7 @@
 name: next
 description: Pick the next task for the active client and start it, with no discussion. Resolves the client from the working directory or from a partial-name argument, chooses by the dashboard's own ordering, claims the item, and either hands to /planner:execute or refines its plan until it is executable. Pass "confirm", "ask" or "dry-run" to be told the choice and the reasoning instead of it starting. Use when the user says "/planner:next", "what next", or "start the next task".
 argument-hint: [client-filter] [confirm|ask|dry-run]
-allowed-tools: Bash, Read, Edit, Skill, AskUserQuestion
+allowed-tools: Bash, Read, Edit, Skill, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_claim, mcp__plugin_tasks_tasks__task_log, mcp__plugin_tasks_tasks__task_complete
 user-invocable: true
 ---
 
@@ -53,6 +53,30 @@ Resolution rules for the filter:
 With no filter, resolve the client from the working directory exactly as
 `/obsidian:dashboard` does: longest path prefix in `clients`, falling back to
 `default_client`.
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, Steps 2 to 6 read and claim from the database instead:
+
+- **Read**: `task_search` with the `clientId`, `unclaimed: true`, and
+  `scheduledTo` the resolved day, so overdue items count too. If that returns
+  nothing, search without `scheduledTo` for unscheduled work. The search
+  returns items in computed priority order (business value against effort,
+  raised by urgency); that order replaces file order.
+- **Choose**: skip items with `blocked: true` and report them. Take
+  `kind: "admin"` items first, then the rest in search order. Do not reorder by
+  your own judgement; if the order looks wrong, the item's value or effort is
+  wrong, so say that instead.
+- **Claim**: `task_claim` with `by` and the `id`. A claim held by another
+  session is refused; take the next item. This replaces the `🔄` marker, and
+  no dashboard write is needed.
+- **Start**: Step 7 as written. `task_get` the item for its summary and
+  `detailsId`, which plays the part of the `[Details]` link. Record progress
+  with `task_log`, and finish with `task_complete`.
+
+Explain mode (Step 5) stops before the claim, as it does for the dashboard.
 
 ## Step 2: Resolve the Day
 

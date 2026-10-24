@@ -2,7 +2,7 @@
 name: wrapup
 description: End-of-session helper that lists today's open dashboard items across all clients and lets the user multi-select which to tick. Use when the user says "/obsidian:wrapup", "wrap up the session", or after running "/todo:wrapup".
 user-invocable: true
-allowed-tools: Read, Edit, Bash, AskUserQuestion
+allowed-tools: Read, Edit, Bash, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_complete
 ---
 
 # Session Wrapup: Tick Completed Tasks
@@ -12,6 +12,17 @@ Catch-all for completions that did not flow through `.tmp/TODO.md` (chat-only ac
 ## Step 1: Resolve Config
 
 Read `~/.claude/obsidian.json`, resolve vault and dashboard paths.
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For moved clients, take today's open items from the database instead of
+`Dashboard.md`: `task_search` per moved client with `scheduledTo` today (it
+includes overdue items). List them beside the dashboard items of clients that
+have not moved, in one multi-select. For each selected database item,
+`task_get` it for its `revision` and `task_complete` it with `by`. Guard and
+edit `Dashboard.md` only for dashboard items, as below.
 
 ## Step 2: Guard the Write
 

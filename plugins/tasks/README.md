@@ -34,11 +34,20 @@ is stored in this repository or in a shell profile.
    security add-generic-password -U -s tasks-mcp-token -a "$USER" -w
    ```
 
-2. Set the URL where Claude Code inherits it, for example `~/.zshenv`:
+2. Set the URL in Claude Code's own settings, `~/.claude/settings.json`, so
+   every session gets it, including the desktop app and Remote Control
+   sessions, which do not read shell profiles such as `~/.zshenv`:
 
-   ```bash
-   export TASKS_MCP_URL=http://<server's tailnet name>:7450/mcp
+   ```json
+   {
+     "env": {
+       "TASKS_MCP_URL": "http://<server's tailnet name>:7450/mcp"
+     }
+   }
    ```
+
+   Without it, the session reports `Missing environment variables:
+TASKS_MCP_URL` for `plugin:tasks:tasks`.
 
 3. Install the plugin and restart the session:
 

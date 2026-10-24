@@ -2,7 +2,7 @@
 name: pull
 description: Pull tomorrow's work forward when today is done. Finds the next task in the Tomorrow band for the active client, moves it into today, and starts it. Same selection rules and same argument contract as /planner:next. Use when the user says "/planner:pull", "I'm done for today, what else", or "pull something forward".
 argument-hint: [client-filter] [confirm|ask|dry-run] [--force]
-allowed-tools: Bash, Read, Edit, Skill, AskUserQuestion
+allowed-tools: Bash, Read, Edit, Skill, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_update, mcp__plugin_tasks_tasks__task_claim, mcp__plugin_tasks_tasks__task_log, mcp__plugin_tasks_tasks__task_complete
 user-invocable: true
 ---
 
@@ -27,6 +27,22 @@ Identical contract to `/planner:next` Step 1:
   overrides the working directory. No match stops the command; more than one
   match asks.
 - **`--force`** — pull even though today still has open items (Step 3).
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, Steps 3 to 6 use the database:
+
+- **Today is done** when `task_search` (`clientId`, `scheduledTo` today)
+  returns nothing open, apart from blocked items.
+- **Choose from tomorrow** with the same rules as `/planner:next`: unclaimed
+  items scheduled for the next working day, blocked skipped, admin first, then
+  the search order.
+- **Move it**: `task_update` with only `scheduledFor` today, then `task_claim`.
+  No dashboard write is needed.
+
+Steps 7 and 8 are unchanged.
 
 ## Step 2: Guard the Write
 

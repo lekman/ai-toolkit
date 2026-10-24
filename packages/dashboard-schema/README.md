@@ -11,6 +11,7 @@ fields.
 | [src/priority.ts](src/priority.ts)                                     | Priority, urgency and quadrant, computed on read |
 | [src/db/schema.ts](src/db/schema.ts)                                   | Drizzle tables for Postgres                      |
 | [migrations/](migrations/)                                             | Generated SQL, plus the append-only trigger      |
+| [docs/database.md](docs/database.md)                                   | Tables, relationships and normalisation          |
 | [deploy/compose.yaml](deploy/compose.yaml)                             | Postgres 17 for the Mac Mini                     |
 | [examples/](examples/)                                                 | Valid items, including one imported from Atlas   |
 
@@ -65,13 +66,20 @@ the priority with a one-line reason.
 Postgres, through Drizzle. The JSON Schema's cross-field rules are also check
 constraints, so a writer that skips validation still cannot store a broken
 item. `item_log` and `item_history` refuse UPDATE and DELETE through a
-trigger; deleting the item removes them with it.
+trigger; deleting the item removes them with it. An item's workstream must
+belong to the item's own client, through a composite foreign key. See
+[docs/database.md](docs/database.md) for the diagram and the reasoning.
 
 ```bash
 bun test                      # schema, priority, and the database through PGlite
 bunx drizzle-kit generate     # after changing src/db/schema.ts
 DATABASE_URL=postgres://... bun src/db/migrate.ts
 ```
+
+Read a generated migration before committing it. drizzle-kit can emit a
+foreign key before the unique constraint that the key references, which
+Postgres refuses; `0002_workstream_same_client.sql` had its two statements
+swapped by hand for that reason.
 
 ### Deploy on the Mac Mini
 

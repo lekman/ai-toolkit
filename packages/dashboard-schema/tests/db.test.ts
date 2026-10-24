@@ -135,6 +135,20 @@ describe("constraints", () => {
     ).rejects.toThrow();
   });
 
+  test("a workstream that belongs to another client is refused", async () => {
+    const item = example("blocked-integration.json");
+    await expect(
+      insertItem(db, { ...item, workstreamId: "estate-hygiene" }),
+    ).rejects.toThrow();
+  });
+
+  test("an item without a workstream needs no workstream check", async () => {
+    const item = { ...example("quick-win.json") };
+    delete item.workstreamId;
+    await insertItem(db, item);
+    expect((await getItem(db, item.id))?.workstreamId).toBeUndefined();
+  });
+
   test("an unknown client is refused", async () => {
     await expect(
       insertItem(db, { ...example("quick-win.json"), clientId: "nobody" }),

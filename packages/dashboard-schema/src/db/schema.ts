@@ -19,6 +19,7 @@ import {
   check,
   date,
   doublePrecision,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -26,6 +27,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -92,18 +94,25 @@ export const client = pgTable("client", {
   order: doublePrecision("order"),
 });
 
-/** Atlas Workstream: a grouping of items within a client. */
-export const workstream = pgTable("workstream", {
-  id: identifier("id").primaryKey(),
-  classification: classificationEnum("classification").notNull(),
-  boundary: identifier("boundary").notNull(),
-  clientId: identifier("client_id")
-    .notNull()
-    .references(() => client.id),
-  title: varchar("title", { length: 300 }).notNull(),
-  summary: varchar("summary", { length: 2000 }),
-  order: doublePrecision("order"),
-});
+/**
+ * Atlas Workstream: a grouping of items within a client. The unique pair
+ * (id, client_id) is the target of the item's composite foreign key.
+ */
+export const workstream = pgTable(
+  "workstream",
+  {
+    id: identifier("id").primaryKey(),
+    classification: classificationEnum("classification").notNull(),
+    boundary: identifier("boundary").notNull(),
+    clientId: identifier("client_id")
+      .notNull()
+      .references(() => client.id),
+    title: varchar("title", { length: 300 }).notNull(),
+    summary: varchar("summary", { length: 2000 }),
+    order: doublePrecision("order"),
+  },
+  (t) => [unique("workstream_id_client_id_key").on(t.id, t.clientId)],
+);
 
 export const dashboardItem = pgTable(
   "dashboard_item",
@@ -115,7 +124,7 @@ export const dashboardItem = pgTable(
       .notNull()
       .references(() => client.id),
     requirementId: identifier("requirement_id"),
-    workstreamId: identifier("workstream_id").references(() => workstream.id),
+    workstreamId: identifier("workstream_id"),
     title: varchar("title", { length: 300 }).notNull(),
     summary: varchar("summary", { length: 2000 }),
     state: stateEnum("state").notNull().default("todo"),
@@ -151,6 +160,13 @@ export const dashboardItem = pgTable(
     index("dashboard_item_client_day_idx").on(t.clientId, t.scheduledFor),
     index("dashboard_item_state_idx").on(t.state),
     index("dashboard_item_due_idx").on(t.due),
+    // An item's workstream must belong to the item's own client. With the
+    // default MATCH SIMPLE, an item without a workstream is not checked.
+    foreignKey({
+      name: "dashboard_item_workstream_same_client_fk",
+      columns: [t.workstreamId, t.clientId],
+      foreignColumns: [workstream.id, workstream.clientId],
+    }),
     check("dashboard_item_id_format", sql`${t.id} ~ '^[a-z0-9][a-z0-9-]*$'`),
     check(
       "dashboard_item_blocked_details",

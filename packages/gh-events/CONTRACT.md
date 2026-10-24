@@ -33,7 +33,9 @@ is stored. Every value is one of these:
 - an ISO 8601 UTC timestamp
 - a repo name `owner/name` that matched `^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$`
   and the configured allow-list
-- an account login or a client id from the operator's own config
+- an account login or a client id from the operator's own config. A
+  client id set for a single repo wins over the one set for its owner, so
+  one owner's repos can belong to different clients
 
 A consumer should still validate every line against its own schema, as a
 second guard.
@@ -132,21 +134,21 @@ consumer sees them as possibly stale, not as closed.
 
 ### items[]
 
-| Field       | Type              | PR                                                                | Issue                                       |
-| ----------- | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
-| `kind`      | `"pr"`, `"issue"` | `"pr"`                                                            | `"issue"`                                   |
-| `repo`      | string            | `owner/name`                                                      | same                                        |
-| `number`    | integer           | PR number                                                         | issue number                                |
-| `url`       | string            | `https://github.com/{repo}/pull/{number}`                         | `https://github.com/{repo}/issues/{number}` |
-| `account`   | string            | Login of the account that sees it                                 | same                                        |
-| `client`    | string or null    | Client id configured for the repo's owner; null when none is set  | same                                        |
-| `state`     | enum              | `OPEN`, `DRAFT`                                                   | `OPEN`                                      |
-| `review`    | enum or null      | `APPROVED`, `CHANGES_REQUESTED`, `REVIEW_REQUIRED`, or null       | null                                        |
-| `ci`        | enum or null      | `SUCCESS`, `FAILURE`, `ERROR`, `PENDING`, `EXPECTED`, or null     | null                                        |
-| `mergeable` | enum or null      | `MERGEABLE`, `CONFLICTING`, `UNKNOWN`                             | null                                        |
-| `sha`       | string or null    | Head commit SHA                                                   | null                                        |
-| `closes`    | integer[]         | Issue numbers in the same repo this PR closes, sorted, at most 50 | `[]`                                        |
-| `since`     | string            | When gh-events first saw the item                                 | same                                        |
+| Field       | Type              | PR                                                                              | Issue                                       |
+| ----------- | ----------------- | ------------------------------------------------------------------------------- | ------------------------------------------- |
+| `kind`      | `"pr"`, `"issue"` | `"pr"`                                                                          | `"issue"`                                   |
+| `repo`      | string            | `owner/name`                                                                    | same                                        |
+| `number`    | integer           | PR number                                                                       | issue number                                |
+| `url`       | string            | `https://github.com/{repo}/pull/{number}`                                       | `https://github.com/{repo}/issues/{number}` |
+| `account`   | string            | Login of the account that sees it                                               | same                                        |
+| `client`    | string or null    | Client id configured for the repo, else for its owner; null when neither is set | same                                        |
+| `state`     | enum              | `OPEN`, `DRAFT`                                                                 | `OPEN`                                      |
+| `review`    | enum or null      | `APPROVED`, `CHANGES_REQUESTED`, `REVIEW_REQUIRED`, or null                     | null                                        |
+| `ci`        | enum or null      | `SUCCESS`, `FAILURE`, `ERROR`, `PENDING`, `EXPECTED`, or null                   | null                                        |
+| `mergeable` | enum or null      | `MERGEABLE`, `CONFLICTING`, `UNKNOWN`                                           | null                                        |
+| `sha`       | string or null    | Head commit SHA                                                                 | null                                        |
+| `closes`    | integer[]         | Issue numbers in the same repo this PR closes, sorted, at most 50               | `[]`                                        |
+| `since`     | string            | When gh-events first saw the item                                               | same                                        |
 
 The `url` is built from `repo` and `number`, never copied from GitHub, so a
 consumer can match it against its own tracker links in the same form.

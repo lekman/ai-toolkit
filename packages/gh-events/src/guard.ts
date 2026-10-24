@@ -100,6 +100,20 @@ export function ownerOf(
 }
 
 /**
+ * The client id for a repo: its entry in the owner's `repos`, else the
+ * owner's `client`, else null.
+ */
+export function clientFor(
+  repo: string,
+  owners: readonly Owner[],
+): null | string {
+  const owner = ownerOf(repo, owners);
+  const name = REPO.exec(repo)?.[2]?.toLowerCase();
+  if (!owner || !name) return null;
+  return name in owner.repos ? (owner.repos[name] ?? null) : owner.client;
+}
+
+/**
  * True when the repo's owner is configured and the repo name passes that
  * owner's include list and none of its exclude patterns.
  */

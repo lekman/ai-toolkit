@@ -11,6 +11,7 @@ export const owners: Owner[] = [
     include: ["*"],
     kind: "org",
     name: "acme",
+    repos: { "special-api": "special" },
   },
   {
     client: null,
@@ -18,6 +19,7 @@ export const owners: Owner[] = [
     include: ["api", "web-*"],
     kind: "user",
     name: "globex",
+    repos: {},
   },
 ];
 

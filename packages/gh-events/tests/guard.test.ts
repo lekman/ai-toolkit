@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { itemUrl, parseItem, watched } from "../src/guard";
+import { clientFor, itemUrl, parseItem, watched } from "../src/guard";
 import { owners, rawIssue, rawPr, SHA_A } from "./fixtures";
 
 describe("parseItem: pull requests", () => {
@@ -147,6 +147,7 @@ describe("watched", () => {
         include: ["a.b"],
         kind: "org" as const,
         name: "acme",
+        repos: {},
       },
     ];
     expect(watched("acme/a.b", literal)).toBe(true);
@@ -161,4 +162,19 @@ test("itemUrl uses the fixed forms", () => {
   expect(itemUrl({ kind: "issue", number: 7, repo: "acme/api" })).toBe(
     "https://github.com/acme/api/issues/7",
   );
+});
+
+describe("clientFor", () => {
+  test("a repo entry wins over the owner default, case-insensitively", () => {
+    expect(clientFor("acme/api", owners)).toBe("acme");
+    expect(clientFor("acme/Special-API", owners)).toBe("special");
+    expect(clientFor("globex/api", owners)).toBeNull();
+    expect(clientFor("initech/api", owners)).toBeNull();
+  });
+
+  test("a repo entry of null holds that repo as unknown", () => {
+    const held = [{ ...owners[0]!, repos: { api: null } }];
+    expect(clientFor("acme/api", held)).toBeNull();
+    expect(clientFor("acme/web", held)).toBe("acme");
+  });
 });

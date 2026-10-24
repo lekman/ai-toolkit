@@ -152,6 +152,7 @@ describe("registry.json", () => {
         pr({ closes: [7], state: "DRAFT" }),
         issue(),
         pr({ id: "PR_3", number: 3, repo: "globex/api" }),
+        issue({ id: "I_2", number: 2, repo: "acme/special-api" }),
       ]),
       f,
       now,
@@ -172,6 +173,13 @@ describe("registry.json", () => {
     ).toEqual([
       ["acme/api", 7, "issue", "acme", "https://github.com/acme/api/issues/7"],
       ["acme/api", 12, "pr", "acme", "https://github.com/acme/api/pull/12"],
+      [
+        "acme/special-api",
+        2,
+        "issue",
+        "special",
+        "https://github.com/acme/special-api/issues/2",
+      ],
       ["globex/api", 3, "pr", null, "https://github.com/globex/api/pull/3"],
     ]);
     expect(reg.items[1]).toEqual(

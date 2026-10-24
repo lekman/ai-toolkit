@@ -89,7 +89,8 @@ Create `~/.config/gh-events/config.json` (mode 0600, never committed):
           "name": "me",
           "kind": "user",
           "client": "home",
-          "include": ["api", "web-*"]
+          "include": ["api", "web-*"],
+          "repos": { "web-shop": "initech" }
         }
       ]
     },
@@ -105,6 +106,9 @@ Create `~/.config/gh-events/config.json` (mode 0600, never committed):
 - `client` is the consumer's id for the client this owner's repos belong to.
   It is copied to every item and event, so the consumer never guesses a client
   from an org name. It defaults to null.
+- `repos` maps a repo name under this owner to a client id, for a repo that
+  belongs to a different client than the owner. It wins over `client`. Set a
+  repo to null to hold it as unknown.
 - `include` and `exclude` are repo name patterns, and `*` is the only
   wildcard. `include` defaults to `["*"]`.
 - An enterprise managed account can only see its own enterprise, so it needs

@@ -11,7 +11,7 @@ import { dirname } from "node:path";
 import type { Account, Config } from "./config";
 
 import { diffGone, diffOpen, type GhEvent, toEvent } from "./diff";
-import { type Item, itemUrl, ownerOf } from "./guard";
+import { clientFor, type Item, itemUrl } from "./guard";
 
 /** What the poller remembers about one account between runs. */
 export interface AccountState {
@@ -82,7 +82,7 @@ export interface AccountReport {
 const SEEN_LIMIT = 5000;
 
 const clientOf = (account: Account, repo: string): null | string =>
-  ownerOf(repo, account.owners)?.client ?? null;
+  clientFor(repo, account.owners);
 
 /**
  * Polls one account. Until an account has one successful poll, the poll

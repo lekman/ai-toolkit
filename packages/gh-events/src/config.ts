@@ -13,6 +13,8 @@ export interface Owner {
   /** `org` or `user`; picks the search qualifier. */
   kind: "org" | "user";
   name: string;
+  /** Client ids for single repos, by lowercase repo name. Wins over `client`. */
+  repos: Record<string, null | string>;
 }
 
 /** One GitHub account, read through its own `gh` token. */
@@ -33,6 +35,7 @@ const LOGIN = /^[A-Za-z0-9_-]{1,64}$/;
 const OWNER = /^[A-Za-z0-9-]{1,39}$/;
 const GLOB = /^[A-Za-z0-9._*-]{1,100}$/;
 const CLIENT = /^[A-Za-z0-9._-]{1,64}$/;
+const REPO_NAME = /^[A-Za-z0-9._-]{1,100}$/;
 
 const configHome = (): string =>
   process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
@@ -50,6 +53,26 @@ export const paths = {
 
 function fail(message: string): never {
   throw new Error(`config: ${message}`);
+}
+
+const clientId = (value: unknown, field: string): null | string =>
+  value === null || (typeof value === "string" && CLIENT.test(value))
+    ? value
+    : fail(`${field} is invalid`);
+
+function repoClients(
+  value: unknown,
+  field: string,
+): Record<string, null | string> {
+  if (value === undefined) return {};
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    fail(`${field} must be an object`);
+  const repos: Record<string, null | string> = {};
+  for (const [name, client] of Object.entries(value)) {
+    if (!REPO_NAME.test(name)) fail(`${field} has an invalid repo name`);
+    repos[name.toLowerCase()] = clientId(client, `${field}.${name}`);
+  }
+  return repos;
 }
 
 function globs(value: unknown, field: string, fallback: string[]): string[] {
@@ -92,6 +115,7 @@ export function parseConfig(raw: unknown): Config {
             include?: unknown;
             kind?: unknown;
             name?: unknown;
+            repos?: unknown;
           },
           j,
         ) => {
@@ -101,18 +125,13 @@ export function parseConfig(raw: unknown): Config {
           const kind = o.kind ?? "org";
           if (kind !== "org" && kind !== "user")
             fail(`${at}.kind must be org or user`);
-          const client = o.client ?? null;
-          if (
-            client !== null &&
-            (typeof client !== "string" || !CLIENT.test(client))
-          )
-            fail(`${at}.client is invalid`);
           return {
-            client,
+            client: clientId(o.client ?? null, `${at}.client`),
             exclude: globs(o.exclude, `${at}.exclude`, []),
             include: globs(o.include, `${at}.include`, ["*"]),
             kind,
             name: o.name,
+            repos: repoClients(o.repos, `${at}.repos`),
           } satisfies Owner;
         },
       );

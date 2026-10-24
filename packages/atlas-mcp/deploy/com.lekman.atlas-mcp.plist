@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd agent for atlas-server on the machine that runs dashboard-db.
+  Copy to ~/Library/LaunchAgents/, replace the three paths, then:
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.lekman.atlas-mcp.plist
+  The env file holds DASHBOARD_DB_PASSWORD and ATLAS_MCP_TOKEN (mode 600), so
+  no secret is written into this file.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.lekman.atlas-mcp</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/ABSOLUTE/PATH/TO/bun</string>
+    <string>--env-file=/ABSOLUTE/PATH/TO/packages/dashboard-schema/deploy/.env</string>
+    <string>/ABSOLUTE/PATH/TO/packages/atlas-mcp/src/bin/atlas-server.ts</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardErrorPath</key>
+  <string>/tmp/atlas-mcp.log</string>
+  <key>StandardOutPath</key>
+  <string>/tmp/atlas-mcp.log</string>
+</dict>
+</plist>

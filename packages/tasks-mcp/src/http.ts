@@ -22,6 +22,47 @@ export interface ServeOptions {
   port: number;
   /** Every request to /mcp must carry `Authorization: Bearer <token>`. */
   token: string;
+  /**
+   * Further tokens, each limited to some clients, for machines that must not
+   * see every client. Only the SHA-256 of each token is held here.
+   */
+  scopedTokens?: readonly ScopedToken[];
+}
+
+/** A token that reads and writes only the named clients. */
+export interface ScopedToken {
+  /** Who holds it, for logs, for example `acme-laptop`. */
+  name: string;
+  /** The SHA-256 of the token, as 64 hex characters. */
+  sha256: string;
+  /** The client ids it may read and write. */
+  clients: readonly string[];
+}
+
+/** Parse and check the scoped-token file's JSON: an array of ScopedToken. */
+export function parseScopedTokens(json: string): ScopedToken[] {
+  const value: unknown = JSON.parse(json);
+  if (!Array.isArray(value))
+    throw new Error("scoped tokens: expected a JSON array");
+  return value.map((entry: unknown, i) => {
+    const e = entry as Partial<ScopedToken>;
+    const ok =
+      typeof e.name === "string" &&
+      e.name.length > 0 &&
+      typeof e.sha256 === "string" &&
+      /^[0-9a-f]{64}$/.test(e.sha256) &&
+      Array.isArray(e.clients) &&
+      e.clients.length > 0 &&
+      e.clients.every(
+        (c) => typeof c === "string" && /^[a-z0-9][a-z0-9-]*$/.test(c),
+      );
+    if (!ok) {
+      throw new Error(
+        `scoped tokens: entry ${i} needs a name, a 64-hex sha256 and at least one client id`,
+      );
+    }
+    return { name: e.name!, sha256: e.sha256!, clients: [...e.clients!] };
+  });
 }
 
 const MIN_TOKEN_LENGTH = 32;
@@ -45,6 +86,10 @@ export async function serve(
     );
   }
   const expected = digest(options.token);
+  const scoped = (options.scopedTokens ?? []).map((t) => ({
+    clients: t.clients,
+    digest: Buffer.from(t.sha256, "hex"),
+  }));
 
   const http = createServer((req, res) => {
     void (async () => {
@@ -57,14 +102,18 @@ export async function serve(
         res.writeHead(404).end();
         return;
       }
-      if (!authorised(req, expected)) {
+      const access = authorise(req, expected, scoped);
+      if (!access) {
         res
           .writeHead(401, { "www-authenticate": "Bearer" })
           .end("missing or wrong bearer token");
         return;
       }
       const server = new McpServer({ name: "tasks", version: "0.1.0" });
-      registerTaskTools(server, ctx);
+      registerTaskTools(
+        server,
+        access === "all" ? ctx : { ...ctx, scope: access },
+      );
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
       });
@@ -99,10 +148,23 @@ function digest(value: string): Buffer {
   return createHash("sha256").update(value).digest();
 }
 
-function authorised(req: IncomingMessage, expected: Buffer): boolean {
+/** "all" for the main token, the clients of a scoped token, or null. */
+function authorise(
+  req: IncomingMessage,
+  expected: Buffer,
+  scoped: { clients: readonly string[]; digest: Buffer }[],
+): "all" | readonly string[] | null {
   const header = req.headers.authorization ?? "";
   const match = /^Bearer (.+)$/.exec(header);
-  return match ? timingSafeEqual(digest(match[1]!), expected) : false;
+  if (!match) return null;
+  const presented = digest(match[1]!);
+  if (timingSafeEqual(presented, expected)) return "all";
+  // Check every entry, so the time taken does not say which one matched.
+  let found: readonly string[] | null = null;
+  for (const t of scoped) {
+    if (timingSafeEqual(presented, t.digest) && !found) found = t.clients;
+  }
+  return found;
 }
 
 async function readJson(req: IncomingMessage): Promise<unknown> {

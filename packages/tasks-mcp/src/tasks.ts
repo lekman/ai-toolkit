@@ -46,6 +46,22 @@ export interface Context {
   now: () => Date;
   /** The time zone that decides what "today" is, for example Europe/London. */
   timeZone: string;
+  /**
+   * The clients this caller may read and write. Absent means every client.
+   * An item outside the scope behaves as if it did not exist.
+   */
+  scope?: readonly string[];
+}
+
+function inScope(ctx: Context, clientId: string): boolean {
+  return !ctx.scope || ctx.scope.includes(clientId);
+}
+
+/** The item, or ItemNotFound when it does not exist or is outside the scope. */
+async function visible(ctx: Context, id: string): Promise<DashboardItem> {
+  const item = await getItem(ctx.db, id);
+  if (!item || !inScope(ctx, item.clientId)) throw new ItemNotFound(id);
+  return item;
 }
 
 /** The open states, used when a search names none. */
@@ -200,8 +216,12 @@ export async function search(
   input: SearchInput,
 ): Promise<{ today: string; count: number; items: ItemSummary[] }> {
   const day = today(ctx);
+  if (input.clientId && !inScope(ctx, input.clientId)) {
+    return { today: day, count: 0, items: [] };
+  }
   const found = await searchItems(ctx.db, {
     clientId: input.clientId,
+    clientIds: ctx.scope ? [...ctx.scope] : undefined,
     states: input.states?.length ? input.states : [...OPEN_STATES],
     text: input.text,
     workstreamId: input.workstreamId,
@@ -227,8 +247,7 @@ export async function read(
   ctx: Context,
   id: string,
 ): Promise<DashboardItem & { assessment: Assessment }> {
-  const item = await getItem(ctx.db, id);
-  if (!item) throw new ItemNotFound(id);
+  const item = await visible(ctx, id);
   return { ...item, assessment: assess(item, today(ctx)) };
 }
 
@@ -244,6 +263,7 @@ export async function clients(ctx: Context): Promise<
   const rows = await ctx.db.select().from(tables.client);
   const streams = await ctx.db.select().from(tables.workstream);
   return rows
+    .filter((c) => inScope(ctx, c.id))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id))
     .map((c) => ({
       id: c.id,
@@ -272,7 +292,8 @@ export async function add(
     .select()
     .from(tables.client)
     .where(eq(tables.client.id, clientId));
-  if (!owner) throw new Error(`no client ${clientId}`);
+  if (!owner || !inScope(ctx, clientId))
+    throw new Error(`no client ${clientId}`);
   const at = stamp(ctx);
   const item = apply(
     {
@@ -343,8 +364,7 @@ async function change(
   options: { note?: string; force?: boolean },
   mutate: (item: DashboardItem, day: string) => DashboardItem,
 ): Promise<number> {
-  const current = await getItem(ctx.db, id);
-  if (!current) throw new ItemNotFound(id);
+  const current = await visible(ctx, id);
   const who = actor(by);
   if (current.claim && actor(current.claim.by) !== who && !options.force) {
     throw new ClaimConflict(id, current.claim.by);
@@ -388,17 +408,23 @@ async function change(
 }
 
 /** Claim an item. Returns the new revision. */
-export function claim(ctx: Context, by: string, id: string): Promise<number> {
+export async function claim(
+  ctx: Context,
+  by: string,
+  id: string,
+): Promise<number> {
+  await visible(ctx, id);
   return claimItem(ctx.db, id, actor(by), stamp(ctx));
 }
 
 /** Release a claim; `force` releases another agent's. Returns the new revision. */
-export function release(
+export async function release(
   ctx: Context,
   by: string,
   id: string,
   force = false,
 ): Promise<number> {
+  await visible(ctx, id);
   return releaseItem(ctx.db, id, actor(by), stamp(ctx), force);
 }
 
@@ -410,7 +436,7 @@ export async function log(
   status: State | "blocked",
   note: string,
 ): Promise<void> {
-  if (!(await getItem(ctx.db, id))) throw new ItemNotFound(id);
+  await visible(ctx, id);
   await appendLog(ctx.db, id, { at: stamp(ctx), status, note, by: actor(by) });
 }
 

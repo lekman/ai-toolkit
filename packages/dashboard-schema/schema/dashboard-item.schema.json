@@ -193,7 +193,7 @@
       }
     },
     "claim": {
-      "description": "The session that has started this item, so another does not start it too.",
+      "description": "The agent that has started this item, so another does not start it too. claim.by is the Atlas Agent id (or a person); an agent's Atlas workingOn list is the items it claims, most recent claim first.",
       "type": "object",
       "additionalProperties": false,
       "required": ["by", "at"],

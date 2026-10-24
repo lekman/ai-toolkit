@@ -32,7 +32,10 @@ The additions:
 - **`blockedOn`**: who or what a blocked item waits for, and since when.
 - **`log`**: progress notes, each a time, a short status and a note of at most
   160 characters. Append only.
-- **`claim`**, **`rank`**, **`kind`**, **`tags`**, and a `dropped` state.
+- **`claim`**: which agent has started the item. `claim.by` is the Atlas Agent
+  id, so an agent's Atlas `workingOn` list is the items it claims, most recent
+  claim first.
+- **`rank`**, **`kind`**, **`tags`**, and a `dropped` state.
 - **`revision`**: every write names the revision it read, and is refused when
   someone else wrote first. The Obsidian file has no such guard; the last
   writer wins.

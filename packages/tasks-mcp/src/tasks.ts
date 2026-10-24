@@ -60,9 +60,12 @@ export interface ItemSummary {
   workstreamId?: string;
   scheduledFor?: string;
   due?: string;
+  doneOn?: string;
+  kind?: "work" | "admin";
   blocked?: boolean;
   claimedBy?: string;
   trackerKey?: string;
+  trackerUrl?: string;
   revision: number;
   priority: Priority;
   urgency: Assessment["urgency"];
@@ -144,9 +147,12 @@ function summarise(item: DashboardItem, day: string): ItemSummary {
     workstreamId: item.workstreamId,
     scheduledFor: item.scheduledFor,
     due: item.due,
+    doneOn: item.doneOn,
+    kind: item.kind,
     blocked: item.blocked,
     claimedBy: item.claim?.by,
     trackerKey: item.tracker?.key,
+    trackerUrl: item.tracker?.url,
     revision: item.revision,
     priority: a.priority,
     urgency: a.urgency,

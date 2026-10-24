@@ -92,6 +92,15 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/gh-events": {
+      "name": "@lekman/gh-events",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "@types/node": "^26.2.0",
+        "typescript": "^5.7.0",
+      },
+    },
     "packages/obsidian-kanban": {
       "name": "obsidian-kanban",
       "version": "0.5.1",
@@ -370,6 +379,8 @@
     "@lekman/claude-local": ["@lekman/claude-local@workspace:packages/claude-local"],
 
     "@lekman/dashboard-schema": ["@lekman/dashboard-schema@workspace:packages/dashboard-schema"],
+
+    "@lekman/gh-events": ["@lekman/gh-events@workspace:packages/gh-events"],
 
     "@lekman/rag-core": ["@lekman/rag-core@workspace:packages/rag/core"],
 

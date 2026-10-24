@@ -9,9 +9,21 @@
 
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
-import { and, asc, eq, sql } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  asc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 
-import type { DashboardItem, HistoryEntry, LogEntry } from "../types.ts";
+import type { DashboardItem, HistoryEntry, LogEntry, State } from "../types.ts";
 
 import * as schema from "./schema.ts";
 
@@ -195,6 +207,172 @@ export async function getItem(
     .where(eq(schema.itemHistory.itemId, id))
     .orderBy(asc(schema.itemHistory.on), asc(schema.itemHistory.id));
   return fromRows(row, log, history);
+}
+
+/** Filters for searchItems. Every field is optional; together they narrow with AND. */
+export interface ItemFilter {
+  clientId?: string;
+  states?: State[];
+  workstreamId?: string;
+  /** Claimed by this agent. `null` means not claimed by anyone. */
+  claimedBy?: string | null;
+  blocked?: boolean;
+  /** Case-insensitive match in the title or summary. */
+  text?: string;
+  /** Has this tag. */
+  tag?: string;
+  /** The tracker key, for example `#250` or `ADX-12`. */
+  trackerKey?: string;
+  scheduledFrom?: string;
+  scheduledTo?: string;
+  /** Due on or before this day. */
+  dueBy?: string;
+  limit?: number;
+}
+
+/**
+ * Items matching a filter, without their log and history. Rows come back in
+ * no particular order: sort with compareItems, which computes priority.
+ */
+export async function searchItems(
+  db: Db,
+  filter: ItemFilter,
+): Promise<DashboardItem[]> {
+  const t = schema.dashboardItem;
+  const where = [
+    filter.clientId ? eq(t.clientId, filter.clientId) : undefined,
+    filter.states?.length ? inArray(t.state, filter.states) : undefined,
+    filter.workstreamId ? eq(t.workstreamId, filter.workstreamId) : undefined,
+    filter.claimedBy === null ? isNull(t.claimBy) : undefined,
+    filter.claimedBy ? eq(t.claimBy, filter.claimedBy) : undefined,
+    filter.blocked === true ? eq(t.blocked, true) : undefined,
+    filter.blocked === false
+      ? or(isNull(t.blocked), eq(t.blocked, false))
+      : undefined,
+    filter.text
+      ? or(
+          ilike(t.title, `%${likeEscape(filter.text)}%`),
+          ilike(t.summary, `%${likeEscape(filter.text)}%`),
+        )
+      : undefined,
+    filter.tag ? arrayContains(t.tags, [filter.tag]) : undefined,
+    filter.trackerKey
+      ? sql`${t.tracker} ->> 'key' = ${filter.trackerKey}`
+      : undefined,
+    filter.scheduledFrom
+      ? gte(t.scheduledFor, filter.scheduledFrom)
+      : undefined,
+    filter.scheduledTo ? lte(t.scheduledFor, filter.scheduledTo) : undefined,
+    filter.dueBy ? lte(t.due, filter.dueBy) : undefined,
+  ].filter((w) => w !== undefined);
+  const rows = await db
+    .select()
+    .from(t)
+    .where(and(...where))
+    .limit(filter.limit ?? 500);
+  return rows.map((row) => fromRows(row, [], []));
+}
+
+function likeEscape(text: string): string {
+  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/** Thrown when an item does not exist. */
+export class ItemNotFound extends Error {
+  constructor(readonly id: string) {
+    super(`no item ${id}`);
+  }
+}
+
+/** Thrown when an item is claimed by another agent. */
+export class ClaimConflict extends Error {
+  constructor(
+    readonly id: string,
+    readonly heldBy: string,
+  ) {
+    super(`item ${id} is claimed by ${heldBy}`);
+  }
+}
+
+/**
+ * Claim an item for an agent, in one statement, so two agents claiming at
+ * once cannot both win. Claiming an item the agent already holds succeeds.
+ * Returns the new revision.
+ */
+export async function claimItem(
+  db: Db,
+  id: string,
+  by: string,
+  at: string,
+): Promise<number> {
+  const t = schema.dashboardItem;
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(t)
+      .set({
+        claimBy: by,
+        claimAt: at,
+        revision: sql`${t.revision} + 1`,
+        updatedAt: sql`now()`,
+      })
+      .where(and(eq(t.id, id), or(isNull(t.claimBy), eq(t.claimBy, by))))
+      .returning({ revision: t.revision });
+    if (!updated[0]) throw await claimFailure(tx as unknown as Db, id);
+    await tx.insert(schema.itemHistory).values({
+      itemId: id,
+      kind: "claimed",
+      on: at.slice(0, 10),
+      at,
+      by,
+    });
+    return updated[0].revision;
+  });
+}
+
+/**
+ * Release an agent's claim. Releasing someone else's claim needs `force`,
+ * for an agent that has gone away. Returns the new revision.
+ */
+export async function releaseItem(
+  db: Db,
+  id: string,
+  by: string,
+  at: string,
+  force = false,
+): Promise<number> {
+  const t = schema.dashboardItem;
+  return db.transaction(async (tx) => {
+    const holder = force ? sql`TRUE` : eq(t.claimBy, by);
+    const updated = await tx
+      .update(t)
+      .set({
+        claimBy: null,
+        claimAt: null,
+        revision: sql`${t.revision} + 1`,
+        updatedAt: sql`now()`,
+      })
+      .where(and(eq(t.id, id), sql`${t.claimBy} IS NOT NULL`, holder))
+      .returning({ revision: t.revision });
+    if (!updated[0]) throw await claimFailure(tx as unknown as Db, id);
+    await tx.insert(schema.itemHistory).values({
+      itemId: id,
+      kind: "released",
+      on: at.slice(0, 10),
+      at,
+      by,
+    });
+    return updated[0].revision;
+  });
+}
+
+async function claimFailure(db: Db, id: string): Promise<Error> {
+  const [row] = await db
+    .select({ claimBy: schema.dashboardItem.claimBy })
+    .from(schema.dashboardItem)
+    .where(eq(schema.dashboardItem.id, id));
+  if (!row) return new ItemNotFound(id);
+  if (row.claimBy) return new ClaimConflict(id, row.claimBy);
+  return new Error(`item ${id} is not claimed`);
 }
 
 /** Every item for a client, without order: sort with compareItems, which computes priority. */

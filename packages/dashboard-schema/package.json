@@ -6,6 +6,9 @@
   "description": "JSON Schema for a dashboard work item, and the priority calculation that reads it: business value against effort, raised by urgency from the due date.",
   "exports": {
     ".": "./src/index.ts",
+    "./db": "./src/db/store.ts",
+    "./db/schema": "./src/db/schema.ts",
+    "./validate": "./src/validate.ts",
     "./schema": "./schema/dashboard-item.schema.json"
   },
   "scripts": {
@@ -18,12 +21,12 @@
     "@electric-sql/pglite": "^0.5.11",
     "@types/bun": "^1.3.14",
     "@types/node": "^26.2.0",
-    "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
     "drizzle-kit": "^0.31.11",
     "typescript": "^5.7.0"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "drizzle-orm": "^0.45.4",
     "postgres": "^3.4.9"
   }

@@ -11,10 +11,15 @@ import type { DashboardItem } from "../src/types.ts";
 import * as schema from "../src/db/schema.ts";
 import {
   appendLog,
+  ClaimConflict,
+  claimItem,
   getItem,
   insertItem,
+  ItemNotFound,
   listItems,
+  releaseItem,
   RevisionConflict,
+  searchItems,
   updateItem,
 } from "../src/db/store.ts";
 
@@ -185,5 +190,86 @@ describe("append only", () => {
       "SELECT (SELECT count(*) FROM item_log) + (SELECT count(*) FROM item_history) AS n",
     );
     expect(Number(rows[0]?.n)).toBe(0);
+  });
+});
+
+describe("search", () => {
+  beforeEach(async () => {
+    for (const name of [
+      "quick-win.json",
+      "low-value-urgent.json",
+      "blocked-integration.json",
+      "atlas-import.json",
+    ]) {
+      await insertItem(db, example(name));
+    }
+  });
+
+  test("filters combine with AND", async () => {
+    const all = await searchItems(db, {});
+    const globex = await searchItems(db, { clientId: "globex" });
+    const blocked = await searchItems(db, { blocked: true });
+    expect(all).toHaveLength(4);
+    expect(globex.length).toBeLessThan(all.length);
+    expect(blocked.every((i) => i.blocked === true)).toBe(true);
+    expect(
+      await searchItems(db, { clientId: "globex", blocked: true }),
+    ).toEqual(blocked.filter((i) => i.clientId === "globex"));
+  });
+
+  test("text matches title or summary, and LIKE wildcards are literal", async () => {
+    const [first] = await searchItems(db, {});
+    const word = first!.title.split(" ")[1]!;
+    expect(
+      (await searchItems(db, { text: word.toUpperCase() })).map((i) => i.id),
+    ).toContain(first!.id);
+    expect(await searchItems(db, { text: "%" })).toEqual([]);
+  });
+
+  test("search results carry no log or history", async () => {
+    const results = await searchItems(db, {});
+    expect(results.every((i) => !i.log && !i.history)).toBe(true);
+  });
+});
+
+describe("claims", () => {
+  const at = "2026-10-24T12:00:00Z";
+
+  test("one agent claims; a second is refused until it is released", async () => {
+    const item = example("quick-win.json");
+    await insertItem(db, item);
+    expect(await claimItem(db, item.id, "builder", at)).toBe(2);
+    expect(await claimItem(db, item.id, "builder", at)).toBe(3);
+    await expect(claimItem(db, item.id, "commander", at)).rejects.toEqual(
+      new ClaimConflict(item.id, "builder"),
+    );
+    await expect(releaseItem(db, item.id, "commander", at)).rejects.toEqual(
+      new ClaimConflict(item.id, "builder"),
+    );
+    await releaseItem(db, item.id, "builder", at);
+    await claimItem(db, item.id, "commander", at);
+    const read = await getItem(db, item.id);
+    expect(read?.claim?.by).toBe("commander");
+    expect(read?.history?.map((h) => h.kind)).toEqual([
+      ...(item.history ?? []).map((h) => h.kind),
+      "claimed",
+      "claimed",
+      "released",
+      "claimed",
+    ]);
+  });
+
+  test("force releases another agent's claim", async () => {
+    const item = example("quick-win.json");
+    await insertItem(db, item);
+    await claimItem(db, item.id, "builder", at);
+    await releaseItem(db, item.id, "commander", at, true);
+    expect((await getItem(db, item.id))?.claim).toBeUndefined();
+  });
+
+  test("claiming an item that does not exist says so", async () => {
+    await expect(claimItem(db, "nope", "builder", at)).rejects.toBeInstanceOf(
+      ItemNotFound,
+    );
   });
 });

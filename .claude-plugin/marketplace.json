@@ -97,6 +97,13 @@
         "subtitles",
         "elevenlabs"
       ]
+    },
+    {
+      "name": "tasks",
+      "source": "./plugins/tasks",
+      "description": "Task MCP for every agent: search, read, add, claim, update, log and complete dashboard items in the shared dashboard database, over the tailnet, with a skill on how agents use it",
+      "category": "productivity",
+      "tags": ["tasks", "dashboard", "mcp", "agents", "workflow"]
     }
   ]
 }

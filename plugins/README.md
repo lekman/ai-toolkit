@@ -16,6 +16,7 @@ path, or a spec.
 /plugin install commander@ai-toolkit
 /plugin install video@ai-toolkit
 /plugin install share@ai-toolkit
+/plugin install tasks@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -90,6 +91,13 @@ Then invoke a skill, for example `/git:commit`.
   [calendar package](../packages/calendar/README.md), Office 365 over OAuth:
   meetings, admin-calendar checklists, and todo-style self-events. See
   [planner/README.md](planner/README.md).
+- **tasks**, [work](tasks/skills/work/SKILL.md): the task MCP
+  server for every session, over the tailnet. Agents search a client's open
+  items in computed priority order, claim one before working on it, log
+  progress, update fields at the revision they read, and complete it, instead
+  of editing `Dashboard.md`. The server is
+  [packages/tasks-mcp](../packages/tasks-mcp). See
+  [tasks/README.md](tasks/README.md).
 - **share**, [site](share/skills/site/SKILL.md) /
   [files](share/skills/files/SKILL.md): put a local site such as Storybook on
   the tailnet with `tailscale serve`, so it stays off the LAN and the internet,

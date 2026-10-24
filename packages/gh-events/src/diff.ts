@@ -4,6 +4,7 @@ import type { Ci, Item } from "./guard";
 export type EventName =
   | "approved"
   | "ci_failed"
+  | "closed"
   | "conflict"
   | "issue_assigned"
   | "issue_closed"
@@ -72,12 +73,14 @@ export function diffOpen(
 }
 
 /**
- * Decides what an item that left the open search means. A merged PR and a
- * closed issue are events. A closed PR, an item that left scope while open,
- * and an item that can no longer be read are dropped without one.
+ * Decides what an item that left the open search means. A merged PR, a PR
+ * closed without merging and a closed issue are events. An item that left
+ * scope while open, and an item that can no longer be read, are dropped
+ * without one.
  */
 export function diffGone(lookup: Item | null): EventName[] {
   if (lookup?.kind === "pr" && lookup.state === "MERGED") return ["merged"];
+  if (lookup?.kind === "pr" && lookup.state === "CLOSED") return ["closed"];
   if (lookup?.kind === "issue" && lookup.state === "CLOSED")
     return ["issue_closed"];
   return [];

@@ -226,6 +226,7 @@ One JSON object per line, appended after each poll that found changes.
 | `ci_failed`      | pr    | `ci` became `FAILURE` or `ERROR` on a head commit. A new failing commit is a new event |
 | `conflict`       | pr    | `mergeable` became `CONFLICTING`                                                       |
 | `merged`         | pr    | The PR was merged                                                                      |
+| `closed`         | pr    | The PR was closed without merging                                                      |
 | `issue_assigned` | issue | The account became an assignee                                                         |
 | `issue_closed`   | issue | The issue was closed                                                                   |
 
@@ -239,7 +240,8 @@ current state, for example a new PR that already fails CI gives
 ### Keys
 
 `key` is `{repo}#{number}:{event}:{discriminator}`. The discriminator is
-the head SHA for PR events, `closedAt` for `issue_closed`, and `-` for
+the head SHA for PR events, `merged` and `closed` included, `closedAt` for
+`issue_closed`, and `-` for
 `issue_assigned`. gh-events never writes a key twice. A consumer
 de-duplicates by `key` too, so reading a line twice is harmless.
 
@@ -253,11 +255,18 @@ again gives no second event.
 - Each poll appends whole lines in one write. A reader processes up to the
   last newline and leaves a partial last line for the next read.
 - Keep a byte offset and the last `key` read.
-- **Rotation is by rename.** If gh-events rotates the log, it renames
-  `events.jsonl` and starts a new file at the same path. A reader that sees
-  a different inode at the path finishes the old file if it still has it
-  open, then reads the new file from offset 0, still de-duplicating by
-  `key`. gh-events does not rotate today.
+- **Rotation is by rename, to a predictable name.** If gh-events rotates the
+  log, it renames `events.jsonl` to `events.<UTC time>.jsonl` in the same
+  folder, with the time as `YYYYMMDDTHHMMSSZ` (for example
+  `events.20270101T000000Z.jsonl`), then starts a new `events.jsonl`. A
+  rotated file is never renamed again or written to.
+- **Finishing a rotated file.** Keep the inode of the file you read, next to
+  the byte offset. When the inode at `events.jsonl` differs from the stored
+  one, look for the stored inode among the `events.*.jsonl` files in the
+  folder. If found, read it from the stored offset to its end, then read the
+  new `events.jsonl` from offset 0. This works across a reader restart, and
+  `key` de-duplication covers any overlap.
+- gh-events does not rotate today.
 - A line without `v`, or with a `v` the reader does not know, is not part of
   this contract. Count it and skip it.
 

@@ -26,8 +26,10 @@ function launchAgent(): string {
   // breaks on the next upgrade.
   const shims = join(homedir(), ".local", "share", "mise", "shims");
   const ghDir = existsSync(join(shims, "gh")) ? shims : dirname(gh);
+  // The bun on PATH is an unversioned link; process.execPath resolves to the
+  // versioned install path, which a package-manager upgrade removes.
   return plist({
-    bun: process.execPath,
+    bun: Bun.which("bun") ?? process.execPath,
     cli: import.meta.path,
     interval: loadConfig().intervalSeconds,
     log: logPath,

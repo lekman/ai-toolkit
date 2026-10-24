@@ -71,12 +71,42 @@ shape_problems() {
   ' "$DASHBOARD"
 }
 
-problems=$(shape_problems)
+# A client whose group holds the line "Moved to the tasks database" has moved
+# to the task database: its items live there, and the tasks MCP tools change
+# them. A checkbox item under that client anywhere in ## Focus would never
+# reach the database and would duplicate one that is there. Calendar lines
+# (📅) stay allowed, because they are not tasks.
+MOVED_MARKER="Moved to the tasks database"
+moved_problems() {
+  awk -v marker="$MOVED_MARKER" '
+    function bare(line) { sub(/^(> ?)*/, "", line); return line }
+    FNR == 1 { focus = 0; client = "" }
+    /^## Focus[[:space:]]*$/ { focus = 1; next }
+    focus && /^## / { focus = 0 }
+    !focus { next }
+    { s = bare($0) }
+    s ~ /^#### / { client = s; sub(/^#### /, "", client); gsub(/\*/, "", client); sub(/[[:space:]]+$/, "", client); next }
+    s ~ /^#{2,3} / || s ~ /^\[!note\]- (Tomorrow|Future)/ { client = ""; next }
+    FNR == NR { if (client != "" && index(s, marker) == 1) moved[client] = 1; next }
+    client != "" && (client in moved) && s ~ /^[[:space:]]*- \[[ xX]\]/ && index(s, "📅") == 0 {
+      n++; names[client] = 1
+      if (n <= 3) list = list (list == "" ? "" : "; ") "line " FNR ": " substr(s, 1, 60)
+    }
+    END {
+      if (n > 0) {
+        for (c in names) who = who (who == "" ? "" : ", ") c
+        printf "%d items under clients that live in the task database (%s). Add or change them with the tasks tools (/tasks:work) and remove them here (%s%s)\n", n, who, list, (n > 3 ? "; and " (n - 3) " more" : "")
+      }
+    }
+  ' "$DASHBOARD" "$DASHBOARD"
+}
+
+problems=$(shape_problems; moved_problems)
 if [ -n "$problems" ]; then
   if [ "$MODE" = "--repair" ]; then
     echo "Repairing a misshapen dashboard:" >&2
   else
-    echo "Dashboard.md is not in the three-band shape. Nothing may be written until it is repaired:" >&2
+    echo "Dashboard.md needs repair before anything may be written:" >&2
   fi
   echo "$problems" | sed 's/^/  - /' >&2
   [ "$MODE" = "--repair" ] || {

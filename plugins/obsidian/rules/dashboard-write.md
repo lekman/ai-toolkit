@@ -33,6 +33,9 @@ Run [`scripts/dashboard-guard.sh`](../scripts/dashboard-guard.sh). It:
   unprefixed line below the first band header. Skills find today as the
   unprefixed heading with today's date, so a stray copy of that heading takes
   the writes meant for today;
+- **refuses** when a checkbox item sits under a client that has [moved to the
+  task database](dashboard-structure.md#clients-in-the-task-database). That
+  client's items are changed with the tasks tools, not here;
 - **copies** the current file to
   `~/.claude/dashboard-snapshots/Dashboard-<timestamp>.md`, outside the vault
   so the snapshot is neither synced nor able to become a conflict copy itself;

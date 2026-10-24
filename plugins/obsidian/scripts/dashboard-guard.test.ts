@@ -118,3 +118,41 @@ test("--repair snapshots a misshapen dashboard with a warning", () => {
 test("an unknown flag is refused", () => {
   expect(run(SOUND, ["--force"]).code).toBe(2);
 });
+
+// 24 Oct: clients moved to the task database keep only a pointer line.
+const MOVED = SOUND.replace(
+  "#### **Acme**\n\n- [ ] Today",
+  "#### **Globex**\n\n- [ ] Today",
+).replace(
+  "> ### Thursday 15 October\n",
+  "> ### Thursday 15 October\n>\n> #### **Acme**\n>\n> Moved to the tasks database on 24 Oct 2026 (3 items).\n",
+);
+const withAcmeToday = (line: string) =>
+  MOVED.replace("- [ ] Today\n", `- [ ] Today\n\n#### **Acme**\n\n${line}\n`);
+
+test("a moved client's pointer line alone is sound", () => {
+  const r = run(MOVED);
+  expect(r.code).toBe(0);
+  expect(r.snapshots).toHaveLength(1);
+});
+
+test("refuses an item under a moved client on another day, and takes no snapshot", () => {
+  const refused = run(withAcmeToday("- [ ] Added the old way"));
+  expect(refused.code).toBe(1);
+  expect(refused.err).toContain("live in the task database (Acme)");
+  expect(refused.err).toContain("/tasks:work");
+  expect(refused.snapshots).toHaveLength(0);
+  expect(run(withAcmeToday("- [ ] Added the old way"), ["--check"]).code).toBe(
+    1,
+  );
+});
+
+test("a calendar line under a moved client is allowed", () => {
+  expect(run(withAcmeToday("- [ ] 📅 09:15–09:45 Stand-up")).code).toBe(0);
+});
+
+test("items under clients that have not moved are untouched by the rule", () => {
+  expect(
+    run(MOVED.replace("- [ ] Today", "- [ ] Today\n- [ ] Another")).code,
+  ).toBe(0);
+});

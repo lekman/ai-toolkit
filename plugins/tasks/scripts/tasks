@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""tasks: the task database from the command line, for sessions without the tasks MCP tools.
+
+Calls the same tasks MCP server as the plugin, so every write goes through the
+same validation, claims and history. Runs with the macOS system Python and
+the standard library only.
+
+    tasks [--by NAME] [--json] <command> ...
+
+Install once per machine with `python3 <this file> install`. That writes a
+small launcher to ~/.local/bin/tasks, which runs the newest installed copy of
+this script, so sessions that are already running can use it and plugin
+updates keep it current.
+
+The server address comes from TASKS_MCP_URL, or the env block of
+~/.claude/settings.json. The token comes from TASKS_MCP_TOKEN, or the login
+Keychain (service tasks-mcp-token). The token is never printed and never put
+on a command line. Writes are recorded under --by, or TASKS_BY.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from datetime import date, timedelta
+from pathlib import Path
+
+KEYCHAIN_SERVICE = "tasks-mcp-token"
+LAUNCHER = Path.home() / ".local" / "bin" / "tasks"
+# The launcher finds the newest installed copy of the plugin, so an update
+# needs no reinstall. A copy outside the plugin cache (a repo checkout) is
+# used only when no installed copy exists.
+LAUNCHER_TEXT = """#!/bin/sh
+# Written by `tasks install` (lekman/ai-toolkit plugins/tasks). Runs the newest installed tasks script.
+for d in $(ls -d "$HOME"/.claude/plugins/cache/*/tasks/*/ 2>/dev/null | sort -t/ -k8 -V -r); do
+  if [ -f "${d}scripts/tasks" ]; then exec /usr/bin/env python3 "${d}scripts/tasks" "$@"; fi
+done
+exec /usr/bin/env python3 "{fallback}" "$@"
+"""
+EXIT_REFUSED, EXIT_USAGE, EXIT_CONFIG, EXIT_UNREACHABLE = 1, 2, 3, 4
+
+
+class Failure(Exception):
+    """An error to report as one line, with the exit code to use."""
+
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+def server_url() -> str:
+    url = os.environ.get("TASKS_MCP_URL", "")
+    if not url:
+        settings = Path.home() / ".claude" / "settings.json"
+        try:
+            url = json.loads(settings.read_text(encoding="utf-8")).get("env", {}).get("TASKS_MCP_URL", "")
+        except (OSError, ValueError):
+            url = ""
+    if not url.startswith(("http://", "https://")):
+        raise Failure("no tasks server: set TASKS_MCP_URL, or add it to the env block of ~/.claude/settings.json", EXIT_CONFIG)
+    return url
+
+
+def token() -> str:
+    value = os.environ.get("TASKS_MCP_TOKEN", "")
+    if value:
+        return value
+    try:
+        out = subprocess.run(["/usr/bin/security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+                             capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        out = None
+    value = out.stdout.strip() if out and out.returncode == 0 else ""
+    if not value:
+        raise Failure(f"no token: set TASKS_MCP_TOKEN, or add it to the login Keychain as {KEYCHAIN_SERVICE}", EXIT_CONFIG)
+    return value
+
+
+def call(tool: str, arguments: dict):
+    """One tools/call; returns the tool's JSON answer, or raises Failure."""
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                       "params": {"name": tool, "arguments": arguments}}).encode("utf-8")
+    req = urllib.request.Request(server_url(), data=body, method="POST", headers={
+        "Authorization": f"Bearer {token()}", "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            raw = response.read().decode("utf-8")
+    except urllib.error.HTTPError as ex:
+        if ex.code == 401:
+            raise Failure("the tasks server refused the token (401)", EXIT_CONFIG) from None
+        raise Failure(f"the tasks server answered HTTP {ex.code}", EXIT_UNREACHABLE) from None
+    except (urllib.error.URLError, TimeoutError, OSError):
+        raise Failure("the tasks server didn't answer: is this machine on the tailnet, and the Mac mini awake?",
+                      EXIT_UNREACHABLE) from None
+    lines = [line[5:].strip() for line in raw.splitlines() if line.startswith("data:")]
+    try:
+        message = json.loads(lines[-1] if lines else raw)
+    except ValueError:
+        raise Failure("the tasks server's answer wasn't JSON", EXIT_UNREACHABLE) from None
+    if "error" in message:
+        raise Failure(str((message["error"] or {}).get("message") or "the server returned an error"), EXIT_REFUSED)
+    result = message.get("result") or {}
+    text = ((result.get("content") or [{}])[0] or {}).get("text") or ""
+    if result.get("isError"):
+        raise Failure(text or f"{tool} was refused", EXIT_REFUSED)
+    try:
+        return json.loads(text)
+    except ValueError:
+        return text
+
+
+def by(args) -> str:
+    name = args.by or os.environ.get("TASKS_BY", "")
+    if not name.strip():
+        raise Failure("writes need a name: pass --by <your session name>, or set TASKS_BY", EXIT_USAGE)
+    return name
+
+
+def day(value: str | None) -> str | None:
+    """YYYY-MM-DD, or today, tomorrow (the next working day) or backlog (None)."""
+    if value is None or value == "backlog":
+        return None
+    today = date.today()
+    if value == "today":
+        return today.isoformat()
+    if value == "tomorrow":
+        d = today + timedelta(days=1)
+        while d.weekday() >= 5:
+            d += timedelta(days=1)
+        return d.isoformat()
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError:
+        raise Failure(f"not a day: {value} (use YYYY-MM-DD, today, tomorrow or backlog)", EXIT_USAGE) from None
+
+
+def revision(item_id: str) -> int:
+    return call("task_get", {"id": item_id})["revision"]
+
+
+def line(item: dict) -> str:
+    """One item as one readable line."""
+    marks = [item.get("priority", ""), item.get("state", "")]
+    if item.get("blocked"):
+        marks.append("blocked")
+    if item.get("claimedBy"):
+        marks.append(f"claimed by {item['claimedBy']}")
+    when = item.get("scheduledFor") or "backlog"
+    key = f" {item['trackerKey']}" if item.get("trackerKey") else ""
+    return f"{item['id']}  [{', '.join(m for m in marks if m)}] {when}{key}  {item['title']}"
+
+
+def show(item: dict) -> str:
+    out = [item["title"], f"  id {item['id']} · {item['clientId']} · {item['state']} · revision {item['revision']}"]
+    a = item.get("assessment") or {}
+    out.append(f"  priority {a.get('priority', item.get('priority'))}: {a.get('reason', '')}")
+    out.append(f"  scheduled {item.get('scheduledFor') or 'backlog'}" + (f" · due {item['due']}" if item.get("due") else ""))
+    if item.get("tracker"):
+        out.append(f"  {item['tracker'].get('key')}  {item['tracker'].get('url')}")
+    if item.get("blocked"):
+        b = item.get("blockedOn") or {}
+        out.append(f"  blocked: waiting for {b.get('waitingFor', 'unknown')}" + (f" since {b['since']}" if b.get("since") else ""))
+    if item.get("claim"):
+        out.append(f"  claimed by {item['claim']['by']} at {item['claim']['at']}")
+    if item.get("summary"):
+        out.append(f"  {item['summary']}")
+    for entry in item.get("log") or []:
+        out.append(f"  log {entry['at'][:16]} {entry['status']}: {entry['note']}" + (f" ({entry['by']})" if entry.get("by") else ""))
+    return "\n".join(out)
+
+
+def install() -> tuple[object, str]:
+    """Write the launcher to ~/.local/bin/tasks."""
+    LAUNCHER.parent.mkdir(parents=True, exist_ok=True)
+    LAUNCHER.write_text(LAUNCHER_TEXT.replace("{fallback}", str(Path(__file__).resolve())), encoding="utf-8")
+    LAUNCHER.chmod(0o755)
+    on_path = str(LAUNCHER.parent) in os.environ.get("PATH", "").split(os.pathsep)
+    note = "" if on_path else f"\n{LAUNCHER.parent} is not on PATH here; add it, or call {LAUNCHER} by its full path"
+    return {"launcher": str(LAUNCHER), "onPath": on_path}, f"installed {LAUNCHER}{note}"
+
+
+def run(args) -> tuple[object, str]:
+    """Do one command; return (the JSON answer, the readable text)."""
+    c = args.command
+    if c == "install":
+        return install()
+    if c == "clients":
+        res = call("client_list", {})
+        return res, "\n".join(f"{x['id']}  {x['name']}" + "".join(f"\n  {w['id']}  {w['title']}" for w in x["workstreams"]) for x in res)
+    if c == "search":
+        q = {k: v for k, v in {"clientId": args.client, "text": args.text, "states": args.state or None,
+                               "claimedBy": args.claimed_by, "unclaimed": args.unclaimed or None,
+                               "blocked": True if args.blocked else None, "trackerKey": args.key,
+                               "scheduledTo": day(args.until) if args.until else None, "limit": args.limit}.items() if v is not None}
+        res = call("task_search", q)
+        items = res.get("items", [])
+        more = f"\n({res['count'] - len(items)} more; raise --limit)" if res.get("count", 0) > len(items) else ""
+        return res, ("\n".join(line(i) for i in items) or "no items") + more
+    if c == "show":
+        res = call("task_get", {"id": args.id})
+        return res, show(res)
+    if c == "claim":
+        res = call("task_claim", {"by": by(args), "id": args.id})
+        return res, f"claimed {args.id}"
+    if c == "release":
+        res = call("task_release", {"by": by(args), "id": args.id, **({"force": True} if args.force else {})})
+        return res, f"released {args.id}"
+    if c == "done":
+        res = call("task_complete", {"by": by(args), "id": args.id, "revision": revision(args.id),
+                                     **({"note": args.note} if args.note else {}), **({"on": day(args.on)} if args.on else {})})
+        return res, f"done {args.id}"
+    if c in ("start", "state"):
+        state = "doing" if c == "start" else args.state
+        res = call("task_update", {"by": by(args), "id": args.id, "revision": revision(args.id), "state": state,
+                                   **({"note": args.note} if args.note else {})})
+        return res, f"{args.id} is {state}"
+    if c == "move":
+        res = call("task_update", {"by": by(args), "id": args.id, "revision": revision(args.id), "scheduledFor": day(args.to)})
+        return res, f"moved {args.id} to {day(args.to) or 'backlog'}"
+    if c == "log":
+        res = call("task_log", {"by": by(args), "id": args.id, "status": args.status, "note": args.note})
+        return res, f"logged on {args.id}"
+    if c == "add":
+        fields = {"by": by(args), "clientId": args.client, "title": args.title, "scheduledFor": day(args.day)}
+        if args.owner:
+            fields["summary"] = f"Owner: {args.owner}." + (f" {args.summary}" if args.summary else "")
+        elif args.summary:
+            fields["summary"] = args.summary
+        if args.waiting_on:
+            fields.update(blocked=True, blockedOn={"since": date.today().isoformat(), "waitingFor": args.waiting_on})
+        for name in ("priority", "effort", "due"):
+            if getattr(args, name):
+                fields[name] = day(args.due) if name == "due" else getattr(args, name)
+        if args.value:
+            fields["businessValue"] = args.value
+        if args.admin:
+            fields["kind"] = "admin"
+        res = call("task_add", {k: v for k, v in fields.items() if v is not None})
+        return res, f"added {res['id']}  {res['title']}"
+    raise Failure(f"unknown command {c}", EXIT_USAGE)
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tasks", description="The task database, through the tasks MCP server.")
+    p.add_argument("--by", help="your session name, recorded on writes (or TASKS_BY)")
+    p.add_argument("--json", action="store_true", help="print the server's JSON answer")
+    sub = p.add_subparsers(dest="command", required=True)
+    sub.add_parser("install", help="write the launcher to ~/.local/bin/tasks")
+    sub.add_parser("clients", help="clients and their workstreams")
+    s = sub.add_parser("search", help="open items, most important first")
+    s.add_argument("--client"); s.add_argument("--text"); s.add_argument("--key", help="tracker key, for example ADX-12")
+    s.add_argument("--state", action="append", choices=["todo", "doing", "review", "done", "dropped"])
+    s.add_argument("--claimed-by"); s.add_argument("--unclaimed", action="store_true")
+    s.add_argument("--blocked", action="store_true"); s.add_argument("--until", help="scheduled up to this day")
+    s.add_argument("--limit", type=int, default=25)
+    for name, text in (("show", "one item in full"), ("claim", "claim an item before working on it")):
+        sub.add_parser(name, help=text).add_argument("id")
+    r = sub.add_parser("release", help="give a claim up"); r.add_argument("id"); r.add_argument("--force", action="store_true")
+    d = sub.add_parser("done", help="mark an item done"); d.add_argument("id"); d.add_argument("--note"); d.add_argument("--on")
+    st = sub.add_parser("start", help="set an item to doing"); st.add_argument("id"); st.add_argument("--note")
+    se = sub.add_parser("state", help="set an item's state"); se.add_argument("id")
+    se.add_argument("state", choices=["todo", "doing", "review", "done", "dropped"]); se.add_argument("--note")
+    m = sub.add_parser("move", help="schedule an item"); m.add_argument("id"); m.add_argument("to", help="YYYY-MM-DD, today, tomorrow or backlog")
+    lg = sub.add_parser("log", help="append a progress note"); lg.add_argument("id")
+    lg.add_argument("--status", default="doing", choices=["todo", "doing", "review", "done", "dropped", "blocked"]); lg.add_argument("note")
+    a = sub.add_parser("add", help="add an item")
+    a.add_argument("--client", required=True); a.add_argument("--title", required=True)
+    a.add_argument("--day", default="today", help="YYYY-MM-DD, today, tomorrow or backlog (default today)")
+    a.add_argument("--owner"); a.add_argument("--waiting-on"); a.add_argument("--summary")
+    a.add_argument("--priority", choices=["high", "normal", "low"]); a.add_argument("--effort", choices=["XS", "S", "M", "L", "XL"])
+    a.add_argument("--value", choices=["negative", "none", "low", "medium", "high", "veryHigh"]); a.add_argument("--due")
+    a.add_argument("--admin", action="store_true")
+    return p
+
+
+def main(argv: list[str]) -> int:
+    args = parser().parse_args(argv)
+    try:
+        answer, text = run(args)
+    except Failure as ex:
+        print(f"tasks: {ex}", file=sys.stderr)
+        return ex.code
+    print(json.dumps(answer, indent=2, ensure_ascii=False) if args.json else text)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

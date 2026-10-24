@@ -2,7 +2,7 @@
 name: goal
 description: Plan a goal before any execution. Derive the acceptance criteria and Definition of Done, write them as a Test Plan section in the initiative's vault subpage, and refine them with the operator until approved. Hands off to /planner:execute for autonomous execution. Use for "plan this goal", "set the acceptance criteria", "what's the definition of done".
 user-invocable: true
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_add, mcp__plugin_tasks_tasks__task_update, mcp__plugin_tasks_tasks__task_log
 ---
 
 # Goal Plan (the Plan Phase)
@@ -96,6 +96,21 @@ like "the container ran".
    autonomously. **Do not start executing here.**
 
 ## Step 6: Link the Plan from the Dashboard
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, link the plan from the item in the database instead of
+`Dashboard.md`:
+
+- **Find it** with `task_search`: by `trackerKey` when there is a ticket,
+  otherwise by `text` with the initiative's title.
+- **Found**: `task_update` its `detailsId` to the subpage's file name in lower
+  case with hyphens, as the Atlas importer does, and add a `task_log` note
+  with the vault path. Leave the title and summary as they are.
+- **Not found**: `task_add` it with the ticket as `tracker`, the title, today
+  as `scheduledFor`, and the same `detailsId`, then the same log note.
+
+The rest of this step is for clients that have not moved.
 
 Every planned goal must be reachable from the root dashboard
 (`<vault>/Dashboard.md`, path from `~/.claude/obsidian.json#dashboard`), so the

@@ -16,6 +16,25 @@ that have come in. Every run sends any check that is missing, then reviews any
 reply that is waiting. A run with nothing to send and nothing
 to review says so in one line.
 
+## Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For moved clients, read and apply the plan in the database:
+
+- **Step 1**: a moved client is on today's plan when `task_search`
+  (`clientId`, `scheduledTo` today) returns open items. Send its check as
+  for any other client.
+- **Step 7**: apply the agreed changes with the tasks tools, at each item's
+  `revision`: done → `task_complete`; moot → `task_update` with `state`
+  `dropped`; pulled in or moved → `task_update` with only `scheduledFor`; a
+  dated state note → `task_log`. Order within a day is computed, so record an
+  agreed order as a `task_log` note, and change `businessValue` or `effort`
+  only when the operator agrees the priority itself is wrong.
+
+The commander still makes these writes, not the workers, so one session owns
+each client's plan.
+
 ## Step 1: Read Today's Client Groups
 
 Resolve the dashboard and today's heading the way `/planner:today` does

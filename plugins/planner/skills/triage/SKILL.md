@@ -2,7 +2,7 @@
 name: triage
 description: Reorder and rebalance planned work. With no argument, reorders one day and offers to move what does not fit; with a weekday name, that day; with "week", spreads the working week by deadline and load. Always proposes and never writes unconfirmed, because it changes the priority signal every other skill reads. Use when the user says "/planner:triage", "reprioritise today", or "spread the week".
 argument-hint: [today|tomorrow|<weekday>|week] [client-filter] [--all]
-allowed-tools: Bash, Read, Edit, Skill, AskUserQuestion
+allowed-tools: Bash, Read, Edit, Skill, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_update
 user-invocable: true
 ---
 
@@ -40,6 +40,25 @@ included. `week` means the current working week from today to Friday, plus any
 weekend day that already has items —
 [the dashboard structure](../../../obsidian/rules/dashboard-structure.md)
 defines that rule; do not re-derive it.
+
+## Step 1b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, the order within a day is computed (business value
+against effort, raised by urgency), so triage proposes two kinds of change and
+applies them only after the operator confirms, as for the dashboard:
+
+- **Moves**: a new `scheduledFor` for an item, a later day or `null` for
+  Unscheduled. Apply with `task_update` at the item's `revision`, passing only
+  `scheduledFor`.
+- **Order**: where the operator wants an item earlier or later, propose the
+  `businessValue` or `effort` change that gives that order, or a `rank` to
+  break a tie. Never write an order the fields do not support.
+
+Read the load with `task_search` (`clientId`, `scheduledFrom` and
+`scheduledTo` for the day or week). Hours come from `effort`, as in
+`/planner:morning`.
 
 ## Step 2: Guard the Write
 

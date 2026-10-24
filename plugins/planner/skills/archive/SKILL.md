@@ -110,6 +110,13 @@ dashboard `#### **<Client>**` becomes a plain `**<Client>**` paragraph. Days
 run **newest first** there, the reverse of the dashboard. An entry for a day
 that already exists is merged into, not duplicated.
 
+## Clients in the Task Database
+
+A client whose group holds the line `Moved to the tasks database` has no
+items in `Dashboard.md` to archive. The database keeps done items and their
+history, so this skill leaves that client alone. The pointer line is not an
+item and never moves.
+
 ## Rules
 
 - **Every client, every day** in `## Focus`, including today. Today's completed

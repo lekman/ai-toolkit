@@ -2,7 +2,7 @@
 name: morning
 description: Roll the dashboard to today, then schedule open work across the week against each client's hours, with no questions asked. Only moves items; never deletes, ticks, rewords or merges, and proves it with check-moves.ts before it finishes. Writes a log of every move to the vault. Built to run unattended from a scheduled routine. Use when the user says "/planner:morning", "plan the week", or "run the morning plan".
 argument-hint: "[--dry-run]"
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, PushNotification
+allowed-tools: Bash, Read, Edit, Write, Grep, Glob, PushNotification, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_update
 user-invocable: true
 ---
 
@@ -58,6 +58,33 @@ appears on the dashboard (`#### **<Client>**`):
 
 No `capacity` block at all: roll, then stop and report "no capacity
 configured". Do not guess hours.
+
+## Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../../obsidian/rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For moved clients, the run plans database items. The dashboard steps still run
+for the day structure, day notes and calendar lines.
+
+- **Roll**: open items scheduled before today count as today's; Step 2 places
+  them. Nothing is carried by hand.
+- **Plan**: candidates are the client's open items scheduled from today
+  (overdue included) through Sunday: `task_search` with the `clientId`,
+  `scheduledTo` Sunday. Unscheduled items stay unscheduled. Leave blocked and
+  claimed items where they are, and count none of their hours.
+- **Hours** come from `effort`: XS 0.5, S 1, M 3, L 6, XL 12. An unsized item
+  counts `default_item_hours`. Calendar lines still reduce the day's capacity.
+- **Rank**: a `due` within 10 working days first, then the search order, which
+  is the computed priority (business value against effort, raised by
+  urgency). That replaces the `🔴` and `🟡` ranking.
+- **Apply**: each move is one `task_update` with `by`, the `id`, the
+  `revision` from the search, and only `scheduledFor` (a date, or `null` for
+  Unscheduled). Passing nothing else is what keeps the run to moves only. A
+  refused write (another session wrote first, or the item is claimed) is left
+  alone and logged.
+- **Verify**: `check-moves.ts` covers the dashboard. For the database, the
+  item history records each move with this session's name; the log lists the
+  same moves.
 
 ## Step 0: Setup
 

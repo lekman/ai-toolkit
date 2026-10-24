@@ -2,7 +2,7 @@
 name: sync-todo
 description: Reconcile .tmp/TODO.md (a per-repo session task tracker) into Dashboard.md. Tick matching dashboard items when TODO.md rows move to Done; append new dashboard items for new In Progress / Backlog rows. Use when the user says "/obsidian:sync-todo", or after any edit to .tmp/TODO.md per the obsidian-todo-sync rule.
 user-invocable: true
-allowed-tools: Read, Edit, Bash, AskUserQuestion
+allowed-tools: Read, Edit, Bash, AskUserQuestion, mcp__plugin_tasks_tasks__client_list, mcp__plugin_tasks_tasks__task_search, mcp__plugin_tasks_tasks__task_get, mcp__plugin_tasks_tasks__task_add, mcp__plugin_tasks_tasks__task_complete
 ---
 
 # TODO ↔ Dashboard Sync
@@ -41,6 +41,17 @@ Extract rows from `## In Progress`, `## Backlog`, and `## Done` sections. For ea
 - Section (`in-progress` | `backlog` | `done`)
 - Jira-key matches: regex `[A-Z][A-Z0-9]+-\d+`
 - Title text (the first non-link, non-status cell, usually the row's leading description)
+
+## Step 4b: Clients in the Task Database
+
+A client has moved when its group in `Dashboard.md` holds the line `Moved to the tasks database` ([the dashboard structure](../../rules/dashboard-structure.md#clients-in-the-task-database)). Its items then live in the task database, and the `tasks` MCP tools (from the tasks plugin) change them. Find the client's id with `client_list`, matching its name case-insensitively. Every write takes `by`: your session name, as other sessions address you. The dashboard guard refuses an item written under a moved client, so never fall back to `Dashboard.md` for one.
+
+For a moved client, Steps 5 to 7 match and write against the database: find
+each row's item with `task_search` (`clientId`, a few words as `text`, or the
+`trackerKey`). A row moved to Done completes its item with `task_complete` at
+its `revision`. A new In Progress or Backlog row with no item is added with
+`task_add`, scheduled for today when In Progress and unscheduled for Backlog.
+Never complete an item from a fuzzy match without asking.
 
 ## Step 5: Match Against Dashboard
 

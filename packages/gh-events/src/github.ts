@@ -1,45 +1,64 @@
 import type { Account, Owner } from "./config";
 
-import { parsePr, type PrSnapshot } from "./guard";
+import { type Item, parseItem } from "./guard";
 
 const ENDPOINT = "https://api.github.com/graphql";
-// 50 keeps a search request at 1 point; 100 doubled it, measured.
 const PAGE = 50;
 
-const FRAGMENT = `fragment pr on PullRequest {
-  id number state headRefOid reviewDecision mergeable
+const FRAGMENTS = `fragment pr on PullRequest {
+  __typename id number state isDraft headRefOid reviewDecision mergeable
   repository { nameWithOwner }
   commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+  closingIssuesReferences(first: 10) { nodes { number repository { nameWithOwner } } }
+}
+fragment issue on Issue {
+  __typename id number state closedAt
+  repository { nameWithOwner }
 }`;
 
-// Both searches go in one request, so a poll costs 1 point per account.
-// Each alias is dropped once its own pages run out.
-const OPEN_QUERY = `query($mine: String!, $rev: String!, $mineAfter: String, $revAfter: String, $doMine: Boolean!, $doRev: Boolean!) {
-  rateLimit { cost remaining }
-  mine: search(type: ISSUE, query: $mine, first: ${PAGE}, after: $mineAfter) @include(if: $doMine) {
-    pageInfo { hasNextPage endCursor } nodes { ...pr }
-  }
-  rev: search(type: ISSUE, query: $rev, first: ${PAGE}, after: $revAfter) @include(if: $doRev) {
-    pageInfo { hasNextPage endCursor } nodes { ...pr }
-  }
-}
-${FRAGMENT}`;
+/** The four searches run each poll, all in one request. */
+const SEARCHES = {
+  issueAssigned: { role: "assignee", type: "issue" },
+  issueMine: { role: "author", type: "issue" },
+  prMine: { role: "author", type: "pr" },
+  prReview: { role: "review-requested", type: "pr" },
+} as const;
 
-const NODES_QUERY = `query($ids: [ID!]!) { nodes(ids: $ids) { ...pr } }
-${FRAGMENT}`;
+type Alias = keyof typeof SEARCHES;
+const ALIASES = Object.keys(SEARCHES) as Alias[];
+
+// One request carries every search. GitHub prices a request from the query
+// text, before it runs: each nested connection costs one unit per possible
+// parent. So an issue search selects only issue fields, or it would pay for
+// the PR connections too. Each alias is dropped once its own pages run out.
+const OPEN_QUERY = `query(${ALIASES.map((a) => `$${a}: String!, $${a}After: String, $${a}Do: Boolean!`).join(", ")}) {
+  rateLimit { cost remaining }
+${ALIASES.map(
+  (
+    a,
+  ) => `  ${a}: search(type: ISSUE, query: $${a}, first: ${PAGE}, after: $${a}After) @include(if: $${a}Do) {
+    pageInfo { hasNextPage endCursor } nodes { ...${SEARCHES[a].type === "pr" ? "pr" : "issue"} }
+  }`,
+).join("\n")}
+}
+${FRAGMENTS}`;
+
+const NODES_QUERY = `query($ids: [ID!]!) { nodes(ids: $ids) { ...pr ...issue } }
+${FRAGMENTS}`;
 
 interface SearchPage {
   nodes?: unknown[];
   pageInfo?: { endCursor?: null | string; hasNextPage?: boolean };
 }
 
-/** The search string for one role across an account's owners. */
+/** The search string for one search across an account's owners. */
 export function searchString(
-  role: "author" | "review-requested",
+  type: "issue" | "pr",
+  role: "assignee" | "author" | "review-requested",
   owners: readonly Owner[],
 ): string {
   const scope = owners.map((o) => `${o.kind}:${o.name}`).join(" ");
-  return `is:pr is:open archived:false ${role}:@me ${scope}`;
+  return `is:${type} is:open archived:false ${role}:@me ${scope}`;
 }
 
 /** Reads an account's token from the `gh` keyring. Never logged. */
@@ -82,57 +101,63 @@ async function graphql(
 }
 
 /**
- * Open PRs the account authored or was asked to review, in watched repos.
- * Returns the guarded snapshots, keyed by node id, and how many raw nodes the
- * guard dropped.
+ * Open PRs the account authored or was asked to review, and open issues it
+ * authored or is assigned, in watched repos. Returns the guarded items keyed
+ * by node id, and how many raw nodes the guard dropped. Issues from the
+ * assignee search are marked `assigned`.
  */
 export async function fetchOpen(
   account: Account,
   auth: string,
-): Promise<{ cost: number; dropped: number; prs: Map<string, PrSnapshot> }> {
-  const prs = new Map<string, PrSnapshot>();
+): Promise<{ cost: number; dropped: number; items: Map<string, Item> }> {
+  const items = new Map<string, Item>();
   let dropped = 0;
   let cost = 0;
-  const cursor = { mine: null as null | string, rev: null as null | string };
-  const more = { mine: true, rev: true };
+  const cursor = new Map<Alias, null | string>();
+  const more = new Set<Alias>(ALIASES);
 
-  while (more.mine || more.rev) {
-    const data = await graphql(auth, OPEN_QUERY, {
-      doMine: more.mine,
-      doRev: more.rev,
-      mine: searchString("author", account.owners),
-      mineAfter: cursor.mine,
-      rev: searchString("review-requested", account.owners),
-      revAfter: cursor.rev,
-    });
+  while (more.size > 0) {
+    const variables: Record<string, unknown> = {};
+    for (const alias of ALIASES) {
+      const { role, type } = SEARCHES[alias];
+      variables[alias] = searchString(type, role, account.owners);
+      variables[`${alias}After`] = cursor.get(alias) ?? null;
+      variables[`${alias}Do`] = more.has(alias);
+    }
+    const data = await graphql(auth, OPEN_QUERY, variables);
     cost += Number(
       (data.rateLimit as { cost?: number } | undefined)?.cost ?? 0,
     );
-    for (const alias of ["mine", "rev"] as const) {
-      if (!more[alias]) continue;
+    for (const alias of [...more]) {
       const page = data[alias] as SearchPage | undefined;
       for (const raw of page?.nodes ?? []) {
-        const snap = parsePr(raw, account.owners);
-        if (snap) prs.set(snap.id, snap);
-        else dropped++;
+        const item = parseItem(raw, account.owners);
+        if (!item) {
+          dropped++;
+          continue;
+        }
+        const known = items.get(item.id);
+        if (alias === "issueAssigned" || known?.assigned) item.assigned = true;
+        items.set(item.id, item);
       }
-      more[alias] = page?.pageInfo?.hasNextPage === true;
-      cursor[alias] = page?.pageInfo?.endCursor ?? null;
+      if (page?.pageInfo?.hasNextPage === true)
+        cursor.set(alias, page.pageInfo.endCursor ?? null);
+      else more.delete(alias);
     }
   }
-  return { cost, dropped, prs };
+  return { cost, dropped, items };
 }
 
 /**
- * Looks up PRs by node id. A missing entry means the PR could not be read or
- * failed the guard.
+ * Looks up PRs and issues by node id. A missing entry means the item could
+ * not be read or failed the guard.
  */
 export async function fetchNodes(
   account: Account,
   auth: string,
   ids: readonly string[],
-): Promise<Map<string, PrSnapshot>> {
-  const found = new Map<string, PrSnapshot>();
+): Promise<Map<string, Item>> {
+  const found = new Map<string, Item>();
   for (let i = 0; i < ids.length; i += PAGE) {
     const data = await graphql(
       auth,
@@ -141,8 +166,8 @@ export async function fetchNodes(
       true,
     );
     for (const raw of (data.nodes as unknown[] | undefined) ?? []) {
-      const snap = parsePr(raw, account.owners);
-      if (snap) found.set(snap.id, snap);
+      const item = parseItem(raw, account.owners);
+      if (item) found.set(item.id, item);
     }
   }
   return found;

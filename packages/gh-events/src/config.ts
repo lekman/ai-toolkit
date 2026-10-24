@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-/** A GitHub org or user whose PRs are searched, with repo filters. */
+/** A GitHub org or user whose PRs and issues are searched, with repo filters. */
 export interface Owner {
+  /** The consumer's client id for this owner's repos, or null. See CONTRACT.md. */
+  client: null | string;
   /** Repo name globs to skip, applied after `include`. */
   exclude: string[];
   /** Repo name globs to watch. `*` is the only wildcard. */
@@ -30,16 +32,18 @@ export interface Config {
 const LOGIN = /^[A-Za-z0-9_-]{1,64}$/;
 const OWNER = /^[A-Za-z0-9-]{1,39}$/;
 const GLOB = /^[A-Za-z0-9._*-]{1,100}$/;
+const CLIENT = /^[A-Za-z0-9._-]{1,64}$/;
 
 const configHome = (): string =>
   process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
 const stateHome = (): string =>
   process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state");
 
-/** Where the config, state and event log live. */
+/** Where the config, state, registry and event log live. */
 export const paths = {
   config: (): string => join(configHome(), "gh-events", "config.json"),
   events: (): string => join(stateHome(), "gh-events", "events.jsonl"),
+  registry: (): string => join(stateHome(), "gh-events", "registry.json"),
   state: (): string => join(stateHome(), "gh-events", "state.json"),
   stateDir: (): string => join(stateHome(), "gh-events"),
 };
@@ -83,6 +87,7 @@ export function parseConfig(raw: unknown): Config {
       const owners = a.owners.map(
         (
           o: {
+            client?: unknown;
             exclude?: unknown;
             include?: unknown;
             kind?: unknown;
@@ -96,7 +101,14 @@ export function parseConfig(raw: unknown): Config {
           const kind = o.kind ?? "org";
           if (kind !== "org" && kind !== "user")
             fail(`${at}.kind must be org or user`);
+          const client = o.client ?? null;
+          if (
+            client !== null &&
+            (typeof client !== "string" || !CLIENT.test(client))
+          )
+            fail(`${at}.client is invalid`);
           return {
+            client,
             exclude: globs(o.exclude, `${at}.exclude`, []),
             include: globs(o.include, `${at}.include`, ["*"]),
             kind,

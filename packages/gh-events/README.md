@@ -1,28 +1,32 @@
 # gh-events
 
-Brings GitHub pull request events to this Mac as a local event log. It covers
-four events:
+Brings GitHub pull request and issue state to this Mac as two local files:
 
-- `approved`: the PR's review decision became approved.
-- `ci_failed`: the combined check state on the head commit became failure or
-  error. A new failing commit is a new event.
-- `merged`: the PR was merged.
-- `conflict`: GitHub reports the PR cannot merge because of conflicts.
+- `registry.json`: every PR and issue currently monitored, with its state,
+  rewritten after each poll.
+- `events.jsonl`: an append-only log of changes. The events are `approved`,
+  `ci_failed`, `conflict` and `merged` for PRs, and `issue_assigned` and
+  `issue_closed` for issues.
 
 It only notifies. Nothing runs in response to an event, and no model reads the
-GitHub data. Actions can be added later as a separate reader of the log. Not
-published to npm.
+GitHub data. A consumer, such as a dashboard, reads the two files.
+[CONTRACT.md](CONTRACT.md) is what a consumer may rely on: every field, value
+and rule. Not published to npm.
 
 ## How It Works
 
 A launchd agent runs `poll` every 60 seconds. Each poll asks GitHub's GraphQL
-API for the open PRs you authored or were asked to review, once per
-configured account. It compares them with the previous poll and appends one
-line to `events.jsonl` per change.
+API, once per configured account, for:
+
+- open PRs the account authored or was asked to review
+- open issues the account authored or is assigned to
+
+It compares them with the previous poll, appends one line to `events.jsonl`
+per change, and rewrites `registry.json`.
 
 ```text
 GitHub GraphQL ──(outbound HTTPS)──▶ guard ──▶ diff ──▶ events.jsonl
-                                                 ▲
+                                                 │   └─▶ registry.json
                                             state.json
 ```
 
@@ -35,14 +39,19 @@ GitHub GraphQL ──(outbound HTTPS)──▶ guard ──▶ diff ──▶ ev
   accounts. The cost is up to one interval of delay. A state that changes and
   changes back within one interval is missed.
 - **A guard before anything is stored.** Every field that leaves the guard is
-  an enum, an integer, a 40-hex SHA or a repo name that matched a strict
-  pattern and the allow-list. Titles, branch names, bodies and logins are
-  dropped. Anything that later reads the log sees no text a PR author wrote.
-  To learn more, a reader asks GitHub with its own credentials.
-- **One request per account per poll.** Both searches go in one GraphQL
-  request with 50 results per page. GitHub charged 1 point per request,
-  against 5,000 points per hour per account. With 100 results per page it
-  charged 2. More than 50 open PRs adds a page.
+  an enum, an integer, a 40-hex SHA, a timestamp or a repo name that matched a
+  strict pattern and the allow-list. Titles, branch names, bodies and logins
+  are dropped. A consumer sees no text an author wrote, and takes titles from
+  its own records instead.
+- **Files, not a push.** A consumer reads the files, so neither side needs the
+  other to be running, and the log holds events while a consumer is down.
+- **One request per account per poll.** All four searches go in one GraphQL
+  request with 50 results per page. GitHub prices a request from the query
+  text: each nested connection costs one unit per possible parent. So the PR
+  searches, which nest the head commit and the issues a PR closes, cost 2
+  points per request, and the issue searches select only issue fields. More
+  than 50 results in one search adds a page. Measured: 2 to 3 points per poll
+  per account, against 5,000 points per hour per account.
 - **Repo filters run in code.** The query names only orgs and users, so it
   stays short and costs the same however many repos you have. GitHub search
   limits query length and boolean operators, so a list of repos in the query
@@ -51,11 +60,10 @@ GitHub GraphQL ──(outbound HTTPS)──▶ guard ──▶ diff ──▶ ev
   existing approvals and failures do not flood the log. A PR whose
   `mergeable` was still `UNKNOWN` at the baseline stores its first computed
   value without an event.
-- **Merges are found by absence.** A PR that leaves the open search is looked
-  up by node id. Merged gives an event. Closed, deleted or no longer in scope
-  gives nothing.
-- **No repeats.** Each event has a key `repo#pr:event:sha`, and a key is never
-  written twice.
+- **Merges and closes are found by absence.** An item that leaves the open
+  search is looked up by node id. A merged PR or a closed issue gives an
+  event. A closed PR, a deleted item or one no longer in scope gives nothing.
+- **No repeats.** Each event has a key, and a key is never written twice.
 
 ## Setup
 
@@ -71,19 +79,32 @@ Create `~/.config/gh-events/config.json` (mode 0600, never committed):
     {
       "login": "me",
       "owners": [
-        { "name": "acme", "kind": "org", "exclude": ["*-sandbox"] },
-        { "name": "me", "kind": "user", "include": ["api", "web-*"] }
+        {
+          "name": "acme",
+          "kind": "org",
+          "client": "acme",
+          "exclude": ["*-sandbox"]
+        },
+        {
+          "name": "me",
+          "kind": "user",
+          "client": "home",
+          "include": ["api", "web-*"]
+        }
       ]
     },
     {
       "login": "me_globex",
-      "owners": [{ "name": "globex", "kind": "org" }]
+      "owners": [{ "name": "globex", "kind": "org", "client": "globex" }]
     }
   ]
 }
 ```
 
 - `kind` is `org` or `user` (default `org`).
+- `client` is the consumer's id for the client this owner's repos belong to.
+  It is copied to every item and event, so the consumer never guesses a client
+  from an org name. It defaults to null.
 - `include` and `exclude` are repo name patterns, and `*` is the only
   wildcard. `include` defaults to `["*"]`.
 - An enterprise managed account can only see its own enterprise, so it needs
@@ -102,26 +123,13 @@ checkout or changing `intervalSeconds`. `uninstall` removes it.
 
 ## Files
 
-| Path                                    | What                                     |
-| --------------------------------------- | ---------------------------------------- |
-| `~/.config/gh-events/config.json`       | Accounts, owners and repo filters        |
-| `~/.local/state/gh-events/events.jsonl` | Append-only event log, one JSON per line |
-| `~/.local/state/gh-events/state.json`   | Last poll's PRs and recent event keys    |
-| `~/Library/Logs/gh-events.log`          | One summary line per account per poll    |
-
-An event line:
-
-```json
-{
-  "account": "me",
-  "at": "2026-01-02T03:04:05.000Z",
-  "event": "ci_failed",
-  "key": "acme/api#12:ci_failed:<sha>",
-  "pr": 12,
-  "repo": "acme/api",
-  "sha": "<40 hex>"
-}
-```
+| Path                                     | What                                       |
+| ---------------------------------------- | ------------------------------------------ |
+| `~/.config/gh-events/config.json`        | Accounts, owners, clients and repo filters |
+| `~/.local/state/gh-events/registry.json` | Monitored items; see CONTRACT.md           |
+| `~/.local/state/gh-events/events.jsonl`  | Event log; see CONTRACT.md                 |
+| `~/.local/state/gh-events/state.json`    | Internal: last poll's items and event keys |
+| `~/Library/Logs/gh-events.log`           | One summary line per account per poll      |
 
 The log line names accounts and counts only. When a request fails, the line
 gives the HTTP status or the number of GraphQL errors, never the response
@@ -129,9 +137,10 @@ body.
 
 ## Limits
 
-- Only PRs you authored or were asked to review. A review request disappears
-  from search once you review, so later events on that PR are seen only if
-  you are also the author.
+- Only items the account authored, was asked to review or is assigned to. A
+  review request disappears from search once you review, so later events on
+  that PR are seen only if you are also the author.
 - GitHub search can lag behind a change by a short time.
 - `ci_failed` uses the combined state of the head commit, so one failing
   required or optional check is enough.
+- `closes` lists only issues in the PR's own repo.

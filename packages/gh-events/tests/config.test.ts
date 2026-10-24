@@ -13,7 +13,15 @@ describe("parseConfig", () => {
       accounts: [
         {
           login: "me_acme",
-          owners: [{ exclude: [], include: ["*"], kind: "org", name: "acme" }],
+          owners: [
+            {
+              client: null,
+              exclude: [],
+              include: ["*"],
+              kind: "org",
+              name: "acme",
+            },
+          ],
         },
       ],
       intervalSeconds: 60,
@@ -43,6 +51,14 @@ describe("parseConfig", () => {
       },
     ],
     [
+      "a client with spaces",
+      {
+        accounts: [
+          { login: "me", owners: [{ client: "acme corp", name: "acme" }] },
+        ],
+      },
+    ],
+    [
       "a short interval",
       {
         accounts: [{ login: "me", owners: [{ name: "acme" }] }],
@@ -56,13 +72,17 @@ describe("parseConfig", () => {
 
 test("searchString uses one qualifier per owner", () => {
   expect(
-    searchString("review-requested", [
-      { exclude: [], include: ["*"], kind: "org", name: "acme" },
-      { exclude: [], include: ["*"], kind: "user", name: "globex" },
+    searchString("issue", "assignee", [
+      { client: null, exclude: [], include: ["*"], kind: "org", name: "acme" },
+      {
+        client: null,
+        exclude: [],
+        include: ["*"],
+        kind: "user",
+        name: "globex",
+      },
     ]),
-  ).toBe(
-    "is:pr is:open archived:false review-requested:@me org:acme user:globex",
-  );
+  ).toBe("is:issue is:open archived:false assignee:@me org:acme user:globex");
 });
 
 test("plist runs poll on the interval and escapes paths", () => {

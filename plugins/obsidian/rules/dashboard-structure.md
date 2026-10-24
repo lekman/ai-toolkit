@@ -139,6 +139,24 @@ Creating the band is the one exception to "never restructure the operator's
 file". It adds an empty container and moves at most one day that was already
 scheduled for that date; it never changes an item, a word, or an order.
 
+## Clients in the Task Database
+
+A client whose items have moved to the task database keeps one pointer line
+in its group, starting with `Moved to the tasks database`:
+
+```markdown
+> #### **Acme**
+>
+> Moved to the tasks database on 24 Oct 2026 (15 items). Find, claim and update them with `/tasks:work`, or on the Atlas page; do not add Acme items here.
+```
+
+From then on the database owns that client's work. Skills add, move, tick and
+claim its items with the tasks MCP tools ([the tasks plugin](../../tasks/README.md)),
+never in `Dashboard.md`. The write guard refuses a dashboard with a checkbox
+item under that client's heading on any day, because the item would never
+reach the database and would duplicate one that is there. Calendar lines
+(📅) stay, because they are not tasks.
+
 ## Rules
 
 - **Never create a second unprefixed day.** One today, always, above the
@@ -153,5 +171,7 @@ scheduled for that date; it never changes an item, a word, or an order.
 - **Never write to a past day.** A day that has happened is a record.
 - **Never reorder items** except where a skill's own contract says it may, and
   then only with the operator's confirmation.
+- **Never add an item under a client that has moved** to the task database.
+  Use the tasks tools. The guard refuses it.
 - Writing follows [the write protocol](dashboard-write.md): guard, write,
   verify.

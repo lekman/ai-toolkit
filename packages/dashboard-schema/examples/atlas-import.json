@@ -1,0 +1,25 @@
+{
+  "id": "globex-move-dns-to-route-53",
+  "classification": "client-confidential",
+  "boundary": "globex",
+  "clientId": "globex",
+  "workstreamId": "estate-hygiene",
+  "title": "Move the remaining DNS zones to Route 53",
+  "summary": "Imported from the dashboard as it stood; not yet sized.",
+  "state": "done",
+  "priority": "high",
+  "tracker": {
+    "system": "monday",
+    "key": "GLX-1201",
+    "url": "https://example.monday.com/boards/1/pulses/1201"
+  },
+  "scheduledFor": "2026-10-19",
+  "doneOn": "2026-10-20",
+  "history": [
+    { "kind": "added", "on": "2026-10-07" },
+    { "kind": "moved", "on": "2026-10-12", "from": "2026-10-11" }
+  ],
+  "revision": 1,
+  "createdAt": "2026-10-19T08:00:00Z",
+  "updatedAt": "2026-10-20T15:00:00Z"
+}

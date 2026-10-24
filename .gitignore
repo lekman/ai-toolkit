@@ -35,6 +35,8 @@ packages/rag/local/qualification/
 # .env — this line is a guard against accidents, not an invitation.
 .env
 .env.*
+# The dashboard database's template: variable names and an empty password, no secret.
+!packages/dashboard-schema/deploy/.env.example
 
 # Names real clients — the leak it exists to prevent
 scripts/client-terms.txt

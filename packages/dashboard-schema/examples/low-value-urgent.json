@@ -1,0 +1,16 @@
+{
+  "id": "01jb90b1c2d3e4f5g6h7j8k9mn",
+  "classification": "internal",
+  "boundary": "globex",
+  "clientId": "globex",
+  "title": "Reformat last quarter's report for the newsletter",
+  "state": "todo",
+  "priority": "normal",
+  "effort": "S",
+  "businessValue": "low",
+  "due": "2026-10-26",
+  "scheduledFor": "2026-10-26",
+  "revision": 1,
+  "createdAt": "2026-10-24T09:05:00Z",
+  "updatedAt": "2026-10-24T09:05:00Z"
+}

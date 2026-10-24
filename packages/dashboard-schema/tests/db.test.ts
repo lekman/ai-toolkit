@@ -1,0 +1,189 @@
+import { PGlite } from "@electric-sql/pglite";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { drizzle } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import type { Db } from "../src/db/store.ts";
+import type { DashboardItem } from "../src/types.ts";
+
+import * as schema from "../src/db/schema.ts";
+import {
+  appendLog,
+  getItem,
+  insertItem,
+  listItems,
+  RevisionConflict,
+  updateItem,
+} from "../src/db/store.ts";
+
+const root = join(import.meta.dir, "..");
+
+function example(name: string): DashboardItem {
+  return JSON.parse(readFileSync(join(root, "examples", name), "utf8"));
+}
+
+/** The read shape drops empty arrays, so compare against the same. */
+function normalised(item: DashboardItem): DashboardItem {
+  const copy = { ...item };
+  for (const k of ["tags", "log", "history"] as const) {
+    if (Array.isArray(copy[k]) && copy[k]!.length === 0) delete copy[k];
+  }
+  return copy;
+}
+
+let pg: PGlite;
+let db: Db;
+
+beforeEach(async () => {
+  pg = new PGlite();
+  db = drizzle(pg, { schema }) as unknown as Db;
+  await migrate(drizzle(pg), { migrationsFolder: join(root, "migrations") });
+  for (const id of ["acme", "globex"]) {
+    await db
+      .insert(schema.client)
+      .values({ id, classification: "internal", boundary: id, name: id });
+  }
+  await db.insert(schema.workstream).values([
+    {
+      id: "time-reporting",
+      classification: "internal",
+      boundary: "acme",
+      clientId: "acme",
+      title: "Time reporting",
+    },
+    {
+      id: "estate-hygiene",
+      classification: "internal",
+      boundary: "globex",
+      clientId: "globex",
+      title: "Estate hygiene",
+    },
+  ]);
+});
+
+describe("round trip", () => {
+  for (const name of [
+    "blocked-integration.json",
+    "quick-win.json",
+    "low-value-urgent.json",
+    "atlas-import.json",
+  ]) {
+    test(`${name} reads back as written`, async () => {
+      const item = example(name);
+      await insertItem(db, item);
+      expect(await getItem(db, item.id)).toEqual(normalised(item));
+    });
+  }
+
+  test("listItems returns a client's items", async () => {
+    await insertItem(db, example("quick-win.json"));
+    await insertItem(db, example("low-value-urgent.json"));
+    await insertItem(db, example("blocked-integration.json"));
+    expect((await listItems(db, "globex")).map((i) => i.id).sort()).toEqual([
+      "01jb90a1b2c3d4e5f6g7h8j9km",
+      "01jb90b1c2d3e4f5g6h7j8k9mn",
+    ]);
+  });
+});
+
+describe("revisions", () => {
+  test("an update at the current revision succeeds and bumps it", async () => {
+    const item = example("quick-win.json");
+    await insertItem(db, item);
+    const next = await updateItem(
+      db,
+      { ...item, title: "Rotate the deploy key today" },
+      1,
+    );
+    expect(next).toBe(2);
+    expect((await getItem(db, item.id))?.title).toBe(
+      "Rotate the deploy key today",
+    );
+  });
+
+  test("a stale revision is refused, and nothing changes", async () => {
+    const item = example("quick-win.json");
+    await insertItem(db, item);
+    await updateItem(db, { ...item, title: "First writer" }, 1);
+    await expect(
+      updateItem(db, { ...item, title: "Second writer" }, 1),
+    ).rejects.toBeInstanceOf(RevisionConflict);
+    expect((await getItem(db, item.id))?.title).toBe("First writer");
+  });
+});
+
+describe("constraints", () => {
+  test("doneOn on an item that is not done is refused", async () => {
+    await expect(
+      insertItem(db, { ...example("quick-win.json"), doneOn: "2026-10-24" }),
+    ).rejects.toThrow();
+  });
+
+  test("blocked details on an item that is not blocked are refused", async () => {
+    const item = {
+      ...example("quick-win.json"),
+      blockedOn: { since: "2026-10-24", waitingFor: "someone" },
+    };
+    await expect(insertItem(db, item)).rejects.toThrow();
+  });
+
+  test("an id that is not lower-case words and hyphens is refused", async () => {
+    await expect(
+      insertItem(db, { ...example("quick-win.json"), id: "Not_Valid" }),
+    ).rejects.toThrow();
+  });
+
+  test("a workstream that belongs to another client is refused", async () => {
+    const item = example("blocked-integration.json");
+    await expect(
+      insertItem(db, { ...item, workstreamId: "estate-hygiene" }),
+    ).rejects.toThrow();
+  });
+
+  test("an item without a workstream needs no workstream check", async () => {
+    const item = { ...example("quick-win.json") };
+    delete item.workstreamId;
+    await insertItem(db, item);
+    expect((await getItem(db, item.id))?.workstreamId).toBeUndefined();
+  });
+
+  test("an unknown client is refused", async () => {
+    await expect(
+      insertItem(db, { ...example("quick-win.json"), clientId: "nobody" }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("append only", () => {
+  test("the log grows but cannot be edited or deleted directly", async () => {
+    const item = example("blocked-integration.json");
+    await insertItem(db, item);
+    await appendLog(db, item.id, {
+      at: "2026-10-25T08:00:00Z",
+      status: "doing",
+      note: "Token arrived",
+    });
+    expect((await getItem(db, item.id))?.log).toHaveLength(3);
+    await expect(
+      pg.query("UPDATE item_log SET note = 'rewritten'"),
+    ).rejects.toThrow(/append only/);
+    await expect(pg.query("DELETE FROM item_log")).rejects.toThrow(
+      /append only/,
+    );
+    await expect(
+      pg.query("UPDATE item_history SET kind = 'edited'"),
+    ).rejects.toThrow(/append only/);
+  });
+
+  test("deleting the item removes its log and history with it", async () => {
+    const item = example("blocked-integration.json");
+    await insertItem(db, item);
+    await pg.query("DELETE FROM dashboard_item WHERE id = $1", [item.id]);
+    const { rows } = await pg.query<{ n: number }>(
+      "SELECT (SELECT count(*) FROM item_log) + (SELECT count(*) FROM item_history) AS n",
+    );
+    expect(Number(rows[0]?.n)).toBe(0);
+  });
+});

@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/lekman/ai-toolkit/main/packages/dashboard-schema/schema/dashboard-item.schema.json",
+  "title": "Dashboard item",
+  "description": "One piece of work on the dashboard. A superset of the Atlas BacklogItem (lekman/atlas packages/core/src/model.ts): every Atlas field keeps its name and meaning, so an Atlas item copies across unchanged. Priority is computed on read from businessValue, effort and due; the stored priority is only the fallback until both businessValue and effort are set. The today/tomorrow/future band is computed from scheduledFor and never stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "classification",
+    "boundary",
+    "clientId",
+    "title",
+    "state",
+    "priority",
+    "revision",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "description": "Lower-case words joined by hyphens (Atlas Identifier). New items use a lower-case ULID; imported items keep their id. Never reused.",
+      "$ref": "#/$defs/identifier"
+    },
+    "classification": {
+      "description": "How sensitive the item is. Atlas reads it before anything moves between places.",
+      "enum": ["public", "internal", "client-confidential", "restricted"]
+    },
+    "boundary": {
+      "description": "Where the item is allowed to live (Atlas boundary).",
+      "$ref": "#/$defs/identifier"
+    },
+    "clientId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "requirementId": {
+      "$ref": "#/$defs/identifier"
+    },
+    "workstreamId": {
+      "description": "The workstream it is grouped under. Absent means unsorted.",
+      "$ref": "#/$defs/identifier"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "summary": {
+      "description": "The current state in plain language. Skills keep it to about 550 characters; the hard limit is higher so imported dashboard prose fits. History lives in log.",
+      "type": "string",
+      "maxLength": 2000
+    },
+    "state": {
+      "$ref": "#/$defs/state"
+    },
+    "priority": {
+      "description": "As imported, or as set by hand. Only used until businessValue and effort are both set; from then on priority is computed.",
+      "$ref": "#/$defs/priority"
+    },
+    "tracker": {
+      "description": "Where the item is tracked outside. The key is the item's identity when it has one; never invented.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "key", "url"],
+      "properties": {
+        "system": {
+          "enum": ["jira", "monday", "github", "other"]
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "effort": {
+      "enum": ["XS", "S", "M", "L", "XL"]
+    },
+    "businessValue": {
+      "description": "How much the work is worth: negative (-1) means doing it costs more than it returns; none (0) to veryHigh (4) rise from there. Low or below is always low priority. Atlas's Fibonacci value (1-13) maps to this on import.",
+      "enum": ["negative", "none", "low", "medium", "high", "veryHigh"]
+    },
+    "due": {
+      "description": "A real, externally fixed deadline. Urgency is computed from it; it is not a way to express urgency.",
+      "$ref": "#/$defs/isoDate"
+    },
+    "scheduledFor": {
+      "description": "The day it is planned for. Absent means unscheduled.",
+      "$ref": "#/$defs/isoDate"
+    },
+    "rank": {
+      "description": "Manual tie-break within a day, a sortable string (a0, a5, b). Priority orders first; rank only orders items that tie on everything else.",
+      "type": "string",
+      "pattern": "^[0-9a-z]+$",
+      "maxLength": 32
+    },
+    "blocked": {
+      "description": "Waiting on someone else (the dashboard's construction-sign marker).",
+      "type": "boolean"
+    },
+    "blockedOn": {
+      "description": "Who or what it waits for. Only allowed when blocked is true; recommended then, but optional so imported items without details stay valid.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["since", "waitingFor"],
+      "properties": {
+        "since": {
+          "$ref": "#/$defs/isoDate"
+        },
+        "waitingFor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 280
+        }
+      }
+    },
+    "doneOn": {
+      "description": "The day it was ticked off.",
+      "$ref": "#/$defs/isoDate"
+    },
+    "kind": {
+      "description": "admin marks quick administrative jobs that are cleared ahead of project work.",
+      "enum": ["work", "admin"]
+    },
+    "detailsId": {
+      "description": "The details document that explains it.",
+      "$ref": "#/$defs/identifier"
+    },
+    "history": {
+      "description": "What happened to the item itself, oldest first. Atlas writes kind added or moved with on and from; the other kinds and fields are additions. Append only.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "on"],
+        "properties": {
+          "kind": {
+            "enum": ["added", "moved", "state", "edited", "claimed", "released"]
+          },
+          "on": {
+            "$ref": "#/$defs/isoDate"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "by": {
+            "$ref": "#/$defs/actor"
+          },
+          "from": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "to": {
+            "type": "string",
+            "maxLength": 80
+          }
+        }
+      }
+    },
+    "log": {
+      "description": "Progress notes, oldest first: a time and a short status. Append only.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "status", "note"],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "enum": ["todo", "doing", "review", "done", "dropped", "blocked"]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "by": {
+            "$ref": "#/$defs/actor"
+          }
+        }
+      }
+    },
+    "claim": {
+      "description": "The agent that has started this item, so another does not start it too. claim.by is the Atlas Agent id (or a person); an agent's Atlas workingOn list is the items it claims, most recent claim first.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by", "at"],
+      "properties": {
+        "by": {
+          "$ref": "#/$defs/actor"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    },
+    "revision": {
+      "description": "Increments on every write. A write names the revision it read; a mismatch means someone wrote first, and the write is refused instead of overwriting.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "blocked": {
+            "const": true
+          }
+        },
+        "required": ["blocked"]
+      },
+      "else": {
+        "properties": {
+          "blockedOn": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "done"
+          }
+        },
+        "required": ["state"]
+      },
+      "else": {
+        "properties": {
+          "doneOn": false
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 128
+    },
+    "isoDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "state": {
+      "enum": ["todo", "doing", "review", "done", "dropped"]
+    },
+    "priority": {
+      "enum": ["high", "normal", "low"]
+    },
+    "actor": {
+      "description": "Who did it: a person (tobias) or an agent session (claude:web-static).",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(:[a-z0-9._-]+)?$",
+      "maxLength": 96
+    }
+  }
+}

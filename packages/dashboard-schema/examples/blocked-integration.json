@@ -1,0 +1,60 @@
+{
+  "id": "01jb8z3k7q2m4v6w8x0y1z2a3b",
+  "classification": "internal",
+  "boundary": "acme",
+  "clientId": "acme",
+  "workstreamId": "time-reporting",
+  "title": "Time reporting integration: month-end export for all projects",
+  "summary": "Export drafted: one time entry per approved timeslip, test environment first.",
+  "state": "todo",
+  "priority": "normal",
+  "tracker": {
+    "system": "github",
+    "key": "acme/timesheets#2",
+    "url": "https://github.com/acme/timesheets/pull/2"
+  },
+  "effort": "S",
+  "businessValue": "medium",
+  "due": "2026-10-31",
+  "blocked": true,
+  "blockedOn": {
+    "since": "2026-10-24",
+    "waitingFor": "Accounting consultant",
+    "reason": "API token requested, arrives by text message"
+  },
+  "kind": "work",
+  "history": [
+    {
+      "kind": "added",
+      "on": "2026-10-23",
+      "at": "2026-10-23T16:40:00Z",
+      "by": "claude:timesheets"
+    },
+    {
+      "kind": "state",
+      "on": "2026-10-24",
+      "at": "2026-10-24T11:18:00Z",
+      "by": "claude:timesheets",
+      "from": "doing",
+      "to": "todo"
+    }
+  ],
+  "log": [
+    {
+      "at": "2026-10-23T16:40:00Z",
+      "status": "doing",
+      "note": "Export drafted from the API documentation",
+      "by": "claude:timesheets"
+    },
+    {
+      "at": "2026-10-24T11:18:00Z",
+      "status": "blocked",
+      "note": "Waiting for the API token",
+      "by": "claude:timesheets"
+    }
+  ],
+  "tags": [],
+  "revision": 3,
+  "createdAt": "2026-10-23T16:40:00Z",
+  "updatedAt": "2026-10-24T11:18:00Z"
+}

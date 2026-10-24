@@ -12,7 +12,7 @@ the item's history, and is checked against what you last read.
 ## Who You Are
 
 Every write takes `by`: your session name, exactly as other sessions address
-you (for example `Iviron` or `Commander`). Use the same name every time. It
+you (for example `Builder` or `Commander`). Use the same name every time. It
 is how a claim is recognised as yours.
 
 ## Find Work

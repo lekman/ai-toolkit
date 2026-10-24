@@ -238,15 +238,15 @@ describe("claims", () => {
   test("one agent claims; a second is refused until it is released", async () => {
     const item = example("quick-win.json");
     await insertItem(db, item);
-    expect(await claimItem(db, item.id, "iviron", at)).toBe(2);
-    expect(await claimItem(db, item.id, "iviron", at)).toBe(3);
+    expect(await claimItem(db, item.id, "builder", at)).toBe(2);
+    expect(await claimItem(db, item.id, "builder", at)).toBe(3);
     await expect(claimItem(db, item.id, "commander", at)).rejects.toEqual(
-      new ClaimConflict(item.id, "iviron"),
+      new ClaimConflict(item.id, "builder"),
     );
     await expect(releaseItem(db, item.id, "commander", at)).rejects.toEqual(
-      new ClaimConflict(item.id, "iviron"),
+      new ClaimConflict(item.id, "builder"),
     );
-    await releaseItem(db, item.id, "iviron", at);
+    await releaseItem(db, item.id, "builder", at);
     await claimItem(db, item.id, "commander", at);
     const read = await getItem(db, item.id);
     expect(read?.claim?.by).toBe("commander");
@@ -262,13 +262,13 @@ describe("claims", () => {
   test("force releases another agent's claim", async () => {
     const item = example("quick-win.json");
     await insertItem(db, item);
-    await claimItem(db, item.id, "iviron", at);
+    await claimItem(db, item.id, "builder", at);
     await releaseItem(db, item.id, "commander", at, true);
     expect((await getItem(db, item.id))?.claim).toBeUndefined();
   });
 
   test("claiming an item that does not exist says so", async () => {
-    await expect(claimItem(db, "nope", "iviron", at)).rejects.toBeInstanceOf(
+    await expect(claimItem(db, "nope", "builder", at)).rejects.toBeInstanceOf(
       ItemNotFound,
     );
   });

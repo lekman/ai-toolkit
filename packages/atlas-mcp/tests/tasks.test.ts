@@ -8,7 +8,7 @@ import { fixture } from "./setup.ts";
 describe("add", () => {
   test("a new item takes its client's classification and boundary, and a ULID", async () => {
     const ctx = await fixture();
-    const item = await tasks.add(ctx, "iviron", "acme", {
+    const item = await tasks.add(ctx, "builder", "acme", {
       title: "Rotate the deploy key",
       workstreamId: "acme-delivery",
       businessValue: "medium",
@@ -23,7 +23,7 @@ describe("add", () => {
         kind: "added",
         on: "2026-10-24",
         at: "2026-10-24T09:00:00Z",
-        by: "iviron",
+        by: "builder",
       },
     ]);
     expect(read.assessment.priority).toBe("high");
@@ -32,7 +32,7 @@ describe("add", () => {
   test("a workstream of another client is refused", async () => {
     const ctx = await fixture();
     await expect(
-      tasks.add(ctx, "iviron", "acme", {
+      tasks.add(ctx, "builder", "acme", {
         title: "x",
         workstreamId: "globex-ops",
       }),
@@ -42,13 +42,13 @@ describe("add", () => {
   test("an unknown client is refused", async () => {
     const ctx = await fixture();
     await expect(
-      tasks.add(ctx, "iviron", "nobody", { title: "x" }),
+      tasks.add(ctx, "builder", "nobody", { title: "x" }),
     ).rejects.toThrow(/no client nobody/);
   });
 
   test("blocked details without blocked are dropped, not stored", async () => {
     const ctx = await fixture();
-    const item = await tasks.add(ctx, "iviron", "acme", {
+    const item = await tasks.add(ctx, "builder", "acme", {
       title: "x",
       blockedOn: { since: "2026-10-24", waitingFor: "the token" },
     });
@@ -85,12 +85,12 @@ describe("search", () => {
     const ctx = await fixture();
     const a = await tasks.add(ctx, "a", "acme", { title: "One" });
     const b = await tasks.add(ctx, "a", "acme", { title: "Two" });
-    await tasks.claim(ctx, "iviron", a.id);
+    await tasks.claim(ctx, "builder", a.id);
     const result = await tasks.search(ctx, { unclaimed: true });
     expect(result.items.map((i) => i.id)).toEqual([b.id]);
     expect(
-      (await tasks.search(ctx, { claimedBy: "iviron" })).items[0]?.claimedBy,
-    ).toBe("iviron");
+      (await tasks.search(ctx, { claimedBy: "builder" })).items[0]?.claimedBy,
+    ).toBe("builder");
   });
 });
 
@@ -100,7 +100,7 @@ describe("update", () => {
     const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });
     const revision = await tasks.update(
       ctx,
-      "iviron",
+      "builder",
       item.id,
       1,
       { state: "doing", scheduledFor: "2026-10-26", summary: "Started" },
@@ -113,7 +113,7 @@ describe("update", () => {
         kind: "state",
         on: "2026-10-24",
         at: "2026-10-24T09:00:00Z",
-        by: "iviron",
+        by: "builder",
         from: "todo",
         to: "doing",
       },
@@ -121,7 +121,7 @@ describe("update", () => {
         kind: "moved",
         on: "2026-10-24",
         at: "2026-10-24T09:00:00Z",
-        by: "iviron",
+        by: "builder",
         from: "unscheduled",
         to: "2026-10-26",
       },
@@ -129,7 +129,7 @@ describe("update", () => {
         kind: "edited",
         on: "2026-10-24",
         at: "2026-10-24T09:00:00Z",
-        by: "iviron",
+        by: "builder",
       },
     ]);
     expect(read.log).toEqual([
@@ -137,7 +137,7 @@ describe("update", () => {
         at: "2026-10-24T09:00:00Z",
         status: "doing",
         note: "picked up",
-        by: "iviron",
+        by: "builder",
       },
     ]);
   });
@@ -164,7 +164,7 @@ describe("update", () => {
   test("another agent's claim is respected unless forced", async () => {
     const ctx = await fixture();
     const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });
-    const revision = await tasks.claim(ctx, "iviron", item.id);
+    const revision = await tasks.claim(ctx, "builder", item.id);
     await expect(
       tasks.update(ctx, "commander", item.id, revision, { title: "Mine" }),
     ).rejects.toBeInstanceOf(ClaimConflict);
@@ -176,7 +176,7 @@ describe("update", () => {
       { title: "Mine" },
       { force: true },
     );
-    expect((await tasks.read(ctx, item.id)).claim?.by).toBe("iviron");
+    expect((await tasks.read(ctx, item.id)).claim?.by).toBe("builder");
   });
 
   test("an update that changes nothing is refused without spending a revision", async () => {
@@ -205,8 +205,8 @@ describe("complete", () => {
       blocked: true,
       blockedOn: { since: "2026-10-20", waitingFor: "review" },
     });
-    const revision = await tasks.claim(ctx, "iviron", item.id);
-    await tasks.complete(ctx, "iviron", item.id, revision, { note: "merged" });
+    const revision = await tasks.claim(ctx, "builder", item.id);
+    await tasks.complete(ctx, "builder", item.id, revision, { note: "merged" });
     const read = await tasks.read(ctx, item.id);
     expect(read).toMatchObject({
       state: "done",
@@ -231,7 +231,7 @@ describe("log", () => {
   test("appends without changing the revision", async () => {
     const ctx = await fixture();
     const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });
-    await tasks.log(ctx, "iviron", item.id, "blocked", "waiting for the token");
+    await tasks.log(ctx, "builder", item.id, "blocked", "waiting for the token");
     const read = await tasks.read(ctx, item.id);
     expect(read.revision).toBe(1);
     expect(read.log).toHaveLength(1);

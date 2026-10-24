@@ -45,7 +45,7 @@ describe("tools", () => {
         await client.callTool({
           name: "task_add",
           arguments: {
-            by: "iviron",
+            by: "builder",
             clientId: "acme",
             title: "Ship it",
             effort: "S",
@@ -58,7 +58,7 @@ describe("tools", () => {
       payload(
         await client.callTool({
           name: "task_claim",
-          arguments: { by: "iviron", id: added.id },
+          arguments: { by: "builder", id: added.id },
         }),
       ).text,
     );
@@ -69,12 +69,12 @@ describe("tools", () => {
       }),
     );
     expect(refused.isError).toBe(true);
-    expect(refused.text).toContain("claimed by iviron");
+    expect(refused.text).toContain("claimed by builder");
 
     const stale = payload(
       await client.callTool({
         name: "task_update",
-        arguments: { by: "iviron", id: added.id, revision: 1, state: "doing" },
+        arguments: { by: "builder", id: added.id, revision: 1, state: "doing" },
       }),
     );
     expect(stale.isError).toBe(true);
@@ -85,7 +85,7 @@ describe("tools", () => {
         await client.callTool({
           name: "task_update",
           arguments: {
-            by: "iviron",
+            by: "builder",
             id: added.id,
             revision: claimed.revision,
             state: "doing",
@@ -97,7 +97,7 @@ describe("tools", () => {
     await client.callTool({
       name: "task_complete",
       arguments: {
-        by: "iviron",
+        by: "builder",
         id: added.id,
         revision: updated.revision,
         note: "done",

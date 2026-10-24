@@ -40,7 +40,7 @@ const by = z
   .min(1)
   .max(96)
   .describe(
-    "Who is acting: your session name, for example Iviron or Commander. Recorded in the history.",
+    "Who is acting: your session name, for example Builder or Commander. Recorded in the history.",
   );
 const revision = z
   .number()

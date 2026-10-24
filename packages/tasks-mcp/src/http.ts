@@ -31,7 +31,7 @@ export interface ServeOptions {
 
 /** A token that reads and writes only the named clients. */
 export interface ScopedToken {
-  /** Who holds it, for logs, for example `evinova-laptop`. */
+  /** Who holds it, for logs, for example `acme-laptop`. */
   name: string;
   /** The SHA-256 of the token, as 64 hex characters. */
   sha256: string;

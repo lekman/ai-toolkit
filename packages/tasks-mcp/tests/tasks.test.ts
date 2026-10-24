@@ -1,4 +1,8 @@
-import { ClaimConflict, RevisionConflict } from "@lekman/dashboard-schema/db";
+import {
+  appendLog,
+  ClaimConflict,
+  RevisionConflict,
+} from "@lekman/dashboard-schema/db";
 import { InvalidItem } from "@lekman/dashboard-schema/validate";
 import { describe, expect, test } from "bun:test";
 
@@ -282,5 +286,39 @@ describe("clients", () => {
         workstreams: [{ id: "globex-ops", title: "Operations" }],
       },
     ]);
+  });
+});
+
+describe("names", () => {
+  test("by is stored in lower case with hyphens", async () => {
+    expect(tasks.actor("Lekman")).toBe("lekman");
+    expect(tasks.actor(" Self-hosted runners troubleshooting ")).toBe(
+      "self-hosted-runners-troubleshooting",
+    );
+    expect(tasks.actor("claude:Atlas")).toBe("claude:atlas");
+    expect(() => tasks.actor("  ")).toThrow(tasks.InvalidActor);
+    const ctx = await fixture();
+    const item = await tasks.add(ctx, "Ops Portal", "acme", { title: "Ship" });
+    const revision = await tasks.claim(ctx, "Ops Portal", item.id);
+    await tasks.log(ctx, "Ops Portal", item.id, "doing", "started");
+    await tasks.complete(ctx, "OPS PORTAL", item.id, revision);
+    const read = await tasks.read(ctx, item.id);
+    expect(new Set(read.history?.map((h) => h.by))).toEqual(
+      new Set(["ops-portal"]),
+    );
+    expect(read.log?.[0]?.by).toBe("ops-portal");
+  });
+
+  test("a stored log entry that predates the rule does not block later writes", async () => {
+    const ctx = await fixture();
+    const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });
+    await appendLog(ctx.db, item.id, {
+      at: "2026-10-24T09:00:00Z",
+      status: "done",
+      note: "old",
+      by: "Lekman",
+    });
+    await tasks.complete(ctx, "a", item.id, 1);
+    expect((await tasks.read(ctx, item.id)).state).toBe("done");
   });
 });

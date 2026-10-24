@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * GitHub PR events for this machine.
+ * GitHub PR and issue events for this machine.
  *
  *   bun src/cli.ts poll        one poll; launchd runs this on the interval
  *   bun src/cli.ts install     write and load the launch agent
@@ -66,6 +66,7 @@ async function poll(): Promise<number> {
   };
   const reports = await runPoll(config, source, {
     events: paths.events(),
+    registry: paths.registry(),
     state: paths.state(),
   });
   const at = new Date().toISOString();
@@ -73,7 +74,7 @@ async function poll(): Promise<number> {
     console.log(
       r.error
         ? `${at} ${r.login}: FAILED ${r.error}`
-        : `${at} ${r.login}: ${r.open} open, ${r.dropped} dropped by guard, ${r.cost} point(s), ${r.events} event(s)`,
+        : `${at} ${r.login}: ${r.open} open items, ${r.dropped} dropped by guard, ${r.cost} point(s), ${r.events} event(s)`,
     );
   }
   return reports.some((r) => r.error) ? 1 : 0;

@@ -4,7 +4,8 @@
  * messages here, and a relay that can reach the named session delivers them.
  *
  * Each message is about one client and carries that client's classification
- * and boundary. A scoped caller sends and reads only its clients' messages.
+ * and boundary. A scoped caller sends and reads only its clients' messages,
+ * and its messages are signed with its token's name (`builder:acme-laptop`).
  */
 
 import * as tables from "@lekman/dashboard-schema/db/schema";
@@ -81,7 +82,7 @@ export async function send(
     classification: client.classification,
     boundary: client.boundary,
     clientId,
-    from: actor(by),
+    from: ctx.caller ? `${actor(by)}:${actor(ctx.caller)}` : actor(by),
     to: actor(to),
     body: text,
     createdAt: stamp(ctx),

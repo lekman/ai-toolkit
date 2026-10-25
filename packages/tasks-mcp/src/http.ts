@@ -87,6 +87,7 @@ export async function serve(
   }
   const expected = digest(options.token);
   const scoped = (options.scopedTokens ?? []).map((t) => ({
+    name: t.name,
     clients: t.clients,
     digest: Buffer.from(t.sha256, "hex"),
   }));
@@ -112,7 +113,9 @@ export async function serve(
       const server = new McpServer({ name: "tasks", version: "0.1.0" });
       registerTaskTools(
         server,
-        access === "all" ? ctx : { ...ctx, scope: access },
+        access === "all"
+          ? ctx
+          : { ...ctx, scope: access.clients, caller: access.name },
       );
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
@@ -148,21 +151,23 @@ function digest(value: string): Buffer {
   return createHash("sha256").update(value).digest();
 }
 
-/** "all" for the main token, the clients of a scoped token, or null. */
+/** "all" for the main token, a scoped token's name and clients, or null. */
 function authorise(
   req: IncomingMessage,
   expected: Buffer,
-  scoped: { clients: readonly string[]; digest: Buffer }[],
-): "all" | readonly string[] | null {
+  scoped: { name: string; clients: readonly string[]; digest: Buffer }[],
+): "all" | { name: string; clients: readonly string[] } | null {
   const header = req.headers.authorization ?? "";
   const match = /^Bearer (.+)$/.exec(header);
   if (!match) return null;
   const presented = digest(match[1]!);
   if (timingSafeEqual(presented, expected)) return "all";
   // Check every entry, so the time taken does not say which one matched.
-  let found: readonly string[] | null = null;
+  let found: { name: string; clients: readonly string[] } | null = null;
   for (const t of scoped) {
-    if (timingSafeEqual(presented, t.digest) && !found) found = t.clients;
+    if (timingSafeEqual(presented, t.digest) && !found) {
+      found = { name: t.name, clients: t.clients };
+    }
   }
   return found;
 }

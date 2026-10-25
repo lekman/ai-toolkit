@@ -22,6 +22,13 @@
       "when": 1792839620048,
       "tag": "0002_workstream_same_client",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792935083528,
+      "tag": "0003_messages",
+      "breakpoints": true
     }
   ]
 }

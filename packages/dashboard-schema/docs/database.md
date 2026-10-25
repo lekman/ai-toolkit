@@ -14,6 +14,7 @@ erDiagram
   WORKSTREAM |o--o{ DASHBOARD_ITEM : groups
   DASHBOARD_ITEM ||--o{ ITEM_LOG : "progress notes"
   DASHBOARD_ITEM ||--o{ ITEM_HISTORY : events
+  CLIENT ||--o{ MESSAGE : "is about"
   CLIENT {
     varchar id PK
     classification classification
@@ -80,6 +81,18 @@ erDiagram
     varchar from
     varchar to
   }
+  MESSAGE {
+    varchar id PK "ULID"
+    varchar client_id FK "not null"
+    classification classification
+    varchar boundary
+    varchar from "sending session"
+    varchar to "receiving session"
+    varchar body "max 4000"
+    timestamptz created_at
+    timestamptz delivered_at "set once"
+    varchar delivered_by
+  }
 ```
 
 `text_array` in the diagram is the Postgres type `text[]`. Mermaid cannot
@@ -92,6 +105,7 @@ show brackets in a type name.
 | workstream to dashboard_item   | Optional. The foreign key is on the pair (`workstream_id`, `client_id`), so an item can only be in a workstream of its own client. |
 | dashboard_item to item_log     | Many notes per item. Deleting the item deletes its notes.                                                                          |
 | dashboard_item to item_history | Many events per item. Deleting the item deletes its events.                                                                        |
+| client to message              | Every message is about one client and takes its classification and boundary, so a token limited to some clients reads only theirs. |
 
 ## Rules the Database Enforces
 

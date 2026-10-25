@@ -61,13 +61,22 @@ If you stop without finishing, `task_release` so someone else can pick it up.
 - `task_log` for a progress note: 160 characters, the status at the time
   (`doing`, `blocked`, `review`). The log is append only and never edited.
 - `task_update` for fields: `state`, `summary`, `scheduledFor`, `due`,
-  `businessValue`, `effort`, `blocked` with `blockedOn`, and so on. Pass the
+  `businessValue`, `effort`, `blocked` with `blockedOn`, `pullRequests`, and
+  so on. Pass the
   `revision` you read. Set a field to `null` to clear it. Add `note` to log
   in the same call.
 - Keep `summary` to the current state in about 550 characters. History
   belongs in the log, not the summary.
 - Set `due` only for a real external deadline. A due date raises urgency, so
   an invented one makes every real deadline weaker.
+
+## Link Your Pull Requests
+
+When you open a pull request for an item, add it to the item's
+`pullRequests` with `task_update`, as `owner/repo#number`. Give the whole
+list: read the item, append yours, and pass the revision. Dashboards then show
+the item's own pull requests instead of every one that mentions its ticket.
+Leave merged ones in the list; they show the work that was done.
 
 ## Finish
 

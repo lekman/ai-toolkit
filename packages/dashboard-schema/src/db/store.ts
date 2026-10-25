@@ -74,6 +74,7 @@ function toRow(item: DashboardItem): ItemInsert {
     claimBy: item.claim?.by ?? null,
     claimAt: item.claim?.at ?? null,
     tags: item.tags ?? [],
+    pullRequests: item.pullRequests ?? [],
     revision: item.revision,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -131,6 +132,7 @@ function fromRows(
         ? { by: row.claimBy, at: iso(row.claimAt) }
         : null,
     tags: row.tags.length ? row.tags : null,
+    pullRequests: row.pullRequests.length ? row.pullRequests : null,
     revision: row.revision,
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),

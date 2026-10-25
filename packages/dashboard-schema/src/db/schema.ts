@@ -152,6 +152,10 @@ export const dashboardItem = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    pullRequests: text("pull_requests")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     revision: integer("revision").notNull().default(1),
     createdAt: stamp("created_at").notNull().defaultNow(),
     updatedAt: stamp("updated_at").notNull().defaultNow(),

@@ -207,6 +207,17 @@
         }
       }
     },
+    "pullRequests": {
+      "description": "The item's own pull requests, as owner/repo#number, set by the agent that opens them. Readers show only these when the list is set.",
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 30,
+      "items": {
+        "type": "string",
+        "maxLength": 140,
+        "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+$"
+      }
+    },
     "tags": {
       "type": "array",
       "uniqueItems": true,

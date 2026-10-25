@@ -89,6 +89,7 @@ export interface ItemSummary {
   trackerKey?: string;
   trackerUrl?: string;
   detailsId?: string;
+  pullRequests?: string[];
   revision: number;
   priority: Priority;
   urgency: Assessment["urgency"];
@@ -128,6 +129,7 @@ export interface ItemFields {
   kind?: "work" | "admin" | null;
   tracker?: Tracker | null;
   tags?: string[] | null;
+  pullRequests?: string[] | null;
   blocked?: boolean | null;
   blockedOn?: { since: string; waitingFor: string; reason?: string } | null;
   detailsId?: string | null;
@@ -205,6 +207,7 @@ function summarise(item: DashboardItem, day: string): ItemSummary {
     trackerKey: item.tracker?.key,
     trackerUrl: item.tracker?.url,
     detailsId: item.detailsId,
+    pullRequests: item.pullRequests?.length ? item.pullRequests : undefined,
     revision: item.revision,
     priority: a.priority,
     urgency: a.urgency,
@@ -481,6 +484,7 @@ const TRACKED: readonly (keyof DashboardItem)[] = [
   "kind",
   "tracker",
   "tags",
+  "pullRequests",
   "blocked",
   "blockedOn",
   "detailsId",

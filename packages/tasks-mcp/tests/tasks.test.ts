@@ -324,3 +324,28 @@ describe("names", () => {
     expect((await tasks.read(ctx, item.id)).state).toBe("done");
   });
 });
+
+describe("pull requests", () => {
+  test("an item keeps its own pull requests, and search returns them", async () => {
+    const ctx = await fixture();
+    const item = await tasks.add(ctx, "builder", "acme", {
+      title: "Share the client",
+      pullRequests: ["acme/app#12"],
+    });
+    const revision = await tasks.update(ctx, "builder", item.id, 1, {
+      pullRequests: ["acme/app#12", "acme/api#3"],
+    });
+    expect(revision).toBe(2);
+    const [found] = (await tasks.search(ctx, {})).items;
+    expect(found?.pullRequests).toEqual(["acme/app#12", "acme/api#3"]);
+    const read = await tasks.read(ctx, item.id);
+    expect(read.history?.at(-1)).toMatchObject({ kind: "edited" });
+  });
+
+  test("a pull request not in owner/repo#number form is refused", async () => {
+    const ctx = await fixture();
+    await expect(
+      tasks.add(ctx, "builder", "acme", { title: "x", pullRequests: ["#12"] }),
+    ).rejects.toThrow();
+  });
+});

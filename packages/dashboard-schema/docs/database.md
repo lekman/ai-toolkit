@@ -51,6 +51,7 @@ erDiagram
     item_kind kind
     jsonb tracker "system, key, url"
     text_array tags
+    text_array pull_requests "owner/repo#number"
     boolean blocked
     date blocked_since
     varchar blocked_waiting_for

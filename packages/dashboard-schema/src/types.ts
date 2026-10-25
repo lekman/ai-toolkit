@@ -73,6 +73,7 @@ export interface DashboardItem {
   doneOn?: IsoDate;
   kind?: "work" | "admin";
   detailsId?: string;
+  pullRequests?: string[];
   history?: HistoryEntry[];
   log?: LogEntry[];
   claim?: { by: string; at: IsoDateTime };

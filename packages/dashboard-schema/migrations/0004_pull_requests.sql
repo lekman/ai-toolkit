@@ -1,0 +1,1 @@
+ALTER TABLE "dashboard_item" ADD COLUMN "pull_requests" text[] DEFAULT '{}'::text[] NOT NULL;

@@ -1,5 +1,5 @@
 {
   "name": "tasks",
   "description": "Task MCP for every agent: search, read, add, claim, update, log and complete dashboard items in the shared Postgres dashboard database, over the tailnet. Replaces editing Dashboard.md by hand, with claims so two agents never work the same item, and revision checks so a stale write is refused",
-  "version": "0.3.0"
+  "version": "0.4.0"
 }

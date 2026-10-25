@@ -108,6 +108,19 @@ const fields = {
     .nullable()
     .optional(),
   tags: z.array(z.string().min(1).max(40)).max(20).nullable().optional(),
+  pullRequests: z
+    .array(
+      z
+        .string()
+        .regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+#[0-9]+$/)
+        .max(140),
+    )
+    .max(30)
+    .nullable()
+    .optional()
+    .describe(
+      "The item's own pull requests as owner/repo#number. Give the whole list: add yours when you open one. Readers then show only these.",
+    ),
   blocked: z.boolean().nullable().optional(),
   blockedOn: z
     .object({

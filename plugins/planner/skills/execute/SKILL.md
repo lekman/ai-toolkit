@@ -101,7 +101,9 @@ Only when every Test Plan row is `green`:
 1. **Push** the branch.
 2. **Open the PR** against the repo's pull request template; copy the
    `## Test Plan` table into the testing-evidence section. Reference the
-   ticket so the project management system links it.
+   ticket so the project management system links it. For a client in the
+   task database, add the PR to its item's `pullRequests` with `task_update`
+   (`owner/repo#number`), so dashboards show this item's own PRs.
 3. **Run the gates**: drive CI green and triage automated review comments to
    steady state.
 4. **Alert the operator** (the one operator touchpoint in this skill): the PR

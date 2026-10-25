@@ -51,6 +51,12 @@ export interface Context {
    * An item outside the scope behaves as if it did not exist.
    */
   scope?: readonly string[];
+  /**
+   * The scoped token's name, for a caller that presented one. Messages from
+   * such a caller are signed with it, so the sender cannot claim to be
+   * another session.
+   */
+  caller?: string;
 }
 
 function inScope(ctx: Context, clientId: string): boolean {

@@ -43,8 +43,11 @@ describe("messages", () => {
     expect(await messages.delivered(ctx, "commander", [a.id])).toEqual([]);
     const open = await messages.inbox(ctx, { undelivered: true });
     expect(open.map((m) => m.id)).toEqual([b.id]);
-    const [first] = await messages.inbox(ctx, { to: "lekman" });
-    expect(first).toMatchObject({ id: a.id, deliveredBy: "commander" });
+    // Both share the test clock, so their order is not fixed: find by id.
+    const read = await messages.inbox(ctx, { to: "lekman" });
+    expect(read.find((m) => m.id === a.id)).toMatchObject({
+      deliveredBy: "commander",
+    });
   });
 
   test("a scoped caller sends and reads only its clients' messages", async () => {
@@ -62,6 +65,14 @@ describe("messages", () => {
     expect(await messages.delivered(scoped, "laptop", [globex!.id])).toEqual(
       [],
     );
+  });
+
+  test("a scoped caller's messages are signed with its token's name", async () => {
+    const ctx = await fixture();
+    const scoped = { ...ctx, scope: ["acme"], caller: "Acme laptop" };
+    await messages.send(scoped, "Builder", "commander", "acme", "hello");
+    const [m] = await messages.inbox(ctx, { to: "commander" });
+    expect(m?.from).toBe("builder:acme-laptop");
   });
 
   test("an unknown client is refused", async () => {

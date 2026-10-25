@@ -225,3 +225,38 @@ export const itemHistory = pgTable(
   },
   (t) => [index("item_history_item_on_idx").on(t.itemId, t.on)],
 );
+
+/**
+ * A message from one agent session to another, carried by the task database
+ * because it is the one service every machine reaches, a tunnelled laptop
+ * included. The body is about one client and governed like that client's
+ * items. Messages are never edited; a delivery stamps them once.
+ */
+export const message = pgTable(
+  "message",
+  {
+    id: identifier("id").primaryKey(),
+    classification: classificationEnum("classification").notNull(),
+    boundary: identifier("boundary").notNull(),
+    clientId: identifier("client_id")
+      .notNull()
+      .references(() => client.id),
+    from: varchar("from", { length: 96 }).notNull(),
+    to: varchar("to", { length: 96 }).notNull(),
+    body: varchar("body", { length: 4000 }).notNull(),
+    createdAt: stamp("created_at").notNull().defaultNow(),
+    deliveredAt: stamp("delivered_at"),
+    deliveredBy: varchar("delivered_by", { length: 96 }),
+  },
+  (t) => [
+    index("message_to_created_idx").on(t.to, t.createdAt),
+    index("message_undelivered_idx")
+      .on(t.createdAt)
+      .where(sql`${t.deliveredAt} IS NULL`),
+    check("message_id_format", sql`${t.id} ~ '^[a-z0-9][a-z0-9-]*$'`),
+    check(
+      "message_delivered_pair",
+      sql`(${t.deliveredAt} IS NULL) = (${t.deliveredBy} IS NULL)`,
+    ),
+  ],
+);

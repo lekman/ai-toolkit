@@ -81,6 +81,21 @@ records the day and clears your claim and any blocked details.
 from `client_list` when one fits. Set `businessValue` and `effort` when you
 know them; until both are set, the stored `priority` is used.
 
+## Answer a Session You Cannot Reach
+
+Some machines reach only the tasks server, for example a laptop behind a
+tunnel. A session there can receive messages from other machines but has no
+route to send one back. Answer through the task database instead:
+
+- `message_send` with `to` (the other session's name, as it addressed you,
+  for example Commander or Lekman), the `clientId` the message is about, and
+  the text. A relay delivers it to that session.
+- `message_inbox` with `to` set to your own session name reads the replies
+  sent to you. Mark the ones you have read with `message_delivered`.
+
+A message is about one client. A token limited to some clients sends and
+reads only their messages.
+
 ## When a Write Is Refused
 
 | Refusal                     | What to do                                                                           |

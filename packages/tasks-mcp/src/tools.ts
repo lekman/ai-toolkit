@@ -8,6 +8,7 @@ import {
 import { InvalidItem } from "@lekman/dashboard-schema/validate";
 import { z } from "zod";
 
+import * as messages from "./messages.ts";
 import * as tasks from "./tasks.ts";
 
 /**
@@ -24,6 +25,9 @@ export const TOOL_NAMES = [
   "task_release",
   "task_log",
   "task_complete",
+  "message_send",
+  "message_inbox",
+  "message_delivered",
 ] as const;
 
 const id = z
@@ -136,6 +140,8 @@ function failure(error: unknown) {
     message = `${error.message}. Read it again with task_get, then retry with the new revision.`;
   } else if (error instanceof ClaimConflict) {
     message = `${error.message}. Pick another item, or ask that agent to release it.`;
+  } else if (error instanceof messages.UnknownClient) {
+    message = `${error.message}. Find the client id with client_list.`;
   } else if (error instanceof ItemNotFound) {
     message = `${error.message}. Find the id with task_search.`;
   } else if (error instanceof InvalidItem) {
@@ -350,5 +356,79 @@ export function registerTaskTools(server: McpServer, ctx: tasks.Context): void {
           force,
         }),
       })),
+  );
+
+  server.registerTool(
+    "message_send",
+    {
+      description:
+        "Send a message to another agent session by its name, for example Commander or Lekman. " +
+        "Use it to answer a session you cannot reach directly: a relay delivers it to the named session. " +
+        "The message is about one client and is visible only to callers allowed that client.",
+      inputSchema: {
+        by,
+        to: z
+          .string()
+          .min(1)
+          .max(96)
+          .describe(
+            "The session to deliver to, by the name other sessions use for it",
+          ),
+        clientId: id.describe(
+          "The client the message is about, from client_list",
+        ),
+        text: z
+          .string()
+          .min(1)
+          .max(4000)
+          .describe("The message, at most 4000 characters"),
+      },
+    },
+    ({ by, to, clientId, text }) =>
+      run(async () => messages.send(ctx, by, to, clientId, text)),
+  );
+
+  server.registerTool(
+    "message_inbox",
+    {
+      description:
+        "Read messages, oldest first: those sent to a session (to), or every one not yet delivered (undelivered). " +
+        "A session that cannot be reached directly reads its replies here.",
+      inputSchema: {
+        to: z
+          .string()
+          .min(1)
+          .max(96)
+          .optional()
+          .describe("Only messages to this session"),
+        undelivered: z
+          .boolean()
+          .optional()
+          .describe("Only messages no relay has delivered yet"),
+        since: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/)
+          .optional()
+          .describe("Only messages created after this time, ISO UTC"),
+        limit: z.number().int().min(1).max(200).optional(),
+      },
+    },
+    (input) =>
+      run(async () => ({ messages: await messages.inbox(ctx, input) })),
+  );
+
+  server.registerTool(
+    "message_delivered",
+    {
+      description:
+        "Mark messages delivered, once you have passed them to their session or read your own. " +
+        "Messages already marked stay as they were.",
+      inputSchema: {
+        by,
+        ids: z.array(id).min(1).max(200),
+      },
+    },
+    ({ by, ids }) =>
+      run(async () => ({ delivered: await messages.delivered(ctx, by, ids) })),
   );
 }

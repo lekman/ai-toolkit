@@ -8,17 +8,20 @@ tailnet.
 
 ## Tools
 
-| Tool            | Does                                                                  |
-| --------------- | --------------------------------------------------------------------- |
-| `task_search`   | Open items for a client, most important first, with computed priority |
-| `task_get`      | One item with its log, history, revision and the priority's reason    |
-| `client_list`   | Clients and their workstreams, with their ids                         |
-| `task_add`      | A new item, taking the client's classification and boundary           |
-| `task_update`   | Change fields at the revision read; history records what changed      |
-| `task_claim`    | Hold an item so other agents leave it alone                           |
-| `task_release`  | Give a claim up                                                       |
-| `task_log`      | An append-only progress note                                          |
-| `task_complete` | Done today, claim and blocked details cleared                         |
+| Tool                | Does                                                                  |
+| ------------------- | --------------------------------------------------------------------- |
+| `task_search`       | Open items for a client, most important first, with computed priority |
+| `task_get`          | One item with its log, history, revision and the priority's reason    |
+| `client_list`       | Clients and their workstreams, with their ids                         |
+| `task_add`          | A new item, taking the client's classification and boundary           |
+| `task_update`       | Change fields at the revision read; history records what changed      |
+| `task_claim`        | Hold an item so other agents leave it alone                           |
+| `task_release`      | Give a claim up                                                       |
+| `task_log`          | An append-only progress note                                          |
+| `task_complete`     | Done today, claim and blocked details cleared                         |
+| `message_send`      | A message to another session by name, delivered by a relay            |
+| `message_inbox`     | Messages to a session, or all not yet delivered                       |
+| `message_delivered` | Mark messages delivered, once passed on or read                       |
 
 ## Set Up a Machine
 

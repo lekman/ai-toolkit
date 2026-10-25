@@ -85,11 +85,12 @@ describe("search", () => {
     expect(all.items.map((i) => i.id)).toEqual([done.id]);
   });
 
-  test("a summary carries the done day, kind and tracker link", async () => {
+  test("a summary carries the done day, kind, tracker link and details page", async () => {
     const ctx = await fixture();
     const item = await tasks.add(ctx, "a", "acme", {
       title: "Ship",
       kind: "admin",
+      detailsId: "7-ship",
       tracker: {
         system: "github",
         key: "acme/app#7",
@@ -103,6 +104,7 @@ describe("search", () => {
       kind: "admin",
       trackerKey: "acme/app#7",
       trackerUrl: "https://github.com/acme/app/issues/7",
+      detailsId: "7-ship",
     });
   });
 

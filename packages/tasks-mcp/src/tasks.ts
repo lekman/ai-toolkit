@@ -82,6 +82,7 @@ export interface ItemSummary {
   claimedBy?: string;
   trackerKey?: string;
   trackerUrl?: string;
+  detailsId?: string;
   revision: number;
   priority: Priority;
   urgency: Assessment["urgency"];
@@ -197,6 +198,7 @@ function summarise(item: DashboardItem, day: string): ItemSummary {
     claimedBy: item.claim?.by,
     trackerKey: item.tracker?.key,
     trackerUrl: item.tracker?.url,
+    detailsId: item.detailsId,
     revision: item.revision,
     priority: a.priority,
     urgency: a.urgency,

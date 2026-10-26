@@ -22,12 +22,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 KEYCHAIN_SERVICE = "tasks-mcp-token"
 LAUNCHER = Path.home() / ".local" / "bin" / "tasks"
@@ -143,6 +145,44 @@ def revision(item_id: str) -> int:
     return call("task_get", {"id": item_id})["revision"]
 
 
+PR_REF = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+$")
+# The tracker system follows from the ticket URL's host; anything else is "other".
+TRACKER_HOSTS = (("monday.com", "monday"), ("atlassian.net", "jira"), ("github.com", "github"))
+
+
+def pr_refs(values: list[str] | None) -> list[str]:
+    """Pull request references as the server stores them: owner/repo#number."""
+    refs = []
+    for value in values or []:
+        if not PR_REF.match(value):
+            raise Failure(f"not a pull request: {value} (use owner/repo#number)", EXIT_USAGE)
+        if value not in refs:
+            refs.append(value)
+    return refs
+
+
+def tracker(pair: list[str] | None) -> dict | None:
+    """--tracker KEY URL as the server's tracker object."""
+    if not pair:
+        return None
+    key, url = pair
+    if not url.startswith(("http://", "https://")):
+        raise Failure(f"not a tracker URL: {url}", EXIT_USAGE)
+    host = (urlparse(url).hostname or "").lower()
+    system = next((name for suffix, name in TRACKER_HOSTS if host == suffix or host.endswith("." + suffix)), "other")
+    return {"system": system, "key": key, "url": url}
+
+
+def links(args) -> dict:
+    """The tracker and details page fields that add and set share."""
+    fields = {}
+    if args.tracker:
+        fields["tracker"] = tracker(args.tracker)
+    if args.details:
+        fields["detailsId"] = None if args.details == "none" else args.details
+    return fields
+
+
 def line(item: dict) -> str:
     """One item as one readable line."""
     marks = [item.get("priority", ""), item.get("state", "")]
@@ -162,6 +202,10 @@ def show(item: dict) -> str:
     out.append(f"  scheduled {item.get('scheduledFor') or 'backlog'}" + (f" · due {item['due']}" if item.get("due") else ""))
     if item.get("tracker"):
         out.append(f"  {item['tracker'].get('key')}  {item['tracker'].get('url')}")
+    if item.get("detailsId"):
+        out.append(f"  details {item['detailsId']}")
+    if item.get("pullRequests"):
+        out.append(f"  pull requests {', '.join(item['pullRequests'])}")
     if item.get("blocked"):
         b = item.get("blockedOn") or {}
         out.append(f"  blocked: waiting for {b.get('waitingFor', 'unknown')}" + (f" since {b['since']}" if b.get("since") else ""))
@@ -240,8 +284,23 @@ def run(args) -> tuple[object, str]:
             fields["businessValue"] = args.value
         if args.admin:
             fields["kind"] = "admin"
+        fields.update(links(args))
+        if args.pr:
+            fields["pullRequests"] = pr_refs(args.pr)
         res = call("task_add", {k: v for k, v in fields.items() if v is not None})
         return res, f"added {res['id']}  {res['title']}"
+    if c == "set":
+        # Pull requests are added to the list the item already holds, at the revision that was read.
+        item = call("task_get", {"id": args.id})
+        fields = links(args)
+        if args.pr or args.drop_pr:
+            drop = set(pr_refs(args.drop_pr))
+            kept = [r for r in item.get("pullRequests") or [] if r not in drop]
+            fields["pullRequests"] = kept + [r for r in pr_refs(args.pr) if r not in kept]
+        if not fields:
+            raise Failure("nothing to set: pass --pr, --drop-pr, --tracker or --details", EXIT_USAGE)
+        res = call("task_update", {"by": by(args), "id": args.id, "revision": item["revision"], **fields})
+        return res, f"set {', '.join(fields)} on {args.id}"
     raise Failure(f"unknown command {c}", EXIT_USAGE)
 
 
@@ -275,6 +334,13 @@ def parser() -> argparse.ArgumentParser:
     a.add_argument("--priority", choices=["high", "normal", "low"]); a.add_argument("--effort", choices=["XS", "S", "M", "L", "XL"])
     a.add_argument("--value", choices=["negative", "none", "low", "medium", "high", "veryHigh"]); a.add_argument("--due")
     a.add_argument("--admin", action="store_true")
+    ln = sub.add_parser("set", help="link pull requests, a tracker ticket or a details page")
+    ln.add_argument("id")
+    ln.add_argument("--drop-pr", action="append", metavar="OWNER/REPO#N", help="remove a pull request link")
+    for q in (a, ln):
+        q.add_argument("--pr", action="append", metavar="OWNER/REPO#N", help="link a pull request; repeat for more")
+        q.add_argument("--tracker", nargs=2, metavar=("KEY", "URL"), help="the tracker ticket, for example ADX-12 and its URL")
+        q.add_argument("--details", metavar="ID", help="the details page id, or none to clear it")
     return p
 
 

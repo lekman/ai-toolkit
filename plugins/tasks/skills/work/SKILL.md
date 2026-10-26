@@ -77,6 +77,8 @@ When you open a pull request for an item, add it to the item's
 list: read the item, append yours, and pass the revision. Dashboards then show
 the item's own pull requests instead of every one that mentions its ticket.
 Leave merged ones in the list; they show the work that was done.
+From Bash, `tasks set <id> --pr owner/repo#number` does the read, the
+append and the revision for you.
 
 ## Finish
 

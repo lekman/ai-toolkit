@@ -20,7 +20,9 @@ through the [tasks plugin](../../plugins/tasks).
   history: added, claimed, released, state, moved and edited.
 - **Claims are exclusive.** Claiming is one statement, so two agents claiming
   at once cannot both win. An item claimed by one agent cannot be updated or
-  completed by another without `force`.
+  completed by another without `force`. An update that changes only the
+  business value, effort or due date goes through, because those grade the
+  item rather than work on it.
 - **Updates are revision checked.** A write names the revision it read and is
   refused when someone else wrote first, with a message telling the agent to
   read again.

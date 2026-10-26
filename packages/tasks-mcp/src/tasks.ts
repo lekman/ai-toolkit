@@ -333,10 +333,22 @@ export async function add(
 }
 
 /**
+ * Fields that grade an item rather than work on it. The owner sets them while
+ * planning, so an update that touches only these goes through another agent's
+ * claim.
+ */
+const GRADING: ReadonlySet<keyof ItemFields> = new Set([
+  "businessValue",
+  "effort",
+  "due",
+]);
+
+/**
  * Change an item's fields, at the revision the caller read. A field set to
  * null is cleared. Records a history entry for a state change, for a move to
  * another day, and for any other edit, and adds the note to the log when one
- * is given. Returns the new revision.
+ * is given. Returns the new revision. Another agent's claim refuses the change
+ * unless it is forced or touches only the grading fields.
  */
 export function update(
   ctx: Context,
@@ -346,8 +358,15 @@ export function update(
   fields: ItemFields,
   options: { note?: string; force?: boolean } = {},
 ): Promise<number> {
-  return change(ctx, by, id, revision, options, (item, day) =>
-    apply(item, fields, day),
+  const keys = Object.keys(fields) as (keyof ItemFields)[];
+  const grading = keys.length > 0 && keys.every((k) => GRADING.has(k));
+  return change(
+    ctx,
+    by,
+    id,
+    revision,
+    { ...options, force: options.force || grading },
+    (item, day) => apply(item, fields, day),
   );
 }
 

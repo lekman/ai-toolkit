@@ -78,17 +78,18 @@ and plugin updates keep it current:
 python3 ~/.claude/plugins/cache/ai-toolkit/tasks/*/scripts/tasks install
 ```
 
-| Command                                                                                             | Does                                                        |
-| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `tasks clients`                                                                                     | Clients and their workstreams                               |
-| `tasks search [--client ID] [--text …] [--unclaimed] [--claimed-by NAME] [--blocked] [--until DAY]` | Open items, most important first                            |
-| `tasks show ID`                                                                                     | One item with its log                                       |
-| `tasks claim ID` / `tasks release ID [--force]`                                                     | Hold an item, or give it up                                 |
-| `tasks start ID [--note …]` / `tasks state ID STATE [--note …]`                                     | Set the state, with an optional note                        |
-| `tasks done ID [--note …] [--on DAY]`                                                               | Mark it done                                                |
-| `tasks move ID DAY`                                                                                 | Schedule it: `YYYY-MM-DD`, `today`, `tomorrow` or `backlog` |
-| `tasks log ID [--status S] NOTE`                                                                    | Append a progress note                                      |
-| `tasks add --client ID --title … [--day DAY] [--owner WHO] [--waiting-on WHO]`                      | Add an item                                                 |
+| Command                                                                                                                      | Does                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `tasks clients`                                                                                                              | Clients and their workstreams                                                                                  |
+| `tasks search [--client ID] [--text …] [--unclaimed] [--claimed-by NAME] [--blocked] [--until DAY]`                          | Open items, most important first                                                                               |
+| `tasks show ID`                                                                                                              | One item with its log                                                                                          |
+| `tasks claim ID` / `tasks release ID [--force]`                                                                              | Hold an item, or give it up                                                                                    |
+| `tasks start ID [--note …]` / `tasks state ID STATE [--note …]`                                                              | Set the state, with an optional note                                                                           |
+| `tasks done ID [--note …] [--on DAY]`                                                                                        | Mark it done                                                                                                   |
+| `tasks move ID DAY`                                                                                                          | Schedule it: `YYYY-MM-DD`, `today`, `tomorrow` or `backlog`                                                    |
+| `tasks log ID [--status S] NOTE`                                                                                             | Append a progress note                                                                                         |
+| `tasks add --client ID --title … [--day DAY] [--owner WHO] [--waiting-on WHO] [--pr REF] [--tracker KEY URL] [--details ID]` | Add an item                                                                                                    |
+| `tasks set ID [--pr REF] [--drop-pr REF] [--tracker KEY URL] [--details ID]`                                                 | Link pull requests (`owner/repo#number`, added to the list the item holds), a tracker ticket or a details page |
 
 Writes need `--by <session name>` or `TASKS_BY`. Add `--json` for the
 server's answer. The address comes from `TASKS_MCP_URL` or the `env` block of

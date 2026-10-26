@@ -90,6 +90,8 @@ export interface ItemSummary {
   trackerUrl?: string;
   detailsId?: string;
   pullRequests?: string[];
+  businessValue?: BusinessValue;
+  effort?: Effort;
   revision: number;
   priority: Priority;
   urgency: Assessment["urgency"];
@@ -208,6 +210,8 @@ function summarise(item: DashboardItem, day: string): ItemSummary {
     trackerUrl: item.tracker?.url,
     detailsId: item.detailsId,
     pullRequests: item.pullRequests?.length ? item.pullRequests : undefined,
+    businessValue: item.businessValue,
+    effort: item.effort,
     revision: item.revision,
     priority: a.priority,
     urgency: a.urgency,

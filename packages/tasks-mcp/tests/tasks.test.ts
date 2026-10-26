@@ -80,6 +80,8 @@ describe("search", () => {
     expect(result.items[0]).toMatchObject({
       priority: "high",
       quadrant: "Q2-schedule",
+      businessValue: "high",
+      effort: "S",
     });
     const all = await tasks.search(ctx, { clientId: "acme", states: ["done"] });
     expect(all.items.map((i) => i.id)).toEqual([done.id]);

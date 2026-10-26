@@ -208,6 +208,30 @@ describe("update", () => {
     expect((await tasks.read(ctx, item.id)).claim?.by).toBe("builder");
   });
 
+  test("value, effort and due go through another agent's claim", async () => {
+    const ctx = await fixture();
+    const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });
+    const revision = await tasks.claim(ctx, "builder", item.id);
+    const next = await tasks.update(ctx, "commander", item.id, revision, {
+      businessValue: "high",
+      effort: "M",
+      due: "2026-11-02",
+    });
+    const read = await tasks.read(ctx, item.id);
+    expect([read.businessValue, read.effort, read.due]).toEqual([
+      "high",
+      "M",
+      "2026-11-02",
+    ]);
+    expect(read.claim?.by).toBe("builder");
+    await expect(
+      tasks.update(ctx, "commander", item.id, next, {
+        effort: "S",
+        title: "Mine",
+      }),
+    ).rejects.toBeInstanceOf(ClaimConflict);
+  });
+
   test("an update that changes nothing is refused without spending a revision", async () => {
     const ctx = await fixture();
     const item = await tasks.add(ctx, "a", "acme", { title: "Ship" });

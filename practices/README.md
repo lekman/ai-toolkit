@@ -90,6 +90,18 @@ flowchart LR
   live connector beats a pipeline. Design for the implementation in
   [packages/rag/DESIGN.md](../packages/rag/DESIGN.md).
 
+## Meetings
+
+Notes from meetings the meeting tool cannot or should not record: transcribe
+on your own machine, then let an agent write the note. The privacy choice sits
+between the two steps, so each client decides which model may read its
+transcripts.
+
+- [Meetings](meetings/README.md): local capture and transcription with
+  Meetily, the export that keeps transcript text out of the session, the
+  per-client local-only rule, and every copy left on disk. Driven by the
+  [meeting plugin](../plugins/meeting/README.md).
+
 ## Codebase Graphs
 
 Retrieval makes prose searchable. The equivalent for code is structural: a graph

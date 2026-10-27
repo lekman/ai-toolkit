@@ -53,7 +53,7 @@ jobs:
 
       - name: Test plugin scripts
         run: |
-          for dir in plugins/commander/scripts plugins/share/scripts plugins/planner/scripts plugins/obsidian/scripts; do
+          for dir in plugins/commander/scripts plugins/share/scripts plugins/planner/scripts plugins/obsidian/scripts plugins/meeting/scripts; do
             echo "--- bun test: $dir"
             (cd "$dir" && bun test)
           done

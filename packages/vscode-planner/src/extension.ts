@@ -21,6 +21,12 @@ import {
   StdioToolHost,
 } from "./atlas/index.ts";
 import { Config, VscodeConfigSource } from "./config/index.ts";
+import {
+  ConnectorHub,
+  type ConnectorName,
+  LocalCredentials,
+  MONDAY_SECRET,
+} from "./connectors/index.ts";
 import { Dashboard, FileDashboardReader } from "./dashboard/index.ts";
 import { Explorer } from "./explorer/index.ts";
 import { PlannerViewProvider } from "./view/index.ts";
@@ -99,7 +105,37 @@ export function activate(context: vscode.ExtensionContext): void {
       dispose: () => host.dispose(),
     },
     store,
+    new ConnectorHub(new LocalCredentials(context.secrets), () =>
+      vscode.workspace
+        .getConfiguration("planner")
+        .get<ConnectorName[]>("connectors", [
+          "github",
+          "microsoft365",
+          "monday",
+        ]),
+    ),
   );
+
+  // The token goes to SecretStorage, the macOS Keychain, and never to the
+  // settings, which are plain text and copied by Settings Sync. The page is
+  // reloaded afterwards, because it stops asking a connector it was told is
+  // not available.
+  const setMondayToken = async () => {
+    const token = await vscode.window.showInputBox({
+      ignoreFocusOut: true,
+      password: true,
+      prompt:
+        "monday.com personal API token (Profile → Developers → API token). Stored in the Keychain.",
+      title: "Atlas: Set monday.com Token",
+    });
+    if (!token?.trim()) return;
+    await context.secrets.store(MONDAY_SECRET, token.trim());
+    reloadAtlas(Config.load(source), true);
+  };
+  const clearMondayToken = async () => {
+    await context.secrets.delete(MONDAY_SECRET);
+    reloadAtlas(Config.load(source), true);
+  };
 
   const reloadAtlas = (config: PaneState["config"], force: boolean) => {
     const server = Atlas.hostServer(
@@ -255,6 +291,11 @@ export function activate(context: vscode.ExtensionContext): void {
       reload();
       reloadAtlas(Config.load(source), true);
     }),
+    vscode.commands.registerCommand("planner.setMondayToken", setMondayToken),
+    vscode.commands.registerCommand(
+      "planner.clearMondayToken",
+      clearMondayToken,
+    ),
     vscode.commands.registerCommand(
       "planner.toggleHiddenFiles",
       toggleHiddenFiles,

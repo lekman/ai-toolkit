@@ -19,16 +19,12 @@ The page talks to its runtime through `window.claude.use("mcp")` and
 `window.claude.use("db")`. In VS Code a small script stands in for that
 runtime and passes each call to the extension:
 
-| The page asks for      | VS Code answers from                                                   |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `host:dashboard` tools | The local dashboard server, started from the Claude desktop config     |
-| The data store (`db`)  | A JSON file in the extension's storage, on this machine only           |
-| Any other connector    | `not_granted`, so that section stays empty, as outside the desktop app |
-
-So the worklist, item actions, details pages, pull requests, release status
-and the calendar feeds behave as in the desktop app. Sections fed only by a
-claude.ai connector (Google Calendar, Microsoft 365, monday.com, GitHub
-issues) stay empty, because VS Code cannot sign in to those connectors.
+| The page asks for                       | VS Code answers from                                                   |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| `host:dashboard` tools                  | The local dashboard server, started from the Claude desktop config     |
+| The data store (`db`)                   | A JSON file in the extension's storage, on this machine only           |
+| `GitHub`, `Microsoft 365`, `monday.com` | The services' own APIs, see [Direct Connectors](#direct-connectors)    |
+| Any other connector                     | `not_granted`, so that section stays empty, as outside the desktop app |
 
 The page is read from the vault on each change and never bundled, so the
 extension holds no client names and a republished page needs no rebuild.
@@ -38,6 +34,31 @@ The webview allows scripts carrying a per-render nonce, Google Fonts, and the
 Markdown libraries the page loads from cdnjs. The page makes no other network
 requests; everything else goes through the extension, which checks each
 message and only accepts store paths shaped like the ones the page writes.
+
+## Direct Connectors
+
+VS Code cannot reach claude.ai connectors, so the extension calls the APIs
+behind the three the page uses and answers in the connector's shape. Each
+uses a credential that already lives on the machine, or one kept in the
+Keychain:
+
+| Connector     | API                                       | Credential                                                           |
+| ------------- | ----------------------------------------- | -------------------------------------------------------------------- |
+| GitHub        | REST: issue search and the signed-in user | The account `gh` is signed in to (`gh auth token`)                   |
+| Microsoft 365 | Graph: the default calendar's view        | The [calendar package](../calendar)'s sign-in, `Calendars.Read` only |
+| monday.com    | GraphQL: one board's items                | A personal API token, set with **Atlas: Set monday.com Token**       |
+
+The monday.com token is stored in VS Code SecretStorage, which is the macOS
+Keychain, never in the settings: settings are plain text and Settings Sync
+copies them. **Atlas: Clear monday.com Token** removes it. A personal token
+carries everything your monday.com user may do, writes included, although
+the extension only reads.
+
+`planner.connectors` lists the ones in use; remove one to leave its section
+empty. A connector with no credential answers `not_granted`, and a refused
+one `needs_reauth`, which the page shows as it does in the artifact. Google
+Calendar has no direct version: calendars shared as `.ics` feeds already
+reach the page through the dashboard server.
 
 ## Today and Tomorrow
 
@@ -86,6 +107,7 @@ repository's `.vscode/settings.json` to pin a repository to specific clients:
 | `planner.atlasPage`          | `""`          | Path to the Atlas page.                        |
 | `planner.atlasServer`        | `"dashboard"` | The dashboard server's key in Claude's config. |
 | `planner.dashboardPath`      | `""`          | Path to `Dashboard.md`.                        |
+| `planner.connectors`         | all three     | Direct connectors in use.                      |
 | `planner.clients`            | `[]`          | Client headings to show.                       |
 | `planner.showClientHeadings` | `"auto"`      | Print the client name.                         |
 | `planner.showCompleted`      | `true`        | Show `- [x]` tasks.                            |
@@ -199,6 +221,7 @@ rules](../../.claude/rules/clean-architecture.md): pure logic in
 | Path               | Holds                                              |
 | ------------------ | -------------------------------------------------- |
 | `src/atlas/`       | Hosting the Atlas page and answering its runtime   |
+| `src/connectors/`  | Connector calls answered by the services' APIs     |
 | `src/config/`      | Resolving the dashboard path and the client filter |
 | `src/dashboard/`   | Parsing `Dashboard.md`; inline markdown to HTML    |
 | `src/view/`        | Building each pane's HTML; the webview providers   |

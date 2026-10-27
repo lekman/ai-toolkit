@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 
+import type { IConnectors } from "../connectors/index.ts";
 import type { IDocStore, IToolHost } from "./interfaces.ts";
 import type { AtlasRequest, RuntimeError } from "./types.ts";
 
@@ -26,11 +27,13 @@ export class AtlasViewProvider implements vscode.WebviewViewProvider {
    * @param getState - Returns the page and focus at render time.
    * @param host - Answers `host:dashboard` tool calls.
    * @param store - The page's data store.
+   * @param connectors - Answers connector calls with direct API requests.
    */
   constructor(
     private readonly getState: () => AtlasState,
     private readonly host: IToolHost,
     private readonly store: IDocStore,
+    private readonly connectors: IConnectors,
   ) {}
 
   /** Re-render the page from current state. Safe before the view exists. */
@@ -86,7 +89,16 @@ export class AtlasViewProvider implements vscode.WebviewViewProvider {
       switch (request.kind) {
         case "callTool": {
           if (!Atlas.isHost(request.server)) {
-            reply({ error: Atlas.notGranted(request.server) });
+            const direct = this.connectors.call(
+              request.server,
+              request.tool,
+              request.args,
+            );
+            reply(
+              direct
+                ? { result: await direct }
+                : { error: Atlas.notGranted(request.server) },
+            );
             return;
           }
           const result = await this.host.callTool(request.tool, request.args);

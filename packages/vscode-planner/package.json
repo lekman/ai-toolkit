@@ -2,7 +2,7 @@
   "name": "planner",
   "displayName": "Atlas",
   "description": "Sidebar view of the Atlas work dashboard, the same page as the Claude artifact, with a read-only Today and Tomorrow fallback from the Obsidian dashboard.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "lekman",
   "license": "MIT",
   "private": true,
@@ -78,6 +78,14 @@
         "command": "planner.toggleHiddenFiles",
         "title": "Atlas: Toggle Hidden Files",
         "icon": "$(files)"
+      },
+      {
+        "command": "planner.setMondayToken",
+        "title": "Atlas: Set monday.com Token"
+      },
+      {
+        "command": "planner.clearMondayToken",
+        "title": "Atlas: Clear monday.com Token"
       }
     ],
     "menus": {
@@ -139,6 +147,24 @@
           },
           "default": [],
           "markdownDescription": "Only show tasks under these client headings, e.g. `[\"Acme\"]`. Set this per repository in `.vscode/settings.json`. Leave empty to derive the client from the `clients` path map in `~/.claude/obsidian.json`; if that also finds nothing, every client is shown."
+        },
+        "planner.connectors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "github",
+              "microsoft365",
+              "monday"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [
+            "github",
+            "microsoft365",
+            "monday"
+          ],
+          "markdownDescription": "Connectors the Atlas page gets from the services' APIs directly, in place of the claude.ai connectors VS Code cannot reach. `github` uses your `gh` sign-in, `microsoft365` the calendar package's sign-in, and `monday` a token set with **Atlas: Set monday.com Token**, kept in the Keychain. Remove one to leave its section empty."
         },
         "planner.dashboardPath": {
           "type": "string",

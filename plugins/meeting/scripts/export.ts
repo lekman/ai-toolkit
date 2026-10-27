@@ -120,8 +120,10 @@ function label(speaker: null | string): string {
 }
 
 /**
- * Join consecutive segments from the same speaker into one paragraph, stamped
- * with the time of its first segment.
+ * Join consecutive segments from the same known speaker into one paragraph,
+ * stamped with the time of its first segment. Unlabelled segments stay one per
+ * line, because without a speaker every segment would join into one paragraph
+ * with a single time.
  */
 export function renderTranscript(meeting: MeetingInfo, rows: Row[]): string {
   const lines = [
@@ -140,7 +142,7 @@ export function renderTranscript(meeting: MeetingInfo, rows: Row[]): string {
     const text = row.transcript.trim();
     if (!text) continue;
     const speaker = label(row.speaker);
-    if (current && current.speaker === speaker) {
+    if (current && speaker && current.speaker === speaker) {
       current.text.push(text);
       continue;
     }

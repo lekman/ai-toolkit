@@ -85,6 +85,11 @@ alone.
   fills the column.
 - Segments are long (a one-minute test produced two), so the time stamped on a
   decision or action points to its segment rather than the exact sentence.
+- Meetily saves each meeting's audio, plus a second copy of the transcript
+  (`transcripts.json`), in `~/Movies/meetily-recordings/<meeting>/`. Deleting
+  the meeting in the app removes it from the database but leaves that folder.
+  Turn off audio saving in Meetily's Recordings settings if you only want
+  text, and delete the folder by hand when you delete a meeting.
 - The database layout is Meetily's internal format, not a published interface.
   A Meetily upgrade can change it. The tests in
   [scripts/export.test.ts](scripts/export.test.ts) pin the layout the script

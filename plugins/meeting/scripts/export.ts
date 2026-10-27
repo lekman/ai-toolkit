@@ -176,8 +176,6 @@ export function exportMeeting(
     );
   if (meeting.segments === 0)
     throw new Error(`Meeting "${meeting.title}" has no transcript segments`);
-  if (existsSync(out)) throw new Error(`Refusing to overwrite ${out}`);
-
   const start = hasColumn(db, "transcripts", "audio_start_time")
     ? "audio_start_time"
     : "NULL";
@@ -191,7 +189,18 @@ export function exportMeeting(
     .all(meeting.id) as Row[];
 
   mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, renderTranscript(meeting, rows), "utf8");
+  // "wx" creates the file and fails if it already exists, in one step.
+  try {
+    writeFileSync(out, renderTranscript(meeting, rows), {
+      encoding: "utf8",
+      flag: "wx",
+    });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new Error(`Refusing to overwrite ${out}`, { cause: err });
+    }
+    throw err;
+  }
   return { ...meeting, out };
 }
 

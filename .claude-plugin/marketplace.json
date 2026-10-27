@@ -104,6 +104,13 @@
       "description": "Task MCP for every agent: search, read, add, claim, update, log and complete dashboard items in the shared dashboard database, over the tailnet, with a skill on how agents use it",
       "category": "productivity",
       "tags": ["tasks", "dashboard", "mcp", "agents", "workflow"]
+    },
+    {
+      "name": "meeting",
+      "source": "./plugins/meeting",
+      "description": "Meeting notes from meetings recorded and transcribed on your Mac by Meetily: transcript into the client's vault folder, summary, decisions, actions and open questions, and a per-client rule that only a local model reads the transcript",
+      "category": "productivity",
+      "tags": ["meetings", "transcription", "notes", "obsidian", "privacy"]
     }
   ]
 }

@@ -17,6 +17,7 @@ path, or a spec.
 /plugin install video@ai-toolkit
 /plugin install share@ai-toolkit
 /plugin install tasks@ai-toolkit
+/plugin install meeting@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -98,6 +99,13 @@ Then invoke a skill, for example `/git:commit`.
   of editing `Dashboard.md`. The server is
   [packages/tasks-mcp](../packages/tasks-mcp). See
   [tasks/README.md](tasks/README.md).
+- **meeting**, [notes](meeting/skills/notes/SKILL.md): turn a meeting that
+  [Meetily](https://github.com/Zackriya-Solutions/meetily) recorded and
+  transcribed on your Mac into a note in the client's vault folder, with
+  summary, decisions, actions and open questions, each stamped with its
+  transcript time. Works for meetings you cannot record in the meeting tool.
+  Clients listed as local-only have their transcript read by a local model
+  only. See [meeting/README.md](meeting/README.md).
 - **share**, [site](share/skills/site/SKILL.md) /
   [files](share/skills/files/SKILL.md): put a local site such as Storybook on
   the tailnet with `tailscale serve`, so it stays off the LAN and the internet,

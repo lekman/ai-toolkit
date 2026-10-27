@@ -55,5 +55,8 @@
         }
       }
     }
+  },
+  "meetings": {
+    "local_only": ["Globex"]
   }
 }

@@ -1,8 +1,8 @@
 {
   "name": "planner",
-  "displayName": "Planner",
-  "description": "Read-only sidebar view of today's and tomorrow's tasks from the Obsidian dashboard, filtered to this repository's client.",
-  "version": "0.1.0",
+  "displayName": "Atlas",
+  "description": "Sidebar view of the Atlas work dashboard, the same page as the Claude artifact, with a read-only Today and Tomorrow fallback from the Obsidian dashboard.",
+  "version": "0.2.0",
   "publisher": "lekman",
   "license": "MIT",
   "private": true,
@@ -18,13 +18,15 @@
     "Other"
   ],
   "main": "./dist/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
           "id": "planner",
-          "title": "Planner",
+          "title": "Atlas",
           "icon": "media/planner.svg"
         }
       ]
@@ -33,36 +35,49 @@
       "planner": [
         {
           "type": "webview",
+          "id": "planner.atlas",
+          "name": "Atlas",
+          "when": "planner.atlasAvailable"
+        },
+        {
+          "type": "webview",
           "id": "planner.today",
-          "name": "Today"
+          "name": "Today",
+          "when": "!planner.atlasAvailable"
         },
         {
           "type": "webview",
           "id": "planner.tomorrow",
-          "name": "Tomorrow"
+          "name": "Tomorrow",
+          "when": "!planner.atlasAvailable"
         }
       ]
     },
     "commands": [
       {
         "command": "planner.refresh",
-        "title": "Planner: Refresh",
+        "title": "Atlas: Refresh",
         "icon": "$(refresh)"
       },
       {
         "command": "planner.hideCompleted",
-        "title": "Planner: Hide Completed Tasks",
+        "title": "Atlas: Hide Completed Tasks",
         "icon": "$(eye)"
       },
       {
         "command": "planner.showCompleted",
-        "title": "Planner: Show Completed Tasks",
+        "title": "Atlas: Show Completed Tasks",
         "icon": "$(eye-closed)"
       },
       {
         "command": "planner.openDashboard",
-        "title": "Planner: Open Dashboard",
+        "title": "Atlas: Open Dashboard",
         "icon": "$(go-to-file)"
+      },
+      {
+        "command": "planner.toggleHiddenFiles",
+        "title": "Atlas: Toggle Hidden Files",
+        "icon": "$(files)"
       }
     ],
     "menus": {
@@ -89,23 +104,33 @@
         },
         {
           "command": "planner.refresh",
-          "when": "view == planner.today || view == planner.tomorrow",
+          "when": "view == planner.atlas || view == planner.today || view == planner.tomorrow",
           "group": "navigation@2"
         },
         {
           "command": "planner.openDashboard",
-          "when": "view == planner.today || view == planner.tomorrow",
+          "when": "view == planner.atlas || view == planner.today || view == planner.tomorrow",
           "group": "navigation@3"
+        },
+        {
+          "command": "planner.toggleHiddenFiles",
+          "when": "view == planner.atlas || view == planner.today || view == planner.tomorrow",
+          "group": "navigation@0"
         }
       ]
     },
     "configuration": {
-      "title": "Planner",
+      "title": "Atlas",
       "properties": {
-        "planner.dashboardPath": {
+        "planner.atlasPage": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Absolute path to `Dashboard.md`. Leave empty to read `vault` + `dashboard` from `~/.claude/obsidian.json`."
+          "markdownDescription": "Absolute path to the Atlas page, the HTML the Claude artifact is published from. Leave empty to use `_Dashboard Sync/dashboard-page.html` in the vault. When the page cannot be read, the sidebar shows the Today and Tomorrow panes instead."
+        },
+        "planner.atlasServer": {
+          "type": "string",
+          "default": "dashboard",
+          "markdownDescription": "Name of the local dashboard server under `mcpServers` in the Claude desktop config. The Atlas page calls it as `host:dashboard`; VS Code starts the same command."
         },
         "planner.clients": {
           "type": "array",
@@ -114,6 +139,17 @@
           },
           "default": [],
           "markdownDescription": "Only show tasks under these client headings, e.g. `[\"Acme\"]`. Set this per repository in `.vscode/settings.json`. Leave empty to derive the client from the `clients` path map in `~/.claude/obsidian.json`; if that also finds nothing, every client is shown."
+        },
+        "planner.dashboardPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Absolute path to `Dashboard.md`. Leave empty to read `vault` + `dashboard` from `~/.claude/obsidian.json`."
+        },
+        "planner.pollSeconds": {
+          "type": "number",
+          "default": 30,
+          "minimum": 0,
+          "markdownDescription": "How often to re-read the dashboard as a fallback, in seconds. The file watcher is the primary trigger; polling covers vaults on iCloud or another sync client, whose writes do not always raise a watcher event. `0` disables polling."
         },
         "planner.showClientHeadings": {
           "type": "string",
@@ -129,12 +165,6 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Show `- [x]` tasks. Toggled by the eye button on the view title bar."
-        },
-        "planner.pollSeconds": {
-          "type": "number",
-          "default": 30,
-          "minimum": 0,
-          "markdownDescription": "How often to re-read the dashboard as a fallback, in seconds. The file watcher is the primary trigger; polling covers vaults on iCloud or another sync client, whose writes do not always raise a watcher event. `0` disables polling."
         },
         "planner.vaultRoot": {
           "type": "string",

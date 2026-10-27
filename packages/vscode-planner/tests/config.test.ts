@@ -17,6 +17,8 @@ const SHARED: SharedObsidianConfig = {
 };
 
 const DEFAULTS: PlannerSettings = {
+  atlasPage: "",
+  atlasServer: "dashboard",
   clients: [],
   dashboardPath: "",
   pollSeconds: 30,
@@ -155,8 +157,8 @@ describe("vaultRoot", () => {
     // Null and "" would both be falsy, but the view spreads this onto the
     // model only when truthy; a null says "not known" without pretending a
     // root of "" exists.
-    expect(Config.resolve(DEFAULTS, null, undefined, SHARED_PATH).vaultRoot).toBe(
-      null,
-    );
+    expect(
+      Config.resolve(DEFAULTS, null, undefined, SHARED_PATH).vaultRoot,
+    ).toBe(null);
   });
 });

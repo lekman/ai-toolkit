@@ -1,17 +1,28 @@
 /**
  * Extension entry point.
  *
- * Wires the config, dashboard and view domains together and keeps the two
- * panes in step with the file on disk.
+ * Wires the config, dashboard, view and Atlas domains together. When the
+ * Atlas page can be read, the sidebar shows it, the same page the Claude
+ * artifact runs; otherwise it shows the Today and Tomorrow panes, kept in
+ * step with `Dashboard.md`.
  */
 
-import { basename, dirname } from "node:path";
+import { basename, dirname, join } from "node:path";
 import * as vscode from "vscode";
 
+import type { AtlasState } from "./atlas/index.ts";
 import type { PaneState, ToggleRequest } from "./view/index.ts";
 
+import {
+  Atlas,
+  AtlasFiles,
+  AtlasViewProvider,
+  FileDocStore,
+  StdioToolHost,
+} from "./atlas/index.ts";
 import { Config, VscodeConfigSource } from "./config/index.ts";
 import { Dashboard, FileDashboardReader } from "./dashboard/index.ts";
+import { Explorer } from "./explorer/index.ts";
 import { PlannerViewProvider } from "./view/index.ts";
 
 /**
@@ -69,6 +80,59 @@ export function activate(context: vscode.ExtensionContext): void {
   const today = new PlannerViewProvider(0, () => state, applyToggle);
   const tomorrow = new PlannerViewProvider(1, () => state, applyToggle);
 
+  // The Atlas page keeps its own timers and fetches its own data, so it is
+  // rendered again only when the page file, the server or the client it
+  // opens on changes. Rendering it on every dashboard reload would restart
+  // it each time the window took focus.
+  let atlas: AtlasState = { focus: null, pagePath: null, source: null };
+  let atlasKey = "";
+  let atlasServerKey = "";
+  let atlasModified: null | number = null;
+  let host = new StdioToolHost(null);
+  const store = new FileDocStore(
+    join(context.globalStorageUri.fsPath, "atlas-store.json"),
+  );
+  const atlasView = new AtlasViewProvider(
+    () => atlas,
+    {
+      callTool: (tool, args) => host.callTool(tool, args),
+      dispose: () => host.dispose(),
+    },
+    store,
+  );
+
+  const reloadAtlas = (config: PaneState["config"], force: boolean) => {
+    const server = Atlas.hostServer(
+      AtlasFiles.desktopConfig(),
+      config.atlasServer,
+    );
+    const serverKey = JSON.stringify(server);
+    if (serverKey !== atlasServerKey) {
+      host.dispose();
+      host = new StdioToolHost(server);
+      atlasServerKey = serverKey;
+    }
+
+    const pagePath = config.atlasPagePath;
+    const modified = pagePath ? AtlasFiles.modifiedAt(pagePath) : null;
+    const focus = Atlas.focusKey(config.clients);
+    const key = JSON.stringify([pagePath, modified, focus, serverKey]);
+    if (!force && key === atlasKey) return;
+    atlasKey = key;
+    atlasModified = modified;
+    atlas = {
+      focus,
+      pagePath,
+      source: pagePath ? AtlasFiles.readPage(pagePath) : null,
+    };
+    void vscode.commands.executeCommand(
+      "setContext",
+      "planner.atlasAvailable",
+      atlas.source !== null,
+    );
+    atlasView.render();
+  };
+
   let watcher: undefined | vscode.FileSystemWatcher;
   let timer: NodeJS.Timeout | undefined;
   let lastModified: null | number = null;
@@ -98,8 +162,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
     today.render();
     tomorrow.render();
+    reloadAtlas(config, false);
     watch(config.dashboardPath);
-    poll(config.dashboardPath, config.pollSeconds);
+    poll(config.dashboardPath, config.pollSeconds, config.atlasPagePath);
   };
 
   // The dashboard lives in the vault, outside the workspace, so the watcher is
@@ -125,14 +190,52 @@ export function activate(context: vscode.ExtensionContext): void {
   // iCloud is written by another process, and those writes do not reliably
   // raise a watcher event; a stat every few seconds costs nothing and is the
   // difference between the panes being right and being quietly stale.
-  const poll = (path: null | string, seconds: number) => {
+  // The Atlas page sits in the same synced vault, so the same poll covers it.
+  const poll = (
+    path: null | string,
+    seconds: number,
+    atlasPath: null | string,
+  ) => {
     if (timer) clearInterval(timer);
     timer = undefined;
-    if (!path || seconds <= 0) return;
+    if ((!path && !atlasPath) || seconds <= 0) return;
     timer = setInterval(() => {
-      const modified = reader.modifiedAt(path);
-      if (modified !== lastModified) reload();
+      if (path && reader.modifiedAt(path) !== lastModified) reload();
+      else if (
+        atlasPath &&
+        AtlasFiles.modifiedAt(atlasPath) !== atlasModified
+      ) {
+        reload();
+      }
     }, seconds * 1000);
+  };
+
+  // Writes the user settings, where the list lives, so other extensions that
+  // read `files.exclude` see the same state.
+  const toggleHiddenFiles = async () => {
+    const files = vscode.workspace.getConfiguration("files");
+    const exclude =
+      files.inspect<Record<string, unknown>>("exclude")?.globalValue ?? {};
+    const remembered = context.globalState.get<string[]>(
+      "planner.hiddenPatterns",
+      [],
+    );
+    const result = Explorer.toggle(exclude, remembered);
+    await files.update(
+      "exclude",
+      result.exclude,
+      vscode.ConfigurationTarget.Global,
+    );
+    await context.globalState.update(
+      "planner.hiddenPatterns",
+      result.remembered,
+    );
+    void vscode.window.setStatusBarMessage(
+      result.hidden
+        ? "Atlas: hidden files are hidden"
+        : "Atlas: hidden files are shown",
+      3000,
+    );
   };
 
   const setShowCompleted = async (value: boolean) => {
@@ -143,7 +246,19 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("planner.today", today),
     vscode.window.registerWebviewViewProvider("planner.tomorrow", tomorrow),
-    vscode.commands.registerCommand("planner.refresh", reload),
+    // Kept alive while hidden, so the page's timers and fetches carry on
+    // the way they do in the artifact sidebar.
+    vscode.window.registerWebviewViewProvider("planner.atlas", atlasView, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.commands.registerCommand("planner.refresh", () => {
+      reload();
+      reloadAtlas(Config.load(source), true);
+    }),
+    vscode.commands.registerCommand(
+      "planner.toggleHiddenFiles",
+      toggleHiddenFiles,
+    ),
     vscode.commands.registerCommand("planner.hideCompleted", () =>
       setShowCompleted(false),
     ),
@@ -169,6 +284,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (window.focused) reload();
     }),
     { dispose: () => timer && clearInterval(timer) },
+    { dispose: () => host.dispose() },
   );
 
   reload();

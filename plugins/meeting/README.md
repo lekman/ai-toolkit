@@ -9,7 +9,9 @@ recording would then sit on a server you do not control.
 and transcribes on your Mac. It hears your microphone and everything played
 through your speakers, so it works with any meeting tool and needs no bot in
 the call. This plugin takes Meetily's transcript into your Obsidian vault and
-writes the note from it with `/meeting:notes`.
+writes the note from it with `/meeting:notes`. The practice behind it, and
+the approaches not taken, are in
+[practices/meetings](../../practices/meetings/README.md).
 
 ## Tell People
 

@@ -31,6 +31,12 @@ import { Dashboard, FileDashboardReader } from "./dashboard/index.ts";
 import { Explorer } from "./explorer/index.ts";
 import { PlannerViewProvider } from "./view/index.ts";
 
+/** The Atlas page's `localStorage`, kept for every window. */
+const STORAGE_STATE = "atlas.storage";
+
+/** The client last chosen on the Atlas page, kept per workspace. */
+const FOCUS_STATE = "atlas.focus";
+
 /**
  * Activate the extension.
  *
@@ -114,6 +120,26 @@ export function activate(context: vscode.ExtensionContext): void {
           "monday",
         ]),
     ),
+    {
+      snapshot: () =>
+        Atlas.storageSnapshot(
+          context.globalState.get<Record<string, string>>(STORAGE_STATE, {}),
+          context.workspaceState.get<string>(FOCUS_STATE) ?? null,
+          atlas.focus,
+        ),
+      set: (key, value) => {
+        if (Atlas.storageScope(key) === "workspace") {
+          void context.workspaceState.update(FOCUS_STATE, value ?? undefined);
+          return;
+        }
+        const saved = {
+          ...context.globalState.get<Record<string, string>>(STORAGE_STATE, {}),
+        };
+        if (value === null) delete saved[key];
+        else saved[key] = value;
+        void context.globalState.update(STORAGE_STATE, saved);
+      },
+    },
   );
 
   // The token goes to SecretStorage, the macOS Keychain, and never to the

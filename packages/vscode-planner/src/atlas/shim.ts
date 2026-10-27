@@ -9,17 +9,31 @@
  * Only the calls the page makes are provided: `mcp.callTool`,
  * `mcp.watchTool`, and `db.doc(path)` with `get`, `set`, `delete` and
  * `onSnapshot`.
+ *
+ * It also replaces `localStorage`, where the page keeps its chosen client,
+ * tab, band and folds. A webview's own storage does not reliably survive a
+ * reload, so reads come from a copy the extension hands over at render time
+ * and every write is sent back to be kept in the extension's state.
  */
 
 const SOURCE = String.raw`(() => {
   "use strict";
-  const FOCUS = __FOCUS__;
-  if (FOCUS) { try { localStorage.setItem("db.focus", FOCUS); } catch (e) {} }
-
   const host = acquireVsCodeApi();
   const pending = new Map();
   const listeners = new Map();
   let next = 0;
+
+  const items = new Map(Object.entries(__STORAGE__));
+  const keep = (key, value) => host.postMessage({ type: "atlas", id: ++next, kind: "storageSet", key, value });
+  const storage = {
+    get length() { return items.size; },
+    key: (i) => [...items.keys()][i] ?? null,
+    getItem: (k) => (items.has(String(k)) ? items.get(String(k)) : null),
+    setItem: (k, v) => { k = String(k); v = String(v); if (items.get(k) === v) return; items.set(k, v); keep(k, v); },
+    removeItem: (k) => { k = String(k); if (!items.delete(k)) return; keep(k, null); },
+    clear: () => { for (const k of [...items.keys()]) storage.removeItem(k); },
+  };
+  try { Object.defineProperty(window, "localStorage", { configurable: true, get: () => storage }); } catch (e) {}
 
   const copy = (data) => (data === undefined || data === null ? null : JSON.parse(JSON.stringify(data)));
   const snap = (path, data) => ({ id: path, exists: data !== undefined && data !== null, data: () => copy(data) });
@@ -94,15 +108,15 @@ const SOURCE = String.raw`(() => {
 /** Builds the runtime stand-in script. */
 export class Shim {
   /**
-   * The script, with the client to open on filled in.
+   * The script, with the page's saved storage filled in.
    *
-   * @param focus - The page's client key, or null to leave the page's own choice.
+   * @param storage - The page's `localStorage` as last saved.
    * @returns JavaScript source for an inline script tag.
    */
-  static script(focus: null | string): string {
-    // JSON is valid JavaScript; escaping `<` keeps a `</script>` in the value
+  static script(storage: Record<string, string>): string {
+    // JSON is valid JavaScript; escaping `<` keeps a `</script>` in a value
     // from closing the tag.
-    const literal = JSON.stringify(focus).replace(/</g, "\\u003c");
-    return SOURCE.replace("__FOCUS__", literal);
+    const literal = JSON.stringify(storage).replace(/</g, "\\u003c");
+    return SOURCE.replace("__STORAGE__", () => literal);
   }
 }

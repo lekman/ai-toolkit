@@ -15,6 +15,7 @@ import type {
   AtlasRequest,
   HostServer,
   RuntimeError,
+  StorageScope,
 } from "./types.ts";
 
 import { Shim } from "./shim.ts";
@@ -27,6 +28,23 @@ const HOST = "host:dashboard";
  * `prs/<key>`. Anything else is refused before it reaches the file.
  */
 const DOC_PATH = /^[a-z0-9_.-]+(\/[a-z0-9_.-]+)*$/i;
+
+/** `localStorage` keys as the page names them: `db.focus`, `db.view`. */
+const STORAGE_KEY = /^[\w.:-]{1,100}$/;
+
+/** The longest `localStorage` value kept. The page's are small JSON lists. */
+const STORAGE_VALUE_MAX = 100_000;
+
+/** The page's key for the chosen client. */
+const FOCUS_KEY = "db.focus";
+
+/**
+ * Base rules the artifact host puts around every page, which the page relies
+ * on. Without the `[hidden]` rule, an element whose own CSS sets `display`
+ * stays visible when the page hides it, such as another client's tab.
+ */
+const BASE_STYLE =
+  "body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}";
 
 /** Pure logic behind the Atlas view. */
 export class Atlas {
@@ -115,7 +133,7 @@ export class Atlas {
    * @returns The HTML to set on the webview.
    */
   static page(source: string, options: AtlasPageOptions): string {
-    const { cspSource, focus, nonce } = options;
+    const { cspSource, nonce, storage } = options;
     const csp = [
       "default-src 'none'",
       `img-src ${cspSource} https: data:`,
@@ -131,7 +149,8 @@ export class Atlas {
       '<html><head><meta charset="utf-8">',
       '<meta name="viewport" content="width=device-width,initial-scale=1">',
       `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
-      `<script nonce="${nonce}">${Shim.script(focus)}</script>`,
+      `<style>${BASE_STYLE}</style>`,
+      `<script nonce="${nonce}">${Shim.script(storage)}</script>`,
       "</head><body>",
       body,
       "</body></html>",
@@ -162,6 +181,16 @@ export class Atlas {
       return { args: args ?? {}, id, kind, server, tool };
     }
 
+    if (kind === "storageSet") {
+      const { key, value } = message;
+      if (typeof key !== "string" || !STORAGE_KEY.test(key)) return null;
+      if (value !== null && typeof value !== "string") return null;
+      if (typeof value === "string" && value.length > STORAGE_VALUE_MAX) {
+        return null;
+      }
+      return { id, key, kind, value };
+    }
+
     if (kind !== "dbDelete" && kind !== "dbGet" && kind !== "dbSet")
       return null;
     const { path } = message;
@@ -173,6 +202,41 @@ export class Atlas {
     }
     if (kind === "dbSet") return { data: message.data, id, kind, path };
     return { id, kind, path };
+  }
+
+  /**
+   * Which state keeps a `localStorage` key.
+   *
+   * The chosen client belongs to the repository, as the Today and Tomorrow
+   * panes' filter does, so it is kept per workspace. Everything else (tab,
+   * band, folds, show done) is a personal preference kept for every window.
+   *
+   * @param key - The page's key.
+   * @returns Where to keep it.
+   */
+  static storageScope(key: string): StorageScope {
+    return key === FOCUS_KEY ? "workspace" : "global";
+  }
+
+  /**
+   * The page's `localStorage` as it should start.
+   *
+   * The client is the one last chosen in this workspace; before any choice,
+   * the repository's own client; without one, the last choice anywhere.
+   *
+   * @param global - The keys kept for every window.
+   * @param workspaceFocus - The client last chosen in this workspace, or null.
+   * @param repositoryFocus - The repository's client key, or null.
+   * @returns The storage to hand the page.
+   */
+  static storageSnapshot(
+    global: Record<string, string>,
+    workspaceFocus: null | string,
+    repositoryFocus: null | string,
+  ): Record<string, string> {
+    const focus =
+      workspaceFocus ?? repositoryFocus ?? global[FOCUS_KEY] ?? null;
+    return focus ? { ...global, [FOCUS_KEY]: focus } : { ...global };
   }
 
   /**

@@ -25,17 +25,18 @@ export type AtlasRequest =
     }
   | { data: unknown; id: number; kind: "dbSet"; path: string }
   | { id: number; kind: "dbDelete"; path: string }
-  | { id: number; kind: "dbGet"; path: string };
+  | { id: number; kind: "dbGet"; path: string }
+  | { id: number; key: string; kind: "storageSet"; value: null | string };
+
+/** Where one of the page's `localStorage` keys is kept. */
+export type StorageScope = "global" | "workspace";
 
 /** What the page needs at render time. */
 export interface AtlasPageOptions {
   /** The webview's own source, for the content security policy. */
   cspSource: string;
-  /**
-   * The page's client key to open on, e.g. `acme`, or null to keep the page's
-   * own remembered choice.
-   */
-  focus: null | string;
+  /** The page's `localStorage`, as last saved. */
+  storage: Record<string, string>;
   /** A fresh nonce; every script on the page gets it. */
   nonce: string;
 }

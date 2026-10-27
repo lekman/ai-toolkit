@@ -22,3 +22,15 @@ export interface IDocStore {
   get(path: string): unknown;
   set(path: string, data: unknown): void;
 }
+
+/** Keeps the page's `localStorage` across reloads. */
+export interface IPageStorage {
+  /** @returns The page's storage as it should start. */
+  snapshot(): Record<string, string>;
+
+  /**
+   * @param key - The key the page wrote.
+   * @param value - The new value, or null when the page removed it.
+   */
+  set(key: string, value: null | string): void;
+}

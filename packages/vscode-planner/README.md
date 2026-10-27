@@ -26,6 +26,14 @@ runtime and passes each call to the extension:
 | `GitHub`, `Microsoft 365`, `monday.com` | The services' own APIs, see [Direct Connectors](#direct-connectors)    |
 | Any other connector                     | `not_granted`, so that section stays empty, as outside the desktop app |
 
+The page keeps its choices in `localStorage`: the client, the tab, the band,
+the folds and show done. A webview's own storage does not reliably survive a
+reload, so the extension keeps them instead. The client is kept per
+workspace, starting on the repository's own client until you choose another;
+the rest apply in every window. The page also gets the base style the
+artifact host adds, so what it hides, such as another client's tabs, stays
+hidden.
+
 The page is read from the vault on each change and never bundled, so the
 extension holds no client names and a republished page needs no rebuild.
 Each VS Code window starts its own copy of the dashboard server.

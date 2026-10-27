@@ -9,8 +9,8 @@ import { Shim } from "../src/atlas/shim.ts";
 
 const OPTIONS = {
   cspSource: "vscode-webview://x",
-  focus: null,
   nonce: "N0nce",
+  storage: {},
 };
 
 describe("focusKey", () => {
@@ -82,6 +82,12 @@ describe("page", () => {
     );
   });
 
+  test("hides what the page marks hidden, as the artifact host does", () => {
+    expect(html).toContain(
+      "[hidden]:not([hidden=until-found i]){display:none!important}",
+    );
+  });
+
   test("drops the page's own doctype", () => {
     const again = Atlas.page("<!DOCTYPE html><p>x</p>", OPTIONS);
     expect(again.match(/<!doctype/gi)?.length).toBe(1);
@@ -89,13 +95,18 @@ describe("page", () => {
 });
 
 describe("shim", () => {
-  test("sets the client to open on", () => {
-    expect(Shim.script("acme")).toContain('const FOCUS = "acme";');
-    expect(Shim.script(null)).toContain("const FOCUS = null;");
+  test("fills in the saved storage", () => {
+    expect(Shim.script({ "db.focus": "acme" })).toContain(
+      'new Map(Object.entries({"db.focus":"acme"}))',
+    );
   });
 
   test("cannot close its own script tag", () => {
-    expect(Shim.script("</script>")).not.toContain("</script>");
+    expect(Shim.script({ x: "</script>" })).not.toContain("</script>");
+  });
+
+  test("keeps a value with $ patterns as written", () => {
+    expect(Shim.script({ x: "$&$'" })).toContain('{"x":"$&$\'"}');
   });
 
   // Runs the script against a stand-in window, with the extension's side
@@ -103,7 +114,6 @@ describe("shim", () => {
   test("answers the page's runtime calls through postMessage", async () => {
     const sent: Record<string, unknown>[] = [];
     let deliver: (data: unknown) => void = () => {};
-    const storage = new Map<string, string>();
     const window: Record<string, unknown> = {
       addEventListener: (_: string, fn: (e: { data: unknown }) => void) => {
         deliver = (data) => fn({ data });
@@ -111,13 +121,24 @@ describe("shim", () => {
     };
     new Function(
       "window",
-      "localStorage",
       "acquireVsCodeApi",
-      Shim.script("acme"),
-    )(window, { setItem: (k: string, v: string) => storage.set(k, v) }, () => ({
+      Shim.script({ "db.focus": "acme" }),
+    )(window, () => ({
       postMessage: (m: Record<string, unknown>) => sent.push(m),
     }));
-    expect(storage.get("db.focus")).toBe("acme");
+
+    // localStorage reads the saved copy and sends each change back.
+    const storage = window.localStorage as Storage;
+    expect(storage.getItem("db.focus")).toBe("acme");
+    storage.setItem("db.view", "agenda");
+    storage.setItem("db.view", "agenda");
+    storage.removeItem("db.focus");
+    expect(storage.getItem("db.focus")).toBeNull();
+    expect(storage.length).toBe(1);
+    expect(sent.map(({ key, kind, value }) => ({ key, kind, value }))).toEqual([
+      { key: "db.view", kind: "storageSet", value: "agenda" },
+      { key: "db.focus", kind: "storageSet", value: null },
+    ]);
 
     interface Snap {
       data: () => unknown;
@@ -265,6 +286,69 @@ describe("request", () => {
       { id: 1, kind: "callTool", server: "", tool: "x", type: "atlas" },
     ];
     for (const message of bad) expect(Atlas.request(message)).toBeNull();
+  });
+});
+
+describe("storage", () => {
+  test("accepts the page's storage writes and removals", () => {
+    expect(
+      Atlas.request({
+        id: 1,
+        key: "db.view",
+        kind: "storageSet",
+        type: "atlas",
+        value: "agenda",
+      }),
+    ).toEqual({
+      id: 1,
+      key: "db.view",
+      kind: "storageSet",
+      value: "agenda",
+    });
+    expect(
+      Atlas.request({
+        id: 1,
+        key: "db.focus",
+        kind: "storageSet",
+        type: "atlas",
+        value: null,
+      }),
+    ).toMatchObject({
+      value: null,
+    });
+  });
+
+  test("refuses odd keys and values", () => {
+    for (const bad of [
+      { key: "a b", value: "x" },
+      { key: "", value: "x" },
+      { key: "db.view", value: 3 },
+      { key: "db.view", value: "x".repeat(100_001) },
+    ]) {
+      expect(
+        Atlas.request({ id: 1, kind: "storageSet", type: "atlas", ...bad }),
+      ).toBeNull();
+    }
+  });
+
+  test("keeps the chosen client per workspace and the rest for every window", () => {
+    expect(Atlas.storageScope("db.focus")).toBe("workspace");
+    expect(Atlas.storageScope("db.view")).toBe("global");
+  });
+
+  test("opens on this workspace's choice, then the repository's client, then the last choice", () => {
+    const global = { "db.focus": "globex", "db.view": "agenda" };
+    expect(Atlas.storageSnapshot(global, "initech", "acme")).toEqual({
+      "db.focus": "initech",
+      "db.view": "agenda",
+    });
+    expect(Atlas.storageSnapshot(global, null, "acme")["db.focus"]).toBe(
+      "acme",
+    );
+    expect(Atlas.storageSnapshot(global, null, null)["db.focus"]).toBe(
+      "globex",
+    );
+    expect(Atlas.storageSnapshot({}, null, null)).toEqual({});
   });
 });
 

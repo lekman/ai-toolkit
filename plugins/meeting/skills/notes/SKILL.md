@@ -65,7 +65,7 @@ bun "${CLAUDE_PLUGIN_ROOT}/scripts/export.ts" \
   --meeting <id> --out "$DIR/<YYYY-MM-DD> <Title> — transcript.md"
 ```
 
-Take the date from the meeting's `createdAt`. Remove `/ \ : * ? " < > |` from
+Take the date from the meeting's `createdAt`, converted to local time (Meetily stores UTC). Remove `/ \ : * ? " < > |` from
 the title. The script refuses to overwrite. If the file already exists, use it
 as it is and do not export again.
 
@@ -73,7 +73,9 @@ as it is and do not export again.
 
 Read the transcript. Lines are labelled **Me** (the user's microphone) and
 **Them** (everyone heard through the speakers) when Meetily recorded the
-source, and unlabelled otherwise. Name people only when the transcript names
+source, and unlabelled otherwise. Meetily 0.4.1 leaves them unlabelled.
+Segments can run 30 seconds or more, so a time points to the segment, not the
+exact sentence. Name people only when the transcript names
 them. Do not guess who said a line from its content.
 
 Write `$VAULT/Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md`. If that file

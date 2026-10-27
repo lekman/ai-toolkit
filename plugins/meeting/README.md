@@ -79,9 +79,12 @@ alone.
 ## Known Gaps
 
 - Meetily 0.4.1's database has a `speaker` column (`mic` or `system`), but the
-  code paths that save transcript segments do not fill it. Transcripts may come
-  out without **Me** and **Them** labels until Meetily writes it. The export
-  uses the labels when they are present.
+  code paths that save transcript segments do not fill it. A test recording
+  confirmed it: microphone and system audio were both transcribed, into one
+  unlabelled stream. The export adds **Me** and **Them** labels once Meetily
+  fills the column.
+- Segments are long (a one-minute test produced two), so the time stamped on a
+  decision or action points to its segment rather than the exact sentence.
 - The database layout is Meetily's internal format, not a published interface.
   A Meetily upgrade can change it. The tests in
   [scripts/export.test.ts](scripts/export.test.ts) pin the layout the script

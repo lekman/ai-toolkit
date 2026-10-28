@@ -78,6 +78,13 @@ If the note already exists, for example meeting prep written earlier, the
 skill adds a `## Notes from the call` section at the end and leaves the rest
 alone.
 
+Every note follows [templates/meeting-note.md](templates/meeting-note.md). Its
+**Shareable** part (attendees, summary, mood and momentum, decisions, actions)
+is ready to paste into Teams or email. Its **Record** part is internal: the
+same decisions and actions with transcript times and quotes, the evidence for
+the mood, open questions and observations. The audio stays on the Mac; the
+note links to it with a delete-by date.
+
 ## Known Gaps
 
 - Meetily 0.4.1's database has a `speaker` column (`mic` or `system`), but the

@@ -78,50 +78,46 @@ Segments can run 30 seconds or more, so a time points to the segment, not the
 exact sentence. Name people only when the transcript names
 them. Do not guess who said a line from its content.
 
-Write `$VAULT/Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md`. If that file
-exists (for example, prep notes written before the meeting), add the sections
-below under a `## Notes from the call` heading at the end and change nothing
+Write `$VAULT/Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md` from
+[`templates/meeting-note.md`](../../templates/meeting-note.md),
+replacing every `{placeholder}`. If that file
+exists (for example, prep notes written before the meeting), add the template's
+sections under a `## Notes from the call` heading at the end and change nothing
 above it.
 
-```markdown
----
-date: <YYYY-MM-DD>
-client: <Client>
-source: meetily
-meetily_id: <id>
----
+The note has two parts:
 
-# <Title>, <D Month YYYY>
-
-[[<transcript file name without .md>|Full transcript]]
-
-## Summary
-
-<3–6 sentences: what the meeting was for and where it landed.>
-
-## Decisions
-
-- <decision> (<mm:ss>)
-
-## Actions
-
-- [ ] <owner>: <action> (<mm:ss>)
-
-## Open Questions
-
-- <question nobody answered> (<mm:ss>)
-```
+- **Shareable** is what the user pastes into Teams or email for the people in
+  the meeting and their team: attendees by company, a summary by topic, Mood
+  and Momentum, decisions and actions. It holds no patient or personal data,
+  no internal observations, and no speaker the transcript does not make clear.
+- **Record** is internal: every decision and action with the transcript time
+  and a short quote, the quotes behind the mood, Reading the Room, open
+  questions, and observations.
 
 Rules for the content:
 
-- Every decision, action and open question carries the transcript time it
-  came from, so the user can check it.
-- An action with no clear owner gets `Owner unclear` as its owner. Do not
+- **Attendees** are name and company only, without titles or credentials. Take
+  them from the transcript, the meeting invite or the user, never from a guess.
+- **Mood and Momentum** says how the meeting felt, where the work stands, what
+  worries the other side raised, and whether a follow-up is needed. The
+  transcript has words, not tone, so every line needs a quote under Mood
+  Evidence. Put worries the other side raised in the Shareable part, worded
+  neutrally. Put your own concerns, and anything that would be awkward to
+  share, under Reading the Room.
+- Every decision, action and open question in the Record carries the
+  transcript time it came from, so the user can check it.
+- An action with no clear owner gets `Owner not named` as its owner. Do not
   assign it to the user by default.
-- Leave out a section that has nothing in it, and write nothing the transcript
-  does not support.
-- Transcription mishears names, product terms and numbers. Mark anything that
-  looks misheard with `(?)` instead of correcting it silently.
+- Leave out a Record section that has nothing in it. In the Shareable part,
+  write "None" instead, so a reader sees it was checked.
+- Write nothing the transcript does not support. Transcription mishears names,
+  product terms and numbers. Mark anything that looks misheard with `(?)`
+  instead of correcting it silently.
+- **Audio link:** link the Meetily audio file with a `file://` URL and set
+  `audio_delete_by` (default: one week after the meeting). Do not copy the
+  audio into the vault. When the file is deleted, replace the link with
+  "Audio deleted on {date}".
 - Follow the house tone (`tone:write`).
 
 ## Step 5: Report

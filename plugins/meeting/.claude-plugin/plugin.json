@@ -1,5 +1,5 @@
 {
   "name": "meeting",
-  "description": "Meeting notes from meetings recorded and transcribed on your Mac by Meetily: export a transcript into the client's Obsidian vault folder and write summary, decisions, actions and open questions, with a per-client rule that only a local model reads the transcript",
-  "version": "0.1.0"
+  "description": "Meeting notes from meetings recorded and transcribed on your Mac by Meetily: export a transcript into the client's Obsidian vault folder and write a note with a shareable part (attendees, summary, mood and momentum, decisions, actions) and an internal record with the evidence, with a per-client rule that only a local model reads the transcript",
+  "version": "0.2.0"
 }

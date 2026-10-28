@@ -11,7 +11,7 @@ Top level is flat and grouped by how each thing is consumed:
 - `practices/`: best practices, patterns, and workflows (guidance, prose).
   Includes `obsidian/`: run an Obsidian vault as an agent-operated
   workspace; `meetings/`: notes from meetings recorded and transcribed on
-  your own machine; `observability/`: see what the agent does and get notified
+  your own machine; `context/`: keep each session's context window small; `observability/`: see what the agent does and get notified
   (notifications now, progress and access visibility to come); and `graphs/`:
   build a structural graph of a repository, and where to run the analysis
   given that it reads every file and fans out across the repo.

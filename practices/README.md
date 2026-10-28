@@ -134,6 +134,12 @@ belongs in a container.
   distrust, and how the run combines with local models and the isolated
   container.
 
+## Context
+
+What a session carries into every turn decides its cost and how much it can still hold. Trim the fixed part once, cap what enters, and let compaction remove the rest by role.
+
+- [Context](context/README.md): what fills the window, compaction thresholds per role with settings templates, keeping state on disk so compaction loses nothing, and the habits that keep output out of the window.
+
 ## Orchestration
 
 Isolation decides what one agent may do. Orchestration decides how many there

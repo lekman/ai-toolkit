@@ -21,6 +21,10 @@ itself when it moves to someone else.
   agent, or you after a gap. Writes one vault note to the contract in
   [HANDOVER.md](HANDOVER.md) and links it from today's dashboard.
 
+## After a Compaction
+
+A `SessionStart` hook for the `compact` matcher runs [scripts/after-compact.sh](scripts/after-compact.sh) after every compaction. When the repository has `.tmp/session-state.md`, it prints that file back into the session, so working state written to disk outlives the summary. It also gives the path of the full transcript, for details the summary dropped. Set `SESSION_STATE_FILE` to use another file. Why and how this fits with the compaction settings: [practices/context](../../practices/context/README.md).
+
 ## The Handover Contract
 
 [HANDOVER.md](HANDOVER.md) is the single definition of what a handover contains,

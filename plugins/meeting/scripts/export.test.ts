@@ -26,6 +26,7 @@ function fixture(): string {
     INSERT INTO transcripts VALUES ('b', 'new', 'Shall we start?', '18:00:04', NULL, NULL, NULL, 3.1, 5.0, 1.9, 'mic');
     INSERT INTO transcripts VALUES ('d', 'new', 'Release is Friday.', '18:02:00', NULL, NULL, NULL, 3725.0, 3727.5, 2.5, 'system');
     INSERT INTO transcripts VALUES ('e', 'old', 'Unlabelled line.', '09:00:10', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    INSERT INTO transcripts VALUES ('f', 'old', 'Next unlabelled line.', '09:00:40', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
   `);
   db.close();
   return path;
@@ -63,14 +64,14 @@ test("exports in audio order, joins a speaker's consecutive segments, labels Me 
   expect(md).toContain("**[01:05] Them:** Thanks. Release is Friday.");
 });
 
-test("falls back to the stored timestamp and no label when Meetily left them empty", () => {
+test("keeps unlabelled segments on their own lines with the stored timestamp", () => {
   const { close, db } = openCopy(fixture());
   const out = join(mkdtempSync(join(tmpdir(), "meeting-out-")), "t.md");
   exportMeeting(db, "old", out);
   close();
-  expect(readFileSync(out, "utf8")).toContain(
-    "**[09:00:10]** Unlabelled line.",
-  );
+  const md = readFileSync(out, "utf8");
+  expect(md).toContain("**[09:00:10]** Unlabelled line.\n");
+  expect(md).toContain("**[09:00:40]** Next unlabelled line.");
 });
 
 test("refuses to overwrite an existing file", () => {

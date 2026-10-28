@@ -374,4 +374,35 @@ describe("pull requests", () => {
       tasks.add(ctx, "builder", "acme", { title: "x", pullRequests: ["#12"] }),
     ).rejects.toThrow();
   });
+
+  test("search finds the items linking a pull request, without regard to case", async () => {
+    const ctx = await fixture();
+    const linked = await tasks.add(ctx, "builder", "acme", {
+      title: "Linked",
+      pullRequests: ["Acme/App#12"],
+    });
+    await tasks.add(ctx, "builder", "acme", {
+      title: "Other",
+      pullRequests: ["acme/app#120"],
+    });
+    const found = await tasks.search(ctx, { pullRequest: "acme/app#12" });
+    expect(found.items.map((i) => i.id)).toEqual([linked.id]);
+  });
+
+  test("approved and merged are open states with no done day", async () => {
+    const ctx = await fixture();
+    const item = await tasks.add(ctx, "builder", "acme", {
+      title: "Ship it",
+      pullRequests: ["acme/app#12"],
+    });
+    await tasks.update(ctx, "gh-events", item.id, 1, { state: "approved" });
+    await tasks.update(ctx, "gh-events", item.id, 2, { state: "merged" });
+    const [found] = (await tasks.search(ctx, {})).items;
+    expect(found).toMatchObject({ id: item.id, state: "merged" });
+    expect(found?.doneOn).toBeUndefined();
+    const read = await tasks.read(ctx, item.id);
+    expect(
+      read.history?.filter((h) => h.kind === "state").map((h) => h.to),
+    ).toEqual(["approved", "merged"]);
+  });
 });

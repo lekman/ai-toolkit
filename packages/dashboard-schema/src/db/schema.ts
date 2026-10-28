@@ -42,6 +42,8 @@ export const stateEnum = pgEnum("item_state", [
   "todo",
   "doing",
   "review",
+  "approved",
+  "merged",
   "done",
   "dropped",
 ]);
@@ -74,6 +76,8 @@ export const logStatusEnum = pgEnum("log_status", [
   "todo",
   "doing",
   "review",
+  "approved",
+  "merged",
   "done",
   "dropped",
   "blocked",

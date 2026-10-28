@@ -36,6 +36,10 @@ The additions:
 - **`claim`**: which agent has started the item. `claim.by` is the Atlas Agent
   id, so an agent's Atlas `workingOn` list is the items it claims, most recent
   claim first.
+- **`state`** adds `approved` (approved, not merged) and `merged` (merged,
+  not yet released) between `review` and `done`. For work with pull
+  requests, `done` means released. gh-events moves items through these from
+  their `pullRequests`.
 - **`rank`**, **`kind`**, **`tags`**, and a `dropped` state.
 - **`revision`**: every write names the revision it read, and is refused when
   someone else wrote first. The Obsidian file has no such guard; the last

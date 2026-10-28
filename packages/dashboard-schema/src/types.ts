@@ -7,7 +7,13 @@
 export type Classification =
   "public" | "internal" | "client-confidential" | "restricted";
 
-export type State = "todo" | "doing" | "review" | "done" | "dropped";
+/**
+ * Where an item is. `review` is a pull request waiting for review,
+ * `approved` is approved and not merged, `merged` is merged and not yet in a
+ * release, and `done` is released (or finished, for work with no release).
+ */
+export type State =
+  "todo" | "doing" | "review" | "approved" | "merged" | "done" | "dropped";
 
 /** Atlas's priority words, used for both the stored fallback and the computed result. */
 export type Priority = "high" | "normal" | "low";

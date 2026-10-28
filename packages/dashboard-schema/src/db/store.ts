@@ -227,6 +227,8 @@ export interface ItemFilter {
   tag?: string;
   /** The tracker key, for example `#250` or `ADX-12`. */
   trackerKey?: string;
+  /** Links this pull request, `owner/repo#number`, compared without case. */
+  pullRequest?: string;
   scheduledFrom?: string;
   scheduledTo?: string;
   /** Due on or before this day. */
@@ -263,6 +265,9 @@ export async function searchItems(
     filter.tag ? arrayContains(t.tags, [filter.tag]) : undefined,
     filter.trackerKey
       ? sql`${t.tracker} ->> 'key' = ${filter.trackerKey}`
+      : undefined,
+    filter.pullRequest
+      ? sql`exists (select 1 from unnest(${t.pullRequests}) pr where lower(pr) = lower(${filter.pullRequest}))`
       : undefined,
     filter.scheduledFrom
       ? gte(t.scheduledFor, filter.scheduledFrom)

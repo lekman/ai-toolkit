@@ -226,9 +226,16 @@ One JSON object per line, appended after each poll that found changes.
 | `ci_failed`      | pr    | `ci` became `FAILURE` or `ERROR` on a head commit. A new failing commit is a new event |
 | `conflict`       | pr    | `mergeable` became `CONFLICTING`                                                       |
 | `merged`         | pr    | The PR was merged                                                                      |
+| `released`       | pr    | The repo's latest release contains the PR's merge commit                               |
 | `closed`         | pr    | The PR was closed without merging                                                      |
 | `issue_assigned` | issue | The account became an assignee                                                         |
 | `issue_closed`   | issue | The issue was closed                                                                   |
+
+After a `merged` event, gh-events compares the merge commit with the repo's
+latest release on each poll, and only when that release changes. It stops
+watching after 180 days. A repo the operator marks `unreleased` gives no
+`released` event. A release counts when it contains the merge commit, so in
+a repo with one release per package, a release of any package counts.
 
 The first poll of an account writes no events, so state that existed
 before gh-events started does not flood the log. A PR whose `mergeable` was
@@ -240,7 +247,7 @@ current state, for example a new PR that already fails CI gives
 ### Keys
 
 `key` is `{repo}#{number}:{event}:{discriminator}`. The discriminator is
-the head SHA for PR events, `merged` and `closed` included, `closedAt` for
+the head SHA for PR events, `merged`, `closed` and `released` included, `closedAt` for
 `issue_closed`, and `-` for
 `issue_assigned`. gh-events never writes a key twice. A consumer
 de-duplicates by `key` too, so reading a line twice is harmless.

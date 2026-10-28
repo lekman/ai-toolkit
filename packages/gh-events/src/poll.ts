@@ -10,8 +10,21 @@ import { dirname } from "node:path";
 
 import type { Account, Config } from "./config";
 
+import { advance, type BridgeState, sync, type TasksApi } from "./bridge";
 import { diffGone, diffOpen, type GhEvent, toEvent } from "./diff";
-import { clientFor, type Item, itemUrl } from "./guard";
+import { clientFor, type Item, itemUrl, unreleased } from "./guard";
+
+/** A merged PR waiting for a release that contains its merge commit. */
+export interface Shipping {
+  /** The release commit last compared, so an unchanged release is not compared again. */
+  checked?: string;
+  mergedAt: string;
+  mergeSha: string;
+  number: number;
+  repo: string;
+  /** The PR's head SHA, which keys its events. */
+  sha: null | string;
+}
 
 /** What the poller remembers about one account between runs. */
 export interface AccountState {
@@ -20,11 +33,15 @@ export interface AccountState {
   items: Record<string, Item>;
   /** When the latest successful poll ran, or null before the first one. */
   polledAt: null | string;
+  /** Merged PRs waiting for a release, by node id. */
+  shipping?: Record<string, Shipping>;
 }
 
 /** What the poller remembers between runs. */
 export interface State {
   accounts: Record<string, AccountState>;
+  /** PR stages and the PRs whose tasks still need a sync. */
+  bridge?: BridgeState;
   /** Recent event keys, newest last, so a key is never written twice. */
   seen: string[];
   version: 2;
@@ -63,10 +80,22 @@ export interface Registry {
 
 /** Where item data comes from. Real runs use GitHub; tests pass a stub. */
 export interface Source {
+  /** True when commit `head` contains commit `base`. */
+  contains(
+    account: Account,
+    repo: string,
+    base: string,
+    head: string,
+  ): Promise<boolean>;
   nodes(account: Account, ids: readonly string[]): Promise<Map<string, Item>>;
   open(
     account: Account,
   ): Promise<{ cost: number; dropped: number; items: Map<string, Item> }>;
+  /** The commit each repo's latest release points at, or null. */
+  releases(
+    account: Account,
+    repos: readonly string[],
+  ): Promise<Map<string, null | string>>;
 }
 
 /** One summary line per account, written to stdout for the launchd log. */
@@ -77,9 +106,14 @@ export interface AccountReport {
   events: number;
   login: string;
   open: number;
+  /** Merged PRs still waiting for a release. */
+  shipping: number;
 }
 
 const SEEN_LIMIT = 5000;
+
+/** How long a merged PR is watched for a release before it is given up. */
+const SHIPPING_DAYS = 180;
 
 const clientOf = (account: Account, repo: string): null | string =>
   clientFor(repo, account.owners);
@@ -99,6 +133,7 @@ export async function pollAccount(
   dropped: number;
   events: GhEvent[];
   items: Record<string, Item>;
+  shipping: Record<string, Shipping>;
 }> {
   const baseline = !prev?.polledAt;
   const before = baseline ? {} : (prev?.items ?? {});
@@ -120,15 +155,84 @@ export async function pollAccount(
     if (!baseline) emit(next, names);
   }
 
+  const shipping: Record<string, Shipping> = { ...(prev?.shipping ?? {}) };
   const gone = Object.keys(before).filter((id) => !open.has(id));
   if (gone.length > 0) {
     const found = await source.nodes(account, gone);
     for (const id of gone) {
       const lookup = found.get(id) ?? null;
-      if (lookup) emit(lookup, diffGone(lookup));
+      if (!lookup) continue;
+      const names = diffGone(lookup);
+      emit(lookup, names);
+      if (
+        names.includes("merged") &&
+        lookup.mergeSha &&
+        !unreleased(lookup.repo, account.owners)
+      )
+        shipping[id] = {
+          mergedAt: now.toISOString(),
+          mergeSha: lookup.mergeSha,
+          number: lookup.number,
+          repo: lookup.repo,
+          sha: lookup.sha,
+        };
     }
   }
-  return { cost, dropped, events, items };
+  await checkReleases(account, shipping, source, now, (entry) =>
+    emit(shipped(entry), ["released"]),
+  );
+  return { cost, dropped, events, items, shipping };
+}
+
+/** The item a `released` event is built from. */
+function shipped(entry: Shipping): Item {
+  return {
+    ci: null,
+    closedAt: null,
+    closes: [],
+    id: "-",
+    kind: "pr",
+    mergeable: null,
+    number: entry.number,
+    repo: entry.repo,
+    review: null,
+    sha: entry.sha,
+    state: "MERGED",
+  };
+}
+
+/**
+ * Compares each waiting PR's merge commit with its repo's latest release, and
+ * calls `released` for each one the release contains. A release that was
+ * already compared is not compared again. PRs older than SHIPPING_DAYS are
+ * given up. A GitHub error leaves the rest for the next poll, so it never
+ * fails the account's poll.
+ */
+async function checkReleases(
+  account: Account,
+  shipping: Record<string, Shipping>,
+  source: Source,
+  now: Date,
+  released: (entry: Shipping) => void,
+): Promise<void> {
+  const oldest = now.getTime() - SHIPPING_DAYS * 86_400_000;
+  for (const [id, entry] of Object.entries(shipping))
+    if (Date.parse(entry.mergedAt) < oldest) delete shipping[id];
+  const repos = [...new Set(Object.values(shipping).map((e) => e.repo))];
+  if (repos.length === 0) return;
+  try {
+    const latest = await source.releases(account, repos);
+    for (const [id, entry] of Object.entries(shipping)) {
+      const tag = latest.get(entry.repo);
+      if (!tag || tag === entry.checked) continue;
+      if (await source.contains(account, entry.repo, entry.mergeSha, tag)) {
+        released(entry);
+        delete shipping[id];
+      } else entry.checked = tag;
+    }
+  } catch {
+    // Retried on the next poll.
+  }
 }
 
 /**
@@ -227,6 +331,7 @@ export async function runPoll(
       state.accounts[account.login] = {
         items: result.items,
         polledAt: now.toISOString(),
+        shipping: result.shipping,
       };
       reports.push({
         cost: result.cost,
@@ -234,6 +339,7 @@ export async function runPoll(
         events: events.length,
         login: account.login,
         open: Object.keys(result.items).length,
+        shipping: Object.keys(result.shipping).length,
       });
     } catch (err) {
       const error = err instanceof Error ? err.message : "unknown error";
@@ -241,6 +347,7 @@ export async function runPoll(
         error,
         items: prev?.items ?? {},
         polledAt: prev?.polledAt ?? null,
+        shipping: prev?.shipping ?? {},
       };
       reports.push({
         cost: 0,
@@ -249,6 +356,7 @@ export async function runPoll(
         events: 0,
         login: account.login,
         open: 0,
+        shipping: Object.keys(prev?.shipping ?? {}).length,
       });
     }
   }
@@ -265,10 +373,36 @@ export async function runPoll(
     );
   }
   state.seen = [...seen].slice(-SEEN_LIMIT);
+  state.bridge = advance(
+    state.bridge,
+    config,
+    Object.values(state.accounts).flatMap((a) => Object.values(a.items)),
+    fresh,
+  );
   writePrivate(files.state, JSON.stringify(state));
   writePrivate(
     files.registry,
     JSON.stringify(buildRegistry(config, state, now), null, 2) + "\n",
   );
   return reports;
+}
+
+/**
+ * Syncs the tasks of every queued PR and saves what is still queued. Runs
+ * after `runPoll`, in the same process, so the state file has one writer.
+ */
+export async function syncTasks(
+  statePath: string,
+  api: TasksApi,
+): Promise<{ error?: string; moved: number; pending: number }> {
+  const state = loadState(statePath);
+  if (!state.bridge?.pending.length) return { moved: 0, pending: 0 };
+  const result = await sync(state.bridge, api);
+  state.bridge.pending = result.pending;
+  writePrivate(statePath, JSON.stringify(state));
+  return {
+    error: result.error,
+    moved: result.moved,
+    pending: result.pending.length,
+  };
 }

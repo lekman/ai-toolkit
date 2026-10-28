@@ -15,6 +15,11 @@ export interface Owner {
   name: string;
   /** Client ids for single repos, by lowercase repo name. Wins over `client`. */
   repos: Record<string, null | string>;
+  /**
+   * Repo name globs that never publish a release. A merge there finishes the
+   * work, so it is not watched for a release.
+   */
+  unreleased: string[];
 }
 
 /** One GitHub account, read through its own `gh` token. */
@@ -116,6 +121,7 @@ export function parseConfig(raw: unknown): Config {
             kind?: unknown;
             name?: unknown;
             repos?: unknown;
+            unreleased?: unknown;
           },
           j,
         ) => {
@@ -132,6 +138,7 @@ export function parseConfig(raw: unknown): Config {
             kind,
             name: o.name,
             repos: repoClients(o.repos, `${at}.repos`),
+            unreleased: globs(o.unreleased, `${at}.unreleased`, []),
           } satisfies Owner;
         },
       );

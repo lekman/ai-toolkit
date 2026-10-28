@@ -5,11 +5,12 @@ Brings GitHub pull request and issue state to this Mac as two local files:
 - `registry.json`: every PR and issue currently monitored, with its state,
   rewritten after each poll.
 - `events.jsonl`: an append-only log of changes. The events are `approved`,
-  `ci_failed`, `conflict`, `merged` and `closed` for PRs, and `issue_assigned`
-  and `issue_closed` for issues.
+  `ci_failed`, `conflict`, `merged`, `closed` and `released` for PRs, and
+  `issue_assigned` and `issue_closed` for issues.
 
-It only notifies. Nothing runs in response to an event, and no model reads the
-GitHub data. A consumer, such as a dashboard, reads the two files.
+No model reads the GitHub data. A consumer, such as a dashboard, reads the
+two files. The one action gh-events takes itself is moving tasks in the
+task database along with their PRs; see [Tasks](#tasks).
 [CONTRACT.md](CONTRACT.md) is what a consumer may rely on: every field, value
 and rule. Not published to npm.
 
@@ -65,6 +66,38 @@ GitHub GraphQL ──(outbound HTTPS)──▶ guard ──▶ diff ──▶ ev
   or a closed issue gives an event. A deleted item, or one no longer in
   scope, gives nothing.
 - **No repeats.** Each event has a key, and a key is never written twice.
+- **Released means in a release.** A merged PR is watched until the repo's
+  latest release contains its merge commit, checked with GitHub's compare of
+  the two SHAs. The release query costs one request per poll for all waiting
+  repos, and a compare runs only when a repo's latest release changes. Tag
+  names are author text and are not read.
+
+## Tasks
+
+After each poll, gh-events moves items in the task database
+([tasks-mcp](../tasks-mcp/README.md)) that link a PR in `pullRequests`:
+
+| PR                                          | Item state |
+| ------------------------------------------- | ---------- |
+| Draft                                       | `doing`    |
+| Open                                        | `review`   |
+| Approved                                    | `approved` |
+| Merged                                      | `merged`   |
+| Released, or merged in an `unreleased` repo | `done`     |
+
+- An item moves to the least advanced state among its PRs. A PR gh-events
+  has not seen counts as open, and a PR closed without merging is left out.
+- Items only move forward, and never out of `done` or `dropped`. A request
+  for changes does not move an item back; the agent working on it does that.
+- The change goes past another agent's claim (`force`), is recorded under
+  `gh-events`, and logs a note naming the PR.
+- PRs whose stage changed are queued in `state.json`. When the task server
+  cannot be reached, the queue waits for the next poll, so nothing is lost
+  while the Mac mini sleeps.
+- The server address and token are found as the `tasks` command finds them:
+  `TASKS_MCP_URL` or the env block of `~/.claude/settings.json`, and
+  `TASKS_MCP_TOKEN` or the Keychain item `tasks-mcp-token`. Without both, the
+  sync is skipped.
 
 ## Setup
 
@@ -84,7 +117,8 @@ Create `~/.config/gh-events/config.json` (mode 0600, never committed):
           "name": "acme",
           "kind": "org",
           "client": "acme",
-          "exclude": ["*-sandbox"]
+          "exclude": ["*-sandbox"],
+          "unreleased": ["infra-*"]
         },
         {
           "name": "me",
@@ -112,6 +146,10 @@ Create `~/.config/gh-events/config.json` (mode 0600, never committed):
   repo to null to hold it as unknown.
 - `include` and `exclude` are repo name patterns, and `*` is the only
   wildcard. `include` defaults to `["*"]`.
+- `unreleased` lists repo name patterns that never publish a release, such as
+  infrastructure or notes repos. A merge there moves a task to `done`
+  instead of waiting for a release. Use `["*"]` for an owner with no
+  releases at all. It defaults to `[]`.
 - An enterprise managed account can only see its own enterprise, so it needs
   its own entry.
 
@@ -128,13 +166,13 @@ checkout or changing `intervalSeconds`. `uninstall` removes it.
 
 ## Files
 
-| Path                                     | What                                       |
-| ---------------------------------------- | ------------------------------------------ |
-| `~/.config/gh-events/config.json`        | Accounts, owners, clients and repo filters |
-| `~/.local/state/gh-events/registry.json` | Monitored items; see CONTRACT.md           |
-| `~/.local/state/gh-events/events.jsonl`  | Event log; see CONTRACT.md                 |
-| `~/.local/state/gh-events/state.json`    | Internal: last poll's items and event keys |
-| `~/Library/Logs/gh-events.log`           | One summary line per account per poll      |
+| Path                                     | What                                                                                |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| `~/.config/gh-events/config.json`        | Accounts, owners, clients and repo filters                                          |
+| `~/.local/state/gh-events/registry.json` | Monitored items; see CONTRACT.md                                                    |
+| `~/.local/state/gh-events/events.jsonl`  | Event log; see CONTRACT.md                                                          |
+| `~/.local/state/gh-events/state.json`    | Internal: last poll's items, event keys, PRs awaiting a release, and the task queue |
+| `~/Library/Logs/gh-events.log`           | One summary line per account per poll                                               |
 
 The log line names accounts and counts only. When a request fails, the line
 gives the HTTP status or the number of GraphQL errors, never the response

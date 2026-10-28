@@ -35,6 +35,8 @@ export interface Item {
   id: string;
   kind: Kind;
   mergeable: Mergeable | null;
+  /** Merged PRs only: the commit the merge put on the base branch. */
+  mergeSha?: string;
   number: number;
   repo: string;
   review: null | Review;
@@ -127,6 +129,14 @@ export function watched(repo: string, owners: readonly Owner[]): boolean {
   );
 }
 
+/** True when the repo matches one of its owner's `unreleased` patterns. */
+export function unreleased(repo: string, owners: readonly Owner[]): boolean {
+  const name = REPO.exec(repo)?.[2];
+  const owner = ownerOf(repo, owners);
+  if (!name || !owner) return false;
+  return owner.unreleased.some((p) => glob(p).test(name));
+}
+
 /** Issue numbers from `closingIssuesReferences`, same repo only. */
 function closes(raw: unknown, repo: string): number[] | undefined {
   const nodes = record(raw)?.nodes;
@@ -169,6 +179,14 @@ function parsePr(
   const closed = closes(node.closingIssuesReferences, base.repo);
   if (!closed) return null;
 
+  // Absent from older fixtures and null until merged.
+  const mergeOid = record(node.mergeCommit)?.oid;
+  if (
+    mergeOid !== undefined &&
+    (typeof mergeOid !== "string" || !SHA.test(mergeOid))
+  )
+    return null;
+
   return {
     ...base,
     ci,
@@ -176,6 +194,7 @@ function parsePr(
     closes: closed,
     kind: "pr",
     mergeable,
+    ...(githubState === "MERGED" && mergeOid ? { mergeSha: mergeOid } : {}),
     review,
     sha,
     state,
@@ -226,6 +245,16 @@ export function parseItem(raw: unknown, owners: readonly Owner[]): Item | null {
   if (node.__typename === "PullRequest") return parsePr(node, base);
   if (node.__typename === "Issue") return parseIssue(node, base);
   return null;
+}
+
+/**
+ * The commit a repo's latest release points at, from a GraphQL `Repository`
+ * node. Null when the repo has no release or the value is out of shape. The
+ * tag name is author text and is not read.
+ */
+export function parseReleaseSha(raw: unknown): null | string {
+  const oid = record(record(record(raw)?.latestRelease)?.tagCommit)?.oid;
+  return typeof oid === "string" && SHA.test(oid) ? oid : null;
 }
 
 /** The item's page on GitHub, built from validated fields only. */

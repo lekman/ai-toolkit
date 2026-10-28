@@ -12,6 +12,7 @@ export const owners: Owner[] = [
     kind: "org",
     name: "acme",
     repos: { "special-api": "special" },
+    unreleased: ["infra-*"],
   },
   {
     client: null,
@@ -20,6 +21,7 @@ export const owners: Owner[] = [
     kind: "user",
     name: "globex",
     repos: {},
+    unreleased: [],
   },
 ];
 

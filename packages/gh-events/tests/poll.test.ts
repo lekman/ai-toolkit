@@ -6,8 +6,8 @@ import { join } from "node:path";
 import type { Config } from "../src/config";
 import type { Item } from "../src/guard";
 
-import { type Registry, runPoll, type Source } from "../src/poll";
-import { issue, owners, pr } from "./fixtures";
+import { type Registry, runPoll, type Source, syncTasks } from "../src/poll";
+import { issue, owners, pr, SHA_B } from "./fixtures";
 
 const config: Config = {
   accounts: [{ login: "me", owners }],
@@ -25,6 +25,7 @@ function files() {
 
 function source(open: Item[], nodes: Item[] = []): Source {
   return {
+    contains: async () => false,
     nodes: async (_a, ids) =>
       new Map(nodes.filter((n) => ids.includes(n.id)).map((n) => [n.id, n])),
     open: async () => ({
@@ -32,6 +33,7 @@ function source(open: Item[], nodes: Item[] = []): Source {
       dropped: 0,
       items: new Map(open.map((s) => [s.id, s])),
     }),
+    releases: async (_a, repos) => new Map(repos.map((r) => [r, null])),
   };
 }
 
@@ -139,6 +141,118 @@ describe("runPoll", () => {
     await runPoll(config, source([pr({ ci: "FAILURE" })]), f);
     expect(() => readFileSync(f.events)).toThrow();
     expect(JSON.parse(readFileSync(f.state, "utf8")).seen).toEqual(["old"]);
+  });
+});
+
+describe("released", () => {
+  const MERGE = "c".repeat(40);
+  const TAG_OLD = "d".repeat(40);
+  const TAG_NEW = "e".repeat(40);
+
+  function releasing(tag: null | string, contains: (tag: string) => boolean) {
+    const compared: string[] = [];
+    const base = source([], [pr({ mergeSha: MERGE, state: "MERGED" })]);
+    const s: Source = {
+      ...base,
+      contains: async (_a, _repo, from, to) => {
+        expect(from).toBe(MERGE);
+        compared.push(to);
+        return contains(to);
+      },
+      releases: async (_a, repos) => new Map(repos.map((r) => [r, tag])),
+    };
+    return { compared, s };
+  }
+
+  test("a merged PR gives released once a release contains its merge commit", async () => {
+    const f = files();
+    await runPoll(config, source([pr()]), f);
+    const old = releasing(TAG_OLD, () => false);
+    const [merged] = await runPoll(config, old.s, f);
+    expect(merged?.shipping).toBe(1);
+    // The same release is not compared twice.
+    await runPoll(config, old.s, f);
+    expect(old.compared).toEqual([TAG_OLD]);
+    const fresh = releasing(TAG_NEW, (t) => t === TAG_NEW);
+    const [released] = await runPoll(config, fresh.s, f);
+    expect(released?.shipping).toBe(0);
+    expect(events(f.events)).toEqual([
+      expect.objectContaining({ event: "merged", number: 12 }),
+      expect.objectContaining({
+        event: "released",
+        key: `acme/api#12:released:${"a".repeat(40)}`,
+        number: 12,
+      }),
+    ]);
+  });
+
+  test("a repo marked unreleased is not watched for a release", async () => {
+    const f = files();
+    const repo = "acme/infra-dns";
+    await runPoll(config, source([pr({ repo })]), f);
+    const [report] = await runPoll(
+      config,
+      source([], [pr({ mergeSha: MERGE, repo, state: "MERGED" })]),
+      f,
+    );
+    expect(report?.shipping).toBe(0);
+  });
+
+  test("a GitHub error while checking releases keeps the PR waiting", async () => {
+    const f = files();
+    await runPoll(config, source([pr()]), f);
+    const broken: Source = {
+      ...releasing(TAG_NEW, () => true).s,
+      releases: async () => {
+        throw new Error("GitHub GraphQL HTTP 502");
+      },
+    };
+    const [report] = await runPoll(config, broken, f);
+    expect(report?.error).toBeUndefined();
+    expect(report?.shipping).toBe(1);
+  });
+
+  test("a PR merged long ago is given up", async () => {
+    const f = files();
+    await runPoll(config, source([pr()]), f, new Date("2026-01-01T00:00:00Z"));
+    await runPoll(
+      config,
+      releasing(null, () => false).s,
+      f,
+      new Date("2026-01-02T00:00:00Z"),
+    );
+    const [report] = await runPoll(
+      config,
+      releasing(SHA_B, () => true).s,
+      f,
+      new Date("2026-08-01T00:00:00Z"),
+    );
+    expect(report?.shipping).toBe(0);
+    expect(events(f.events).map((e) => e.event)).toEqual(["merged"]);
+  });
+});
+
+describe("tasks", () => {
+  test("a poll queues PRs that moved, and a sync clears the queue", async () => {
+    const f = files();
+    await runPoll(config, source([pr()]), f);
+    await runPoll(config, source([pr({ review: "APPROVED" })]), f);
+    const moves: string[] = [];
+    const result = await syncTasks(f.state, {
+      search: async (key) => [
+        { id: "t1", pullRequests: [key], revision: 1, state: "review" },
+      ],
+      update: async (id, _revision, state) => {
+        moves.push(`${id}:${state}`);
+      },
+    });
+    expect(result).toEqual({ error: undefined, moved: 1, pending: 0 });
+    expect(moves).toEqual(["t1:approved"]);
+    const saved = JSON.parse(readFileSync(f.state, "utf8"));
+    expect(saved.bridge).toEqual({
+      pending: [],
+      stages: { "acme/api#12": "approved" },
+    });
   });
 });
 

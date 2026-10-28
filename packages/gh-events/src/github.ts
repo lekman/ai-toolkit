@@ -1,12 +1,13 @@
 import type { Account, Owner } from "./config";
 
-import { type Item, parseItem } from "./guard";
+import { type Item, parseItem, parseReleaseSha } from "./guard";
 
-const ENDPOINT = "https://api.github.com/graphql";
+const API = "https://api.github.com";
+const ENDPOINT = `${API}/graphql`;
 const PAGE = 50;
 
 const FRAGMENTS = `fragment pr on PullRequest {
-  __typename id number state isDraft headRefOid reviewDecision mergeable
+  __typename id number state isDraft headRefOid reviewDecision mergeable mergeCommit { oid }
   repository { nameWithOwner }
   commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
   closingIssuesReferences(first: 10) { nodes { number repository { nameWithOwner } } }
@@ -171,4 +172,61 @@ export async function fetchNodes(
     }
   }
   return found;
+}
+
+const REPO = /^([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})$/;
+const SHA = /^[0-9a-f]{40}$/;
+
+/**
+ * The commit each repo's latest release points at, or null for a repo with
+ * no release. One request for up to 50 repos. Repos are validated names from
+ * the guard, so they are safe to pass as variables.
+ */
+export async function fetchReleases(
+  auth: string,
+  repos: readonly string[],
+): Promise<Map<string, null | string>> {
+  const found = new Map<string, null | string>();
+  for (let i = 0; i < repos.length; i += PAGE) {
+    const batch = repos.slice(i, i + PAGE).filter((r) => REPO.test(r));
+    if (batch.length === 0) continue;
+    const variables: Record<string, string> = {};
+    const fields = batch.map((repo, j) => {
+      const [, owner, name] = REPO.exec(repo) ?? [];
+      variables[`o${j}`] = owner ?? "";
+      variables[`n${j}`] = name ?? "";
+      return `r${j}: repository(owner: $o${j}, name: $n${j}) { latestRelease { tagCommit { oid } } }`;
+    });
+    const query = `query(${batch.map((_, j) => `$o${j}: String!, $n${j}: String!`).join(", ")}) {\n${fields.join("\n")}\n}`;
+    const data = await graphql(auth, query, variables, true);
+    batch.forEach((repo, j) => found.set(repo, parseReleaseSha(data[`r${j}`])));
+  }
+  return found;
+}
+
+/**
+ * True when `head` contains `base`: GitHub's compare of base...head is
+ * `ahead` or `identical`. Both are SHAs, so no author text reaches the URL.
+ */
+export async function contains(
+  auth: string,
+  repo: string,
+  base: string,
+  head: string,
+): Promise<boolean> {
+  if (!REPO.test(repo) || !SHA.test(base) || !SHA.test(head))
+    throw new Error("compare: invalid repo or SHA");
+  const res = await fetch(
+    `${API}/repos/${repo}/compare/${base}...${head}?per_page=1`,
+    {
+      headers: {
+        accept: "application/vnd.github+json",
+        authorization: `bearer ${auth}`,
+      },
+      signal: AbortSignal.timeout(20_000),
+    },
+  );
+  if (!res.ok) throw new Error(`GitHub compare HTTP ${res.status}`);
+  const body = (await res.json()) as { status?: unknown };
+  return body.status === "ahead" || body.status === "identical";
 }

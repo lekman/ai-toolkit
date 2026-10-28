@@ -12,9 +12,16 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { loadConfig, paths } from "./config";
-import { fetchNodes, fetchOpen, token } from "./github";
+import {
+  contains,
+  fetchNodes,
+  fetchOpen,
+  fetchReleases,
+  token,
+} from "./github";
 import { LABEL, plist } from "./launchd";
-import { runPoll, type Source } from "./poll";
+import { runPoll, type Source, syncTasks } from "./poll";
+import { tasksApi } from "./tasks";
 
 const agentPath = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
 const logPath = join(homedir(), "Library", "Logs", "gh-events.log");
@@ -63,8 +70,11 @@ async function poll(): Promise<number> {
     return value;
   };
   const source: Source = {
+    contains: (account, repo, base, head) =>
+      contains(auth(account.login), repo, base, head),
     nodes: (account, ids) => fetchNodes(account, auth(account.login), ids),
     open: (account) => fetchOpen(account, auth(account.login)),
+    releases: (account, repos) => fetchReleases(auth(account.login), repos),
   };
   const reports = await runPoll(config, source, {
     events: paths.events(),
@@ -76,8 +86,16 @@ async function poll(): Promise<number> {
     console.log(
       r.error
         ? `${at} ${r.login}: FAILED ${r.error}`
-        : `${at} ${r.login}: ${r.open} open items, ${r.dropped} dropped by guard, ${r.cost} point(s), ${r.events} event(s)`,
+        : `${at} ${r.login}: ${r.open} open items, ${r.dropped} dropped by guard, ${r.cost} point(s), ${r.events} event(s), ${r.shipping} awaiting release`,
     );
+  }
+  const api = tasksApi();
+  if (api) {
+    const synced = await syncTasks(paths.state(), api);
+    if (synced.moved || synced.pending || synced.error)
+      console.log(
+        `${at} tasks: ${synced.moved} moved, ${synced.pending} PR(s) queued${synced.error ? `, stopped: ${synced.error}` : ""}`,
+      );
   }
   return reports.some((r) => r.error) ? 1 : 0;
 }

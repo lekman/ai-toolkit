@@ -118,6 +118,9 @@ Rules for the content:
   `audio_delete_by` (default: one week after the meeting). Do not copy the
   audio into the vault. When the file is deleted, replace the link with
   "Audio deleted on {date}".
+- Write each paragraph and each list item on one line. Obsidian shows a line
+  break inside a paragraph as a visible break, so wrapped lines read as stray
+  breaks.
 - Follow the house tone (`tone:write`).
 
 ## Step 5: Report

@@ -11,16 +11,13 @@ tags: [meeting]
 
 # {Title}, {D Month YYYY}
 
-Transcript: [[{transcript file name without .md}|full transcript]] ·
-Audio: [audio.mp4](file://{URL-encoded path to the Meetily audio file})
-(on this Mac only, delete by {D Mon YYYY})
+Transcript: [[{transcript file name without .md}|full transcript]] · Audio: [audio.mp4](file://{URL-encoded path to the Meetily audio file}) (on this Mac only, delete by {D Mon YYYY})
 
 {Start to end time with time zone, meeting tool, who hosted, who was expected but absent.}
 
 ## Shareable
 
-Ready to paste into Teams or email. No patient or personal data, no internal observations, no
-speaker the transcript does not make clear.
+Ready to paste into Teams or email. No patient or personal data, no internal observations, no speaker the transcript does not make clear.
 
 Summary of {meeting}, {D Mon}.
 
@@ -39,8 +36,7 @@ Summary of {meeting}, {D Mon}.
 
 - **Mood:** {how the participants came across, from their own words}.
 - **Where we are:** {status against the plan or milestone, and how urgent the next step is}.
-- **Worries raised:** {concerns the other side raised themselves, worded neutrally; "None raised"
-  if none}.
+- **Worries raised:** {concerns the other side raised themselves, worded neutrally; "None raised" if none}.
 - **Follow-up:** {whether a follow-up is needed, what and when; "None needed" if none}.
 
 ### Decisions
@@ -69,8 +65,7 @@ Internal. Times in brackets are minutes into the recording.
 
 ### Reading the Room
 
-Internal only. {Tensions, risks to the relationship, absences that mattered, anything that should
-shape the next conversation but not be shared.}
+Internal only. {Tensions, risks to the relationship, absences that mattered, anything that should shape the next conversation but not be shared.}
 
 ### Open Questions
 
@@ -78,5 +73,4 @@ shape the next conversation but not be shared.}
 
 ### Observations
 
-{What was seen on shared screens or noticed outside the discussion, for the team to triage. Not
-decisions from the meeting.}
+{What was seen on shared screens or noticed outside the discussion, for the team to triage. Not decisions from the meeting.}

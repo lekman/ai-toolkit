@@ -108,7 +108,7 @@
     {
       "name": "meeting",
       "source": "./plugins/meeting",
-      "description": "Meeting notes from meetings recorded and transcribed on your Mac by Meetily: transcript into the client's vault folder, summary, decisions, actions and open questions, and a per-client rule that only a local model reads the transcript",
+      "description": "Meeting notes from meetings recorded and transcribed on your Mac by Meetily: transcript into the client's vault folder, a shareable summary with mood and momentum, decisions and actions, an internal record with the evidence, and a per-client rule that only a local model reads the transcript",
       "category": "productivity",
       "tags": ["meetings", "transcription", "notes", "obsidian", "privacy"]
     }

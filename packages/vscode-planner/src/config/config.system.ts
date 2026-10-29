@@ -37,6 +37,8 @@ export class VscodeConfigSource implements IConfigSource {
   readSettings(): PlannerSettings {
     const settings = vscode.workspace.getConfiguration("planner");
     return {
+      atlasPage: settings.get<string>("atlasPage", ""),
+      atlasServer: settings.get<string>("atlasServer", "dashboard"),
       clients: settings.get<string[]>("clients", []),
       dashboardPath: settings.get<string>("dashboardPath", ""),
       pollSeconds: settings.get<number>("pollSeconds", 30),

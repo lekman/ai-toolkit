@@ -5,6 +5,13 @@ export type ClientHeadingMode = "always" | "auto" | "never";
 
 /** Everything the views need in order to render, plus why they cannot. */
 export interface PlannerConfig {
+  /**
+   * Absolute path to the Atlas page, the HTML the Claude artifact runs, or
+   * null when neither the setting nor the vault gives one.
+   */
+  atlasPagePath: null | string;
+  /** Key of the local dashboard server under `mcpServers` in the Claude desktop config. */
+  atlasServer: string;
   /** Client headings to show. Empty means show every client. */
   clients: string[];
   /** Absolute path to `Dashboard.md`, or null when it could not be resolved. */
@@ -28,6 +35,8 @@ export interface PlannerConfig {
 
 /** The extension's own settings, as read from VS Code. */
 export interface PlannerSettings {
+  atlasPage: string;
+  atlasServer: string;
   clients: string[];
   dashboardPath: string;
   pollSeconds: number;

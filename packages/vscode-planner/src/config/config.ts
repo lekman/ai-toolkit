@@ -9,6 +9,9 @@
 
 import { join } from "node:path";
 
+/** Where the Atlas page sits in the vault unless `planner.atlasPage` says otherwise. */
+const ATLAS_PAGE = join("_Dashboard Sync", "dashboard-page.html");
+
 import type { IConfigSource } from "./interfaces.ts";
 import type {
   PlannerConfig,
@@ -86,9 +89,16 @@ export class Config {
     // The setting wins so a manually configured dashboard can still resolve
     // links; otherwise the shared file, which is where the vault is normally
     // declared. Neither is required — links simply stay plain text.
-    const vaultRoot = settings.vaultRoot.trim() || shared?.vault?.trim() || null;
+    const vaultRoot =
+      settings.vaultRoot.trim() || shared?.vault?.trim() || null;
+
+    const atlasPagePath =
+      settings.atlasPage.trim() ||
+      (vaultRoot ? join(vaultRoot, ATLAS_PAGE) : null);
 
     return {
+      atlasPagePath,
+      atlasServer: settings.atlasServer.trim() || "dashboard",
       clients,
       dashboardPath,
       pollSeconds: Math.max(0, settings.pollSeconds),

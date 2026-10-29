@@ -179,7 +179,16 @@
             "format": "date-time"
           },
           "status": {
-            "enum": ["todo", "doing", "review", "approved", "merged", "done", "dropped", "blocked"]
+            "enum": [
+              "todo",
+              "doing",
+              "review",
+              "approved",
+              "merged",
+              "done",
+              "dropped",
+              "blocked"
+            ]
           },
           "note": {
             "type": "string",
@@ -283,7 +292,15 @@
     },
     "state": {
       "description": "review: a pull request waits for review. approved: approved, not merged. merged: merged, not yet released. done: released, or finished for work that is never released.",
-      "enum": ["todo", "doing", "review", "approved", "merged", "done", "dropped"]
+      "enum": [
+        "todo",
+        "doing",
+        "review",
+        "approved",
+        "merged",
+        "done",
+        "dropped"
+      ]
     },
     "priority": {
       "enum": ["high", "normal", "low"]

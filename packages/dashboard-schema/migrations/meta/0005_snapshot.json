@@ -310,12 +310,8 @@
           "name": "dashboard_item_client_id_client_id_fk",
           "tableFrom": "dashboard_item",
           "tableTo": "client",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -323,14 +319,8 @@
           "name": "dashboard_item_workstream_same_client_fk",
           "tableFrom": "dashboard_item",
           "tableTo": "workstream",
-          "columnsFrom": [
-            "workstream_id",
-            "client_id"
-          ],
-          "columnsTo": [
-            "id",
-            "client_id"
-          ],
+          "columnsFrom": ["workstream_id", "client_id"],
+          "columnsTo": ["id", "client_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -459,12 +449,8 @@
           "name": "item_history_item_id_dashboard_item_id_fk",
           "tableFrom": "item_history",
           "tableTo": "dashboard_item",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -556,12 +542,8 @@
           "name": "item_log_item_id_dashboard_item_id_fk",
           "tableFrom": "item_log",
           "tableTo": "dashboard_item",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -683,12 +665,8 @@
           "name": "message_client_id_client_id_fk",
           "tableFrom": "message",
           "tableTo": "client",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -762,12 +740,8 @@
           "name": "workstream_client_id_client_id_fk",
           "tableFrom": "workstream",
           "tableTo": "client",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -777,10 +751,7 @@
         "workstream_id_client_id_key": {
           "name": "workstream_id_client_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "client_id"
-          ]
+          "columns": ["id", "client_id"]
         }
       },
       "policies": {},
@@ -792,55 +763,27 @@
     "public.business_value": {
       "name": "business_value",
       "schema": "public",
-      "values": [
-        "negative",
-        "none",
-        "low",
-        "medium",
-        "high",
-        "veryHigh"
-      ]
+      "values": ["negative", "none", "low", "medium", "high", "veryHigh"]
     },
     "public.classification": {
       "name": "classification",
       "schema": "public",
-      "values": [
-        "public",
-        "internal",
-        "client-confidential",
-        "restricted"
-      ]
+      "values": ["public", "internal", "client-confidential", "restricted"]
     },
     "public.effort": {
       "name": "effort",
       "schema": "public",
-      "values": [
-        "XS",
-        "S",
-        "M",
-        "L",
-        "XL"
-      ]
+      "values": ["XS", "S", "M", "L", "XL"]
     },
     "public.history_kind": {
       "name": "history_kind",
       "schema": "public",
-      "values": [
-        "added",
-        "moved",
-        "state",
-        "edited",
-        "claimed",
-        "released"
-      ]
+      "values": ["added", "moved", "state", "edited", "claimed", "released"]
     },
     "public.item_kind": {
       "name": "item_kind",
       "schema": "public",
-      "values": [
-        "work",
-        "admin"
-      ]
+      "values": ["work", "admin"]
     },
     "public.log_status": {
       "name": "log_status",
@@ -859,11 +802,7 @@
     "public.priority": {
       "name": "priority",
       "schema": "public",
-      "values": [
-        "high",
-        "normal",
-        "low"
-      ]
+      "values": ["high", "normal", "low"]
     },
     "public.item_state": {
       "name": "item_state",

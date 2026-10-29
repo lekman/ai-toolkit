@@ -30,6 +30,10 @@ through the [tasks plugin](../../plugins/tasks).
   database, and the database's own constraints check again.
 - **New items take their client's classification and boundary** and get a
   lower-case ULID as their id.
+- **Open means not done or dropped.** A search with no `states` returns
+  `todo`, `doing`, `review`, `approved` and `merged`. `pullRequest` finds the
+  items that link one PR, without regard to case; gh-events uses it to move
+  items as their PRs are approved, merged and released.
 - **Search order is computed**: priority from business value against effort,
   then urgency from the due date, as in
   [priority.ts](../dashboard-schema/src/priority.ts). "Today" is the day in

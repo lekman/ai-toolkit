@@ -8,7 +8,8 @@ export type EventName =
   | "conflict"
   | "issue_assigned"
   | "issue_closed"
-  | "merged";
+  | "merged"
+  | "released";
 
 /** One line of `events.jsonl`. See CONTRACT.md. */
 export interface GhEvent {

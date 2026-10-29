@@ -71,7 +71,13 @@ async function visible(ctx: Context, id: string): Promise<DashboardItem> {
 }
 
 /** The open states, used when a search names none. */
-export const OPEN_STATES: readonly State[] = ["todo", "doing", "review"];
+export const OPEN_STATES: readonly State[] = [
+  "todo",
+  "doing",
+  "review",
+  "approved",
+  "merged",
+];
 
 /** An item in a search result: enough to choose one, without its prose. */
 export interface ItemSummary {
@@ -109,6 +115,7 @@ export interface SearchInput {
   blocked?: boolean;
   tag?: string;
   trackerKey?: string;
+  pullRequest?: string;
   scheduledFrom?: string;
   scheduledTo?: string;
   dueBy?: string;
@@ -244,6 +251,7 @@ export async function search(
     blocked: input.blocked,
     tag: input.tag,
     trackerKey: input.trackerKey,
+    pullRequest: input.pullRequest,
     scheduledFrom: input.scheduledFrom,
     scheduledTo: input.scheduledTo,
     dueBy: input.dueBy,

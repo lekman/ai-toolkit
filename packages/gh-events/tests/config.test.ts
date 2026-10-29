@@ -42,6 +42,7 @@ describe("parseConfig", () => {
               kind: "org",
               name: "acme",
               repos: {},
+              unreleased: [],
             },
           ],
         },
@@ -137,6 +138,7 @@ test("searchString uses one qualifier per owner", () => {
         kind: "org",
         name: "acme",
         repos: {},
+        unreleased: [],
       },
       {
         client: null,
@@ -145,6 +147,7 @@ test("searchString uses one qualifier per owner", () => {
         kind: "user",
         name: "globex",
         repos: {},
+        unreleased: [],
       },
     ]),
   ).toBe("is:issue is:open archived:false assignee:@me org:acme user:globex");

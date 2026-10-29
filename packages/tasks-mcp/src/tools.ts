@@ -38,7 +38,22 @@ const day = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .describe("A date, YYYY-MM-DD");
-const state = z.enum(["todo", "doing", "review", "done", "dropped"]);
+const STATES = [
+  "todo",
+  "doing",
+  "review",
+  "approved",
+  "merged",
+  "done",
+  "dropped",
+] as const;
+const state = z
+  .enum(STATES)
+  .describe(
+    "review: a pull request waits for review. approved: approved, not merged. merged: merged, not yet released. " +
+      "done: released, or finished for work that is never released. " +
+      "gh-events moves an item with linked pullRequests through approved, merged and done on its own.",
+  );
 const by = z
   .string()
   .min(1)
@@ -187,7 +202,7 @@ export function registerTaskTools(server: McpServer, ctx: tasks.Context): void {
     "task_search",
     {
       description:
-        "Find dashboard items. Returns open items (todo, doing, review) unless states says otherwise, " +
+        "Find dashboard items. Returns open items (todo, doing, review, approved, merged) unless states says otherwise, " +
         "most important first: computed priority, then urgency from the due date. " +
         "Use task_get to read one in full before changing it.",
       inputSchema: {
@@ -211,6 +226,11 @@ export function registerTaskTools(server: McpServer, ctx: tasks.Context): void {
           .max(64)
           .optional()
           .describe("A ticket key, for example #250 or ADX-12"),
+        pullRequest: z
+          .string()
+          .regex(/^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}#\d+$/)
+          .optional()
+          .describe("Items linking this pull request, owner/repo#number"),
         scheduledFrom: day.optional(),
         scheduledTo: day.optional(),
         dueBy: day.optional(),
@@ -328,14 +348,7 @@ export function registerTaskTools(server: McpServer, ctx: tasks.Context): void {
       inputSchema: {
         by,
         id,
-        status: z.enum([
-          "todo",
-          "doing",
-          "review",
-          "done",
-          "dropped",
-          "blocked",
-        ]),
+        status: z.enum([...STATES, "blocked"]),
         note,
       },
     },

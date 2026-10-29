@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { clientFor, itemUrl, parseItem, watched } from "../src/guard";
+import {
+  clientFor,
+  itemUrl,
+  parseItem,
+  parseReleaseSha,
+  unreleased,
+  watched,
+} from "../src/guard";
 import { owners, rawIssue, rawPr, SHA_A } from "./fixtures";
 
 describe("parseItem: pull requests", () => {
@@ -22,6 +29,20 @@ describe("parseItem: pull requests", () => {
     const text = JSON.stringify(item);
     expect(text).not.toContain("instructions");
     expect(text).not.toContain("curl");
+  });
+
+  test("a merged PR keeps its merge commit; an open one has none", () => {
+    const merge = "c".repeat(40);
+    expect(
+      parseItem(rawPr({ mergeCommit: { oid: merge }, state: "MERGED" }), owners)
+        ?.mergeSha,
+    ).toBe(merge);
+    expect(parseItem(rawPr({ mergeCommit: null }), owners)?.mergeSha).toBe(
+      undefined,
+    );
+    expect(parseItem(rawPr({ mergeCommit: { oid: "main" } }), owners)).toBe(
+      null,
+    );
   });
 
   test("an open draft is DRAFT; a merged draft flag does not hide MERGED", () => {
@@ -148,6 +169,7 @@ describe("watched", () => {
         kind: "org" as const,
         name: "acme",
         repos: {},
+        unreleased: [],
       },
     ];
     expect(watched("acme/a.b", literal)).toBe(true);
@@ -177,4 +199,23 @@ describe("clientFor", () => {
     expect(clientFor("acme/api", held)).toBeNull();
     expect(clientFor("acme/web", held)).toBe("acme");
   });
+});
+
+test("parseReleaseSha reads only the release commit", () => {
+  const sha = "d".repeat(40);
+  expect(
+    parseReleaseSha({
+      latestRelease: { tagCommit: { oid: sha }, tagName: "$(curl evil)" },
+    }),
+  ).toBe(sha);
+  expect(parseReleaseSha({ latestRelease: null })).toBe(null);
+  expect(parseReleaseSha({ latestRelease: { tagCommit: { oid: "v1" } } })).toBe(
+    null,
+  );
+});
+
+test("unreleased matches the owner's patterns", () => {
+  expect(unreleased("acme/infra-dns", owners)).toBe(true);
+  expect(unreleased("acme/api", owners)).toBe(false);
+  expect(unreleased("other/infra-dns", owners)).toBe(false);
 });

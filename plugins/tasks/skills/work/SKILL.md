@@ -27,7 +27,8 @@ tasks --by <your session name> search --client <id> --unclaimed
 tasks --by <your session name> claim <id>
 tasks --by <your session name> start <id> --note "picked up"
 tasks --by <your session name> log <id> "halfway"
-tasks --by <your session name> done <id> --note "merged"
+tasks --by <your session name> state <id> review --note "opened acme/api#12"
+tasks --by <your session name> done <id> --note "set up the runner"
 tasks --by <your session name> add --client <id> --title "…" --day tomorrow --owner <who> --waiting-on <who>
 ```
 
@@ -59,7 +60,7 @@ If you stop without finishing, `task_release` so someone else can pick it up.
 ## Record Progress
 
 - `task_log` for a progress note: 160 characters, the status at the time
-  (`doing`, `blocked`, `review`). The log is append only and never edited.
+  (`doing`, `blocked`, `review`, `approved`, `merged`). The log is append only and never edited.
 - `task_update` for fields: `state`, `summary`, `scheduledFor`, `due`,
   `businessValue`, `effort`, `blocked` with `blockedOn`, `pullRequests`, and
   so on. Pass the
@@ -80,10 +81,28 @@ Leave merged ones in the list; they show the work that was done.
 From Bash, `tasks set <id> --pr owner/repo#number` does the read, the
 append and the revision for you.
 
+Set the state to `review` in the same update. From there gh-events moves the
+item on its own, through these states:
+
+| State      | Meaning                                                         | Set by                 |
+| ---------- | --------------------------------------------------------------- | ---------------------- |
+| `review`   | A pull request waits for review                                 | you, when you open it  |
+| `approved` | Approved, not merged                                            | gh-events, on approval |
+| `merged`   | Merged, not yet in a release                                    | gh-events, on merge    |
+| `done`     | In a published release, or merged in a repo that never releases | gh-events              |
+
+gh-events moves an item to the least advanced state among its pull
+requests, only ever forward, and past your claim. A pull request it cannot
+see counts as `review`; one closed without merging is left out. Set the
+state yourself when gh-events cannot know it, for example when changes are
+requested and the item goes back to `doing`.
+
 ## Finish
 
-`task_complete` with the revision and a short note on what was done. It
-records the day and clears your claim and any blocked details.
+For work with pull requests, stop once they are open and linked: do not call
+`task_complete` on a merge, because the release sets `done`. For work with
+no pull request, `task_complete` with the revision and a short note on what
+was done. It records the day and clears your claim and any blocked details.
 
 ## Add New Work
 

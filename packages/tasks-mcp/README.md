@@ -8,6 +8,7 @@ through the [tasks plugin](../../plugins/tasks).
 | Path                                               | What it is                                                                |
 | -------------------------------------------------- | ------------------------------------------------------------------------- |
 | [src/tasks.ts](src/tasks.ts)                       | The operations: search, read, add, update, claim, complete                |
+| [src/hoststats.ts](src/hoststats.ts)               | Host statistics: store and list samples, breach limits, retention         |
 | [src/tools.ts](src/tools.ts)                       | The MCP tools over those operations, one registration for both transports |
 | [src/http.ts](src/http.ts)                         | Streamable HTTP at `/mcp`, bearer token, `GET /health`                    |
 | [src/bin/tasks-server.ts](src/bin/tasks-server.ts) | The HTTP server for the tailnet                                           |
@@ -38,6 +39,42 @@ through the [tasks plugin](../../plugins/tasks).
   then urgency from the due date, as in
   [priority.ts](../dashboard-schema/src/priority.ts). "Today" is the day in
   `TASKS_TIME_ZONE` (default Europe/London).
+
+## Host Statistics
+
+Two tools carry load numbers for the machines, so Atlas can show them:
+
+| Tool             | Does                                                                                   |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| `host_stat_push` | Store one sample: CPU, load, memory free, swap, disk free and runners. A retry is safe |
+| `host_stat_list` | Each host's newest numbers, last seen, the limits it is past, and samples in a range   |
+
+- **A host is named within its client.** A token scoped to one client that
+  pushes host `server` writes that client's `server` and cannot touch
+  another client's. `host_stat_list` shows a scoped token only its clients'
+  hosts.
+- **Samples are UTC, every 5 minutes.** A push more than 5 minutes ahead of
+  the server's clock, or more than 7 days old, is refused. A second push for
+  the same host and time returns `stored: false`.
+- **Retention runs in the database.** `host_stat_rollup()` averages 5-minute
+  samples older than 7 days into hourly rows, and deletes hourly rows older
+  than 97 days. `tasks-server` calls it at start-up and then every hour; a
+  failure is logged and the server keeps running. Nothing else schedules it.
+- **Breaches** are worked out on read, from `LIMITS` and `ALWAYS_ON` in
+  [src/hoststats.ts](src/hoststats.ts):
+
+  | Metric       | Warn                 | Crit                 | Judged on                       |
+  | ------------ | -------------------- | -------------------- | ------------------------------- |
+  | `memFreePct` | below 20             | below 10             | the newest sample               |
+  | `swapUsedMb` | above 8192           | above 24576          | the newest sample               |
+  | `diskFreeGb` | below 50             | below 20             | the newest sample               |
+  | `cpuPct`     | 90 or more           |                      | the mean of the last 15 minutes |
+  | `lastSeen`   | more than 17 minutes | more than 60 minutes | always-on hosts only (`server`) |
+
+  The `lastSeen` warning waits for three missed samples plus 2 minutes'
+  grace, because the laptop sleeps and the server can be a minute late. The
+  crit values must match the watchdog's (`~/homelab/watchdog/watchdog.sh`);
+  tell Commander when they change.
 
 ## Run It on the Mac Mini
 

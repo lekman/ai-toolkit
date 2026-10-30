@@ -8,6 +8,7 @@ import {
 import { InvalidItem } from "@lekman/dashboard-schema/validate";
 import { z } from "zod";
 
+import * as hoststats from "./hoststats.ts";
 import * as messages from "./messages.ts";
 import * as tasks from "./tasks.ts";
 
@@ -28,12 +29,20 @@ export const TOOL_NAMES = [
   "message_send",
   "message_inbox",
   "message_delivered",
+  "host_stat_push",
+  "host_stat_list",
 ] as const;
 
 const id = z
   .string()
   .regex(/^[a-z0-9][a-z0-9-]*$/)
   .max(128);
+const hostName = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]*$/)
+  .max(64)
+  .describe("The machine's name within its client, for example server");
+const instant = z.iso.datetime();
 const day = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -176,7 +185,8 @@ function failure(error: unknown) {
     message = error.message;
   } else if (
     error instanceof tasks.NothingToChange ||
-    error instanceof tasks.InvalidActor
+    error instanceof tasks.InvalidActor ||
+    error instanceof hoststats.HostStatRefused
   ) {
     message = error.message;
   } else {
@@ -456,5 +466,106 @@ export function registerTaskTools(server: McpServer, ctx: tasks.Context): void {
     },
     ({ by, ids }) =>
       run(async () => ({ delivered: await messages.delivered(ctx, by, ids) })),
+  );
+
+  server.registerTool(
+    "host_stat_push",
+    {
+      description:
+        "Store one load sample for a machine: CPU, memory, swap, disk and runners, every 5 minutes. " +
+        "The host is named within the client, so each client has its own hosts. " +
+        "stored false means a sample for that host and time is already there, so a retry is safe. " +
+        "Leave out a number the machine does not have.",
+      inputSchema: {
+        clientId: id.describe(
+          "The client the machine belongs to, from client_list",
+        ),
+        host: hostName,
+        sampledAt: instant.describe(
+          "When the sample was taken, ISO UTC with a Z. Refused when more than 5 minutes ahead or more than 7 days old.",
+        ),
+        cpuPct: z
+          .number()
+          .min(0)
+          .max(100)
+          .nullable()
+          .optional()
+          .describe("CPU in use, percent"),
+        load1: z
+          .number()
+          .min(0)
+          .max(1024)
+          .nullable()
+          .optional()
+          .describe("Load average over 1 minute"),
+        memFreePct: z
+          .number()
+          .min(0)
+          .max(100)
+          .nullable()
+          .optional()
+          .describe("Memory free, percent, as memory_pressure reports it"),
+        swapUsedMb: z
+          .number()
+          .int()
+          .min(0)
+          .max(1048576)
+          .nullable()
+          .optional()
+          .describe("Swap in use, MB"),
+        diskFreeGb: z
+          .number()
+          .min(0)
+          .max(100000)
+          .nullable()
+          .optional()
+          .describe("Free space on the main volume, GB"),
+        runnersBusy: z
+          .number()
+          .int()
+          .min(0)
+          .max(64)
+          .nullable()
+          .optional()
+          .describe("Runner containers working"),
+        runnersMax: z
+          .number()
+          .int()
+          .min(1)
+          .max(64)
+          .nullable()
+          .optional()
+          .describe("Runner containers allowed"),
+      },
+    },
+    (input) => run(() => hoststats.push(ctx, input)),
+  );
+
+  server.registerTool(
+    "host_stat_list",
+    {
+      description:
+        "Machines' load: for each host its newest numbers, when it was last seen, the limits it is past (warn or crit), " +
+        "and its samples in the range, oldest first. Samples are every 5 minutes for the last 7 days and hourly averages before that. " +
+        "The newest numbers and the limits describe the host now, whatever the range.",
+      inputSchema: {
+        clientId: id
+          .optional()
+          .describe(
+            "Only this client's hosts. Leave out for every client you may see.",
+          ),
+        host: hostName.optional(),
+        from: instant
+          .optional()
+          .describe("Start of the range, ISO UTC. Default 24 hours before to."),
+        to: instant
+          .optional()
+          .describe(
+            "End of the range, ISO UTC. Default now. At most 97 days after from.",
+          ),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    (input) => run(() => hoststats.list(ctx, input)),
   );
 }

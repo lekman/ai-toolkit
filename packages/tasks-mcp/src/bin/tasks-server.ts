@@ -12,6 +12,7 @@
 import { readFileSync } from "node:fs";
 
 import { connect, databaseUrl } from "../db.ts";
+import { startRollup } from "../hoststats.ts";
 import { parseScopedTokens, serve } from "../http.ts";
 import { findTailnetAddress } from "../tailnet.ts";
 
@@ -44,14 +45,14 @@ const scopedTokens = scopedFile
   : [];
 
 const { db, close } = connect(databaseUrl());
-const running = await serve(
-  {
-    db,
-    now: () => new Date(),
-    timeZone: process.env.TASKS_TIME_ZONE ?? "Europe/London",
-  },
-  { host, port, scopedTokens, token },
-);
+const ctx = {
+  db,
+  now: () => new Date(),
+  timeZone: process.env.TASKS_TIME_ZONE ?? "Europe/London",
+};
+const running = await serve(ctx, { host, port, scopedTokens, token });
+// Fold and expire host statistics now and every hour. Nothing else schedules it.
+const stopRollup = startRollup(ctx);
 console.error(
   `tasks-server listening on http://${running.address.host}:${String(running.address.port)}/mcp` +
     (scopedTokens.length
@@ -60,6 +61,7 @@ console.error(
 );
 
 const shutdown = () => {
+  stopRollup();
   void running
     .close()
     .then(close)

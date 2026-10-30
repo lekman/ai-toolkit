@@ -5,15 +5,15 @@ It replaces the conventions the Obsidian dashboard encodes in markdown
 (emoji for status, line order for priority, inline dated notes) with explicit
 fields.
 
-| Path                                                                   | What it is                                       |
-| ---------------------------------------------------------------------- | ------------------------------------------------ |
-| [schema/dashboard-item.schema.json](schema/dashboard-item.schema.json) | JSON Schema (2020-12) for one item               |
-| [src/priority.ts](src/priority.ts)                                     | Priority, urgency and quadrant, computed on read |
-| [src/db/schema.ts](src/db/schema.ts)                                   | Drizzle tables for Postgres                      |
-| [migrations/](migrations/)                                             | Generated SQL, plus the append-only trigger      |
-| [docs/database.md](docs/database.md)                                   | Tables, relationships and normalisation          |
-| [deploy/compose.yaml](deploy/compose.yaml)                             | Postgres 17 for the Mac Mini                     |
-| [examples/](examples/)                                                 | Valid items, including one imported from Atlas   |
+| Path                                                                   | What it is                                                                  |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [schema/dashboard-item.schema.json](schema/dashboard-item.schema.json) | JSON Schema (2020-12) for one item                                          |
+| [src/priority.ts](src/priority.ts)                                     | Priority, urgency and quadrant, computed on read                            |
+| [src/db/schema.ts](src/db/schema.ts)                                   | Drizzle tables for Postgres                                                 |
+| [migrations/](migrations/)                                             | Generated SQL, the append-only trigger and the host_stat retention function |
+| [docs/database.md](docs/database.md)                                   | Tables, relationships and normalisation                                     |
+| [deploy/compose.yaml](deploy/compose.yaml)                             | Postgres 17 for the Mac Mini                                                |
+| [examples/](examples/)                                                 | Valid items, including one imported from Atlas                              |
 
 ## The Item
 
@@ -71,7 +71,8 @@ Postgres, through Drizzle. The JSON Schema's cross-field rules are also check
 constraints, so a writer that skips validation still cannot store a broken
 item. `item_log` and `item_history` refuse UPDATE and DELETE through a
 trigger; deleting the item removes them with it. An item's workstream must
-belong to the item's own client, through a composite foreign key. See
+belong to the item's own client, through a composite foreign key. `host_stat` holds load samples for the machines, with
+retention in the SQL function `host_stat_rollup()`. See
 [docs/database.md](docs/database.md) for the diagram and the reasoning.
 
 ```bash

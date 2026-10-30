@@ -25,6 +25,9 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
+  real,
+  smallint,
   text,
   timestamp,
   unique,
@@ -266,5 +269,43 @@ export const message = pgTable(
       "message_delivered_pair",
       sql`(${t.deliveredAt} IS NULL) = (${t.deliveredBy} IS NULL)`,
     ),
+  ],
+);
+
+export const hostStatResolutionEnum = pgEnum("host_stat_resolution", [
+  "5m",
+  "1h",
+]);
+
+/**
+ * Load numbers for one machine at one time: a sample every 5 minutes, or an
+ * hourly average of those once they are older than 7 days. The SQL function
+ * host_stat_rollup() (migration 0006) makes the averages and deletes what is
+ * past retention. A host is named within its client, so two clients can each
+ * have a host called "server". No process or file names are stored.
+ */
+export const hostStat = pgTable(
+  "host_stat",
+  {
+    clientId: identifier("client_id")
+      .notNull()
+      .references(() => client.id),
+    host: varchar("host", { length: 64 }).notNull(),
+    resolution: hostStatResolutionEnum("resolution").notNull().default("5m"),
+    sampledAt: stamp("sampled_at").notNull(),
+    cpuPct: real("cpu_pct"),
+    load1: real("load1"),
+    memFreePct: real("mem_free_pct"),
+    swapUsedMb: integer("swap_used_mb"),
+    diskFreeGb: real("disk_free_gb"),
+    runnersBusy: smallint("runners_busy"),
+    runnersMax: smallint("runners_max"),
+  },
+  (t) => [
+    primaryKey({
+      name: "host_stat_pkey",
+      columns: [t.clientId, t.host, t.resolution, t.sampledAt],
+    }),
+    check("host_stat_host_format", sql`${t.host} ~ '^[a-z0-9][a-z0-9-]*$'`),
   ],
 );

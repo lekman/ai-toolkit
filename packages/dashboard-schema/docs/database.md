@@ -15,6 +15,7 @@ erDiagram
   DASHBOARD_ITEM ||--o{ ITEM_LOG : "progress notes"
   DASHBOARD_ITEM ||--o{ ITEM_HISTORY : events
   CLIENT ||--o{ MESSAGE : "is about"
+  CLIENT ||--o{ HOST_STAT : "owns hosts"
   CLIENT {
     varchar id PK
     classification classification
@@ -94,27 +95,41 @@ erDiagram
     timestamptz delivered_at "set once"
     varchar delivered_by
   }
+  HOST_STAT {
+    varchar client_id PK "FK, with host"
+    varchar host PK "lower case, max 64"
+    host_stat_resolution resolution PK "5m or 1h"
+    timestamptz sampled_at PK "UTC"
+    real cpu_pct
+    real load1
+    real mem_free_pct
+    int swap_used_mb
+    real disk_free_gb
+    smallint runners_busy
+    smallint runners_max
+  }
 ```
 
 `text_array` in the diagram is the Postgres type `text[]`. Mermaid cannot
 show brackets in a type name.
 
-| Relationship                   | Rule                                                                                                                               |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| client to workstream           | Every workstream belongs to one client.                                                                                            |
-| client to dashboard_item       | Every item belongs to one client (`client_id` is not null).                                                                        |
-| workstream to dashboard_item   | Optional. The foreign key is on the pair (`workstream_id`, `client_id`), so an item can only be in a workstream of its own client. |
-| dashboard_item to item_log     | Many notes per item. Deleting the item deletes its notes.                                                                          |
-| dashboard_item to item_history | Many events per item. Deleting the item deletes its events.                                                                        |
-| client to message              | Every message is about one client and takes its classification and boundary, so a token limited to some clients reads only theirs. |
+| Relationship                   | Rule                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| client to workstream           | Every workstream belongs to one client.                                                                                             |
+| client to dashboard_item       | Every item belongs to one client (`client_id` is not null).                                                                         |
+| workstream to dashboard_item   | Optional. The foreign key is on the pair (`workstream_id`, `client_id`), so an item can only be in a workstream of its own client.  |
+| dashboard_item to item_log     | Many notes per item. Deleting the item deletes its notes.                                                                           |
+| dashboard_item to item_history | Many events per item. Deleting the item deletes its events.                                                                         |
+| client to message              | Every message is about one client and takes its classification and boundary, so a token limited to some clients reads only theirs.  |
+| client to host_stat            | A host is named within its client, so two clients can each have a `server`. A token limited to some clients reads only their hosts. |
 
 ## Rules the Database Enforces
 
 These hold even for a writer that skips the JSON Schema validation.
 
 - **Allowed values** are Postgres enums: `classification`, `item_state`,
-  `priority`, `business_value`, `effort`, `item_kind`, `history_kind` and
-  `log_status`.
+  `priority`, `business_value`, `effort`, `item_kind`, `history_kind`,
+  `log_status` and `host_stat_resolution`.
 - **Check constraints** on `dashboard_item` mirror the JSON Schema's
   cross-field rules:
   - the `id` is lower-case letters, digits and hyphens
@@ -129,6 +144,11 @@ These hold even for a writer that skips the JSON Schema validation.
 - **Writes are revision checked.** `updateItem` updates only where the
   revision still matches the one the writer read, and raises
   `RevisionConflict` when it does not.
+- **Host statistics are kept for 97 days.** `host_stat_rollup()` (migration 0006) averages 5-minute samples older than 7 days into one `1h` row per
+  host and hour, deletes those samples, and deletes `1h` rows older than 97
+  days, in one transaction. It averages an hour only once the whole hour is
+  past 7 days, so running it again changes nothing. `host_stat` is not
+  append only, and `host` must be lower-case letters, digits and hyphens.
 - **An item's workstream belongs to the item's client.** The composite
   foreign key needs `workstream` to have a unique (`id`, `client_id`). With
   the default `MATCH SIMPLE`, a null `workstream_id` is not checked, so items

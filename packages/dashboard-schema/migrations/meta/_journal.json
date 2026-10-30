@@ -43,6 +43,13 @@
       "when": 1793200953234,
       "tag": "0005_pr_states",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793375763177,
+      "tag": "0006_host_stat",
+      "breakpoints": true
     }
   ]
 }

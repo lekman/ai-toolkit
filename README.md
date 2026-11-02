@@ -60,6 +60,8 @@ any of the above further than it goes.
 
 ## Build with It
 
+- **[Atlas](https://github.com/lekman/atlas)** a live map of your agents, clients and work, drawn as a world you choose, with the sidebar the [live dashboard](practices/live-dashboard/README.md) publishes and the [planner extension](packages/vscode-planner/README.md) shows in VS Code.
+
 - **[@lekman/claude-local](packages/claude-local/README.md)** run fully private, offline and uncensored LLMs on your local machine.
 - **[@lekman/claude-bedrock](packages/claude-bedrock/README.md)** run Claude in your own AWS account and region, under your own IAM, without prompts reaching Anthropic's own API.
 - **[@lekman/claude-foundry](packages/claude-foundry/README.md)** run Claude on Azure under Entra ID and RBAC; each deployment's hosting option decides whether inference stays on Azure.

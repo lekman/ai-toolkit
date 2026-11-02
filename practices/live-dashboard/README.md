@@ -8,6 +8,12 @@ It is a Claude artifact: a hosted page on claude.ai, private until you share
 it. The page code calls your connectors and a small data store directly, so
 most of it refreshes without any AI run at all.
 
+The page is now the Atlas sidebar, built from
+[lekman/atlas](https://github.com/lekman/atlas) (`apps/sidebar`), a React
+build that compiles to one HTML file. The hand-written `dashboard.html` that
+used to live here is retired. This practice keeps the sync scripts and the
+local MCP server the page reads.
+
 ## What It Shows
 
 - **A summary strip.** Next meeting, today's work as done and open, and one
@@ -95,12 +101,16 @@ it keeps working when you switch claude.ai accounts.
    laid out as day headings (`### Wednesday 7 October`), client headings
    (`#### **Acme**`) and checkbox items, with later days inside
    `> [!note]- Tomorrow` and `> [!note]- Future` callouts.
-2. **Edit the `EDIT:` lines in `dashboard.html`:** client names and title
-   keywords, the GitHub repository, and the monday.com board, person and
-   column ids. In `dashboard_mcp.py`, set `EVENTS_PYTHON` to a Python that has
-   `icalendar` and `recurring-ical-events`, or a `uv run --with …` command.
-3. **Ask Claude to publish `dashboard.html` as an artifact** with these
-   capabilities, trimmed to the connectors you use:
+2. **Build the page from lekman/atlas.** In `apps/sidebar`, copy
+   `sidebar.config.example.json` to `sidebar.config.json` and fill in your
+   clients, trackers, calendars and inbox, or point `SIDEBAR_CONFIG` at a
+   config kept elsewhere. Run `bun run build`; the page is
+   `dist/index.html`, one file with no external loads. In `dashboard_mcp.py`,
+   set `EVENTS_PYTHON` to a Python that has `icalendar` and
+   `recurring-ical-events`, or a `uv run --with …` command.
+3. **Ask Claude to publish the built page as an artifact** with
+   capabilities for the connectors and local tools it calls, trimmed to the
+   ones you use. The shape is:
 
    ```json
    {
@@ -116,6 +126,12 @@ it keeps working when you switch claude.ai accounts.
      "db": { "rules": [{ "path": "", "read": "interact", "write": "owner" }] }
    }
    ```
+
+   The `dashboard_mcp.py` here offers `release_status` and `sync_now` only.
+   The Atlas sidebar also calls `host:dashboard` tools for the worklist,
+   waiting asks, host statistics, details pages, task pull requests, task
+   edits and Commander requests. Without them, those panels show a note
+   instead of data. Declare each tool your server offers.
 
 4. **Create the scheduled sync** as a scheduled task on your computer. Put the
    artifact URL in `artifact.json` beside the scripts (`{ "url": "…" }`) and
@@ -142,7 +158,7 @@ claude.ai account. The sync scripts, the config files, the local server and the
 desktop config belong to the computer, and keep working after a switch. On the
 new account:
 
-1. **Publish the page again.** Ask Claude to publish `dashboard.html` with the
+1. **Publish the page again.** Ask Claude to publish the built page with the
    capabilities from step 3. The new artifact has a new URL and an empty store.
 2. **Point the sync at it.** Put the new URL in `artifact.json`. Click Refresh
    once in the desktop app to fill the store, or run the scheduled task.
@@ -168,9 +184,11 @@ account when you no longer need it.
 
 ## Files
 
+The page itself is in [lekman/atlas](https://github.com/lekman/atlas)
+(`apps/sidebar`).
+
 | File                            | Purpose                                                          |
 | ------------------------------- | ---------------------------------------------------------------- |
-| `dashboard.html`                | The page, with `EDIT:` markers for your clients and ids          |
 | `sync/sync_tasks.py`            | Notes file → worklist items (headline fields only)               |
 | `sync/sync_events.py`           | `.ics` feeds → events for the next two weeks                     |
 | `sync/sync_jira.py`             | Jira tickets assigned to you that are not done                   |

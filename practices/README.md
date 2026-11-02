@@ -177,7 +177,8 @@ systems say, and keeps itself current. It is a Claude artifact, so most of it
 refreshes from page code with no AI run in the loop.
 
 - [live-dashboard/README.md](live-dashboard/README.md): a per-client page of
-  meetings, worklist and trackers, fed three ways: live connectors, a
+  meetings, worklist and trackers (the
+  [Atlas](https://github.com/lekman/atlas) sidebar), fed three ways: live connectors, a
   scheduled sync that keeps secrets on your computer, and a local MCP server
   for code-only checks such as release drift.
 

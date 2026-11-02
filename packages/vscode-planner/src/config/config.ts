@@ -10,7 +10,7 @@
 import { join } from "node:path";
 
 /** Where the Atlas page sits in the vault unless `planner.atlasPage` says otherwise. */
-const ATLAS_PAGE = join("_Dashboard Sync", "dashboard-page.html");
+const ATLAS_PAGE = join("_Dashboard Sync", "sidebar.html");
 
 import type { IConfigSource } from "./interfaces.ts";
 import type {

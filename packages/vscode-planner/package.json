@@ -133,7 +133,7 @@
         "planner.atlasPage": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Absolute path to the Atlas page, the HTML the Claude artifact is published from. Leave empty to use `_Dashboard Sync/dashboard-page.html` in the vault. When the page cannot be read, the sidebar shows the Today and Tomorrow panes instead."
+          "markdownDescription": "Absolute path to the Atlas page, the HTML the Claude artifact is published from. Leave empty to use `_Dashboard Sync/sidebar.html` in the vault, the build of the Atlas sidebar (github.com/lekman/atlas). When the page cannot be read, the sidebar shows the Today and Tomorrow panes instead."
         },
         "planner.atlasServer": {
           "type": "string",

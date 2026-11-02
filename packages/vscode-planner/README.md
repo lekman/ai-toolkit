@@ -7,7 +7,9 @@ The sidebar shows one of two things:
 
 - **The Atlas page**, when it can be read. This is the same HTML page the
   [live dashboard](../../practices/live-dashboard/README.md) Claude artifact
-  is published from, so the sidebar matches the artifact: next meeting,
+  is published from, built from the
+  [Atlas sidebar](https://github.com/lekman/atlas) (`apps/sidebar`), so the
+  sidebar matches the artifact: next meeting,
   worklist with Today, Tomorrow and Backlog, item menus, details, and the
   tracker and release tabs.
 - **Today and Tomorrow panes** otherwise, read from the Obsidian
@@ -122,7 +124,7 @@ repository's `.vscode/settings.json` to pin a repository to specific clients:
 | `planner.pollSeconds`        | `30`          | Fallback re-read interval.                     |
 | `planner.vaultRoot`          | `""`          | Vault path, for links.                         |
 
-An empty `planner.atlasPage` uses `_Dashboard Sync/dashboard-page.html` in
+An empty `planner.atlasPage` uses `_Dashboard Sync/sidebar.html` in
 the vault. The dashboard server is the `mcpServers` entry the Claude desktop
 app starts for the artifact, read from
 `~/Library/Application Support/Claude/claude_desktop_config.json`. With one

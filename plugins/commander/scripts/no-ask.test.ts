@@ -3,7 +3,13 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { reason, rosterMatch, rosterNames, sessionName } from "./no-ask.ts";
+import {
+  nameFromArgs,
+  reason,
+  rosterMatch,
+  rosterNames,
+  sessionName,
+} from "./no-ask.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "no-ask-"));
 const roster = join(dir, "commander.json");
@@ -48,6 +54,19 @@ describe("no-ask", () => {
   it("finds a session's name by its id", () => {
     expect(sessionName(sessions, "s-1")).toBe("iviron-69");
     expect(sessionName(sessions, "nope")).toBeNull();
+  });
+  it("reads the name from a claude command line", () => {
+    expect(
+      nameFromArgs("claude --resume abc --remote-control Ops Portal"),
+    ).toBe("Ops Portal");
+    expect(
+      nameFromArgs(
+        "claude --agent commander:commander --remote-control Commander",
+      ),
+    ).toBe("Commander");
+    expect(nameFromArgs("claude --remote-control 'Gaps'")).toBe("Gaps");
+    expect(nameFromArgs("claude --name Atlas --model x")).toBe("Atlas");
+    expect(nameFromArgs("claude --resume abc")).toBeNull();
   });
   it("tells the commander and a worker each how to ask instead", () => {
     expect(reason(true)).toContain("notify.ts ask");

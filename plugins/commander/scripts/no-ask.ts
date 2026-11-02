@@ -10,9 +10,11 @@
  * reaches the operator's Waiting on you list, where the Atlas sidebar
  * answers it with choices.
  *
- * Which sessions: the caller's session name, read from
- * ~/.claude/sessions/<pid>.json by its session id, is the roster's
- * commander or one of its agents. A roster name matches as a prefix,
+ * Which sessions: the caller's session name is the roster's commander or one
+ * of its agents. The name comes from ~/.claude/sessions/<pid>.json by the
+ * session id. A session started in screen may have no such record, so the
+ * hook then reads `--remote-control <name>` or `--name <name>` from the
+ * command line of the claude process above it. A roster name matches as a prefix,
  * without case, with spaces as hyphens ("Iviron" matches "iviron-69").
  * Sessions outside the roster, and any session when there is no roster,
  * keep AskUserQuestion. An unreadable input lets the call through, so a
@@ -75,6 +77,35 @@ export function sessionName(dir: string, sessionId: string): string | null {
   return null;
 }
 
+/**
+ * The session name a claude command line gives with `--remote-control` or
+ * `--name`. The name runs to the next ` --` flag or the end, because ps
+ * joins arguments with spaces ("--remote-control Ops Portal").
+ */
+export function nameFromArgs(args: string): string | null {
+  const m = /(?:^|\s)--(?:remote-control|name)\s+(.+?)(?=\s--|$)/.exec(args);
+  const name = m?.[1]?.trim().replace(/^['"]|['"]$/g, "");
+  return name || null;
+}
+
+/** The name from the nearest claude process above this hook, up to eight levels. */
+export function nameFromProcess(start = process.ppid): string | null {
+  let pid = start;
+  for (let i = 0; i < 8 && pid > 1; i++) {
+    const r = Bun.spawnSync(["ps", "-o", "ppid=,args=", "-p", String(pid)]);
+    const line = new TextDecoder().decode(r.stdout).trim();
+    const m = /^(\d+)\s+(.*)$/.exec(line);
+    if (!m) return null;
+    // Only the claude program itself, not a shell whose command mentions it.
+    if (/^(\S*\/)?claude(\s|$)/.test(m[2]!)) {
+      const name = nameFromArgs(m[2]!);
+      if (name) return name;
+    }
+    pid = Number(m[1]);
+  }
+  return null;
+}
+
 /** The refusal text: how the commander, or a worker, asks instead. */
 export function reason(isCommander: boolean): string {
   return isCommander
@@ -103,10 +134,11 @@ if (import.meta.main) {
   const roster = rosterNames(
     process.env.COMMANDER_ROSTER ?? join(home, ".claude", "commander.json"),
   );
-  const name = sessionName(
-    process.env.CLAUDE_SESSIONS_DIR ?? join(home, ".claude", "sessions"),
-    String(input.session_id ?? ""),
-  );
+  const name =
+    sessionName(
+      process.env.CLAUDE_SESSIONS_DIR ?? join(home, ".claude", "sessions"),
+      String(input.session_id ?? ""),
+    ) ?? (process.env.NO_ASK_SKIP_PROCESS ? null : nameFromProcess());
   const match = name ? rosterMatch(name, roster.names) : null;
   if (!match) process.exit(0);
   console.log(

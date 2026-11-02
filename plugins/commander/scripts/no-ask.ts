@@ -28,13 +28,18 @@ import { join } from "node:path";
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "-");
 
 /** The roster's commander and agent names, or none without a readable roster. */
-export function rosterNames(path: string): { commander: string | null; names: string[] } {
+export function rosterNames(path: string): {
+  commander: string | null;
+  names: string[];
+} {
   try {
     const r = JSON.parse(readFileSync(path, "utf8"));
     const commander = typeof r.commander === "string" ? r.commander : null;
     const agents = Array.isArray(r.agents) ? r.agents : [];
     const names = agents
-      .map((a: { name?: unknown }) => (typeof a?.name === "string" ? a.name : ""))
+      .map((a: { name?: unknown }) =>
+        typeof a?.name === "string" ? a.name : "",
+      )
       .filter(Boolean);
     return { commander, names: commander ? [commander, ...names] : names };
   } catch {
@@ -43,10 +48,15 @@ export function rosterNames(path: string): { commander: string | null; names: st
 }
 
 /** The roster name a session name falls under, if any. */
-export function rosterMatch(session: string, names: readonly string[]): string | null {
+export function rosterMatch(
+  session: string,
+  names: readonly string[],
+): string | null {
   const s = norm(session);
   if (!s) return null;
-  return names.find((n) => s === norm(n) || s.startsWith(`${norm(n)}-`)) ?? null;
+  return (
+    names.find((n) => s === norm(n) || s.startsWith(`${norm(n)}-`)) ?? null
+  );
 }
 
 /** A session's name from the session records, by its id. */
@@ -56,7 +66,8 @@ export function sessionName(dir: string, sessionId: string): string | null {
     if (!f.endsWith(".json")) continue;
     try {
       const rec = JSON.parse(readFileSync(join(dir, f), "utf8"));
-      if (rec?.sessionId === sessionId && typeof rec.name === "string") return rec.name;
+      if (rec?.sessionId === sessionId && typeof rec.name === "string")
+        return rec.name;
     } catch {
       // a record being rewritten: skip it
     }
@@ -75,7 +86,7 @@ export function reason(isCommander: boolean): string {
     : [
         "AskUserQuestion is off in roster worker sessions: it blocks this session until the operator opens it.",
         "Ask through the system instead, then carry on with other work:",
-        "(1) for a task, task_update it blocked with blockedOn.waitingFor starting with the operator's name, for example \"Tobias: which support system does the customer use?\";",
+        '(1) for a task, task_update it blocked with blockedOn.waitingFor starting with the operator\'s name, for example "Tobias: which support system does the customer use?";',
         "(2) otherwise, message_send to Commander with the question and up to four choices.",
         "Either way it shows in the Atlas sidebar's Waiting on you, and the answer comes back to you through Commander.",
       ].join(" ");
@@ -89,7 +100,9 @@ if (import.meta.main) {
     process.exit(0);
   }
   const home = homedir();
-  const roster = rosterNames(process.env.COMMANDER_ROSTER ?? join(home, ".claude", "commander.json"));
+  const roster = rosterNames(
+    process.env.COMMANDER_ROSTER ?? join(home, ".claude", "commander.json"),
+  );
   const name = sessionName(
     process.env.CLAUDE_SESSIONS_DIR ?? join(home, ".claude", "sessions"),
     String(input.session_id ?? ""),

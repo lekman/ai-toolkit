@@ -321,7 +321,9 @@ test("a question keeps up to four options for the Atlas sidebar", async () => {
     "--dry-run",
   ]);
   expect(r.code).toBe(0);
-  const pending = JSON.parse(readFileSync(join(r.home, "pending.json"), "utf8"));
+  const pending = JSON.parse(
+    readFileSync(join(r.home, "pending.json"), "utf8"),
+  );
   expect(pending["q-opt"].options).toEqual([
     { label: "Yes", description: "Restart it now", recommended: true },
     { label: "No" },

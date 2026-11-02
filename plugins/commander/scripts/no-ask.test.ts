@@ -9,12 +9,21 @@ const dir = mkdtempSync(join(tmpdir(), "no-ask-"));
 const roster = join(dir, "commander.json");
 writeFileSync(
   roster,
-  JSON.stringify({ commander: "Commander", agents: [{ name: "Iviron" }, { name: "Ops Portal" }] }),
+  JSON.stringify({
+    commander: "Commander",
+    agents: [{ name: "Iviron" }, { name: "Ops Portal" }],
+  }),
 );
 const sessions = join(dir, "sessions");
 mkdirSync(sessions);
-writeFileSync(join(sessions, "1.json"), JSON.stringify({ sessionId: "s-1", name: "iviron-69" }));
-writeFileSync(join(sessions, "2.json"), JSON.stringify({ sessionId: "s-2", name: "Atlas" }));
+writeFileSync(
+  join(sessions, "1.json"),
+  JSON.stringify({ sessionId: "s-1", name: "iviron-69" }),
+);
+writeFileSync(
+  join(sessions, "2.json"),
+  JSON.stringify({ sessionId: "s-2", name: "Atlas" }),
+);
 
 describe("no-ask", () => {
   it("reads the commander and agents from the roster", () => {
@@ -22,7 +31,10 @@ describe("no-ask", () => {
       commander: "Commander",
       names: ["Commander", "Iviron", "Ops Portal"],
     });
-    expect(rosterNames(join(dir, "missing.json"))).toEqual({ commander: null, names: [] });
+    expect(rosterNames(join(dir, "missing.json"))).toEqual({
+      commander: null,
+      names: [],
+    });
   });
   it("matches roster names as a prefix, without case, spaces as hyphens", () => {
     const { names } = rosterNames(roster);
@@ -44,14 +56,22 @@ describe("no-ask", () => {
   it("denies a roster worker and lets anyone else through, end to end", async () => {
     const run = async (id: string) => {
       const p = Bun.spawn(["bun", join(import.meta.dir, "no-ask.ts")], {
-        stdin: new TextEncoder().encode(JSON.stringify({ session_id: id, tool_name: "AskUserQuestion" })),
+        stdin: new TextEncoder().encode(
+          JSON.stringify({ session_id: id, tool_name: "AskUserQuestion" }),
+        ),
         stdout: "pipe",
-        env: { ...process.env, COMMANDER_ROSTER: roster, CLAUDE_SESSIONS_DIR: sessions },
+        env: {
+          ...process.env,
+          COMMANDER_ROSTER: roster,
+          CLAUDE_SESSIONS_DIR: sessions,
+        },
       });
       await p.exited;
       return (await new Response(p.stdout).text()).trim();
     };
-    expect(JSON.parse(await run("s-1")).hookSpecificOutput.permissionDecision).toBe("deny");
+    expect(
+      JSON.parse(await run("s-1")).hookSpecificOutput.permissionDecision,
+    ).toBe("deny");
     expect(await run("s-2")).toBe("");
   });
 });

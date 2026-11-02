@@ -85,10 +85,13 @@ function parseOptions(raw: string | undefined): AskOption[] | undefined {
   if (!Array.isArray(v) || v.length < 1 || v.length > 4)
     throw new Error("--options takes 1 to 4 options");
   return v.map((o) => {
-    const label = typeof o?.label === "string" ? o.label.trim().slice(0, 80) : "";
+    const label =
+      typeof o?.label === "string" ? o.label.trim().slice(0, 80) : "";
     if (!label) throw new Error("each option needs a label");
     const description =
-      typeof o.description === "string" ? o.description.trim().slice(0, 300) : "";
+      typeof o.description === "string"
+        ? o.description.trim().slice(0, 300)
+        : "";
     return {
       label,
       ...(description ? { description } : {}),

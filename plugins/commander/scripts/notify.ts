@@ -10,7 +10,8 @@
  *   bun notify.ts send --key K --title T --message M [--url U] [--url-title UT]
  *                      [--priority -2..1] [--dry-run]
  *   bun notify.ts clear --key K | --prefix P
- *   bun notify.ts ask --key K --question Q [--after-seconds N] [--dry-run]
+ *   bun notify.ts ask --key K --question Q [--options JSON] [--after-seconds N]
+ *                     [--dry-run]
  *   bun notify.ts answered --key K
  *   bun notify.ts due [--dry-run]
  *
@@ -60,6 +61,44 @@ const ROSTER =
   process.env.COMMANDER_ROSTER ?? join(homedir(), ".claude", "commander.json");
 const SENT = join(HOME, "notify.json");
 const PENDING = join(HOME, "pending.json");
+
+/** One answer the operator can pick in the Atlas sidebar, as AskUserQuestion offers. */
+interface AskOption {
+  label: string;
+  description?: string;
+  recommended?: boolean;
+}
+
+/**
+ * Up to four options from `--options`, a JSON array of {label, description?,
+ * recommended?}. Anything else is a usage error, so a question is never
+ * recorded with half its choices.
+ */
+function parseOptions(raw: string | undefined): AskOption[] | undefined {
+  if (raw === undefined) return undefined;
+  let v: unknown;
+  try {
+    v = JSON.parse(raw);
+  } catch {
+    throw new Error("--options must be a JSON array");
+  }
+  if (!Array.isArray(v) || v.length < 1 || v.length > 4)
+    throw new Error("--options takes 1 to 4 options");
+  return v.map((o) => {
+    const label =
+      typeof o?.label === "string" ? o.label.trim().slice(0, 80) : "";
+    if (!label) throw new Error("each option needs a label");
+    const description =
+      typeof o.description === "string"
+        ? o.description.trim().slice(0, 300)
+        : "";
+    return {
+      label,
+      ...(description ? { description } : {}),
+      ...(o.recommended === true ? { recommended: true } : {}),
+    };
+  });
+}
 const LOG = join(HOME, "notify.log");
 
 // Limits from https://pushover.net/api (checked 1 Oct 2026).
@@ -76,7 +115,7 @@ interface Sent {
 }
 
 interface Pending {
-  [key: string]: { question: string; asked_at: string };
+  [key: string]: { question: string; asked_at: string; options?: AskOption[] };
 }
 
 function now(): Date {
@@ -297,9 +336,19 @@ function clear(a: Map<string, string>): void {
 function ask(a: Map<string, string>): void {
   const key = need(a, "key");
   const question = need(a, "question");
+  let options: AskOption[] | undefined;
+  try {
+    options = parseOptions(a.get("options"));
+  } catch (err) {
+    fail(2, (err as Error).message);
+  }
   credentials();
   const pending = readJson<Pending>(PENDING, {});
-  pending[key] = { question, asked_at: now().toISOString() };
+  pending[key] = {
+    question,
+    asked_at: now().toISOString(),
+    ...(options ? { options } : {}),
+  };
   writeJson(PENDING, pending);
 
   const after = a.has("after-seconds")

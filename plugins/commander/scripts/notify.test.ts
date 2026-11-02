@@ -303,3 +303,44 @@ test("due pushes only questions older than the threshold", async () => {
   expect(r.out).toContain("Old question? (asked 60m ago)");
   expect(r.out).not.toContain("ask:new");
 });
+
+test("a question keeps up to four options for the Atlas sidebar", async () => {
+  const r = await run([
+    "ask",
+    "--key",
+    "q-opt",
+    "--question",
+    "Restart the waiter?",
+    "--options",
+    JSON.stringify([
+      { label: "Yes", recommended: true, description: "Restart it now" },
+      { label: "No" },
+    ]),
+    "--after-seconds",
+    "600",
+    "--dry-run",
+  ]);
+  expect(r.code).toBe(0);
+  const pending = JSON.parse(
+    readFileSync(join(r.home, "pending.json"), "utf8"),
+  );
+  expect(pending["q-opt"].options).toEqual([
+    { label: "Yes", description: "Restart it now", recommended: true },
+    { label: "No" },
+  ]);
+});
+
+test("bad options are a usage error and record nothing", async () => {
+  const r = await run([
+    "ask",
+    "--key",
+    "q-bad",
+    "--question",
+    "Pick?",
+    "--options",
+    JSON.stringify([{ label: "" }]),
+    "--dry-run",
+  ]);
+  expect(r.code).toBe(2);
+  expect(r.err).toContain("each option needs a label");
+});

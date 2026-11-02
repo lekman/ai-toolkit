@@ -30,10 +30,9 @@ Pick the agent in this order:
    owns it in the roster.
 
 If the client is in `out_of_scope_clients`, stop and say so. If nothing
-matches, ask the operator with `AskUserQuestion`, listing the roster agents as
-options. Wrap the question in `notify ask` and `notify answered` (see
-`/commander:notify`), so it reaches the operator's phone if it waits past the
-threshold.
+matches, ask the operator with `/commander:notify` `ask`, with up to four
+roster agents in `--options`, and hold the task until the answer arrives (see
+`/commander:notify`). Never `AskUserQuestion`; the `no-ask` hook refuses it.
 
 Work in an agent's `serial` list (for example deployments and releases) always
 goes to that agent and is never split across sessions, because two sessions

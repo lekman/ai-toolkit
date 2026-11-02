@@ -86,13 +86,25 @@ the roster's `notify.threshold_minutes` (default 30):
 - a worker waiting for approval (`requires_action`), stuck after two nudges,
   or silent on a handoff after its last nudge;
 - a `decision` row in the ledger;
-- a question the commander asked with `AskUserQuestion`.
+- a question the commander asked with `notify ask`.
 
-A question needs its own mechanism. While `AskUserQuestion` is open the
-commander session is blocked and no loop tick fires, so the nudge loop cannot
-see it. The commander therefore starts a detached timer, an operating-system
-process outside the session, before it asks, and removes the question from
-`pending.json` when the answer arrives. A timer that fires on an answered
+The commander and its roster workers never ask with `AskUserQuestion`. The
+plugin's `no-ask` hook ([scripts/no-ask.ts](scripts/no-ask.ts)) refuses it in
+any session whose name is the roster's commander or one of its agents,
+because a session blocked on a question relays nothing and does no work. The
+refusal tells the session how to ask instead:
+
+- **The commander** runs `notify ask`, with up to four choices in
+  `--options`. The question goes to `pending.json`, which the Atlas sidebar
+  shows under Waiting on you, and the answer returns as a dash request.
+- **A worker** marks its task blocked with `waitingFor` starting with the
+  operator's name, or sends the question to the commander with
+  `message_send`.
+
+Sessions outside the roster keep `AskUserQuestion`. A question asked with
+`notify ask` also starts a detached timer, an operating-system process
+outside the session, and is removed from `pending.json` when the answer
+arrives. A timer that fires on an answered
 question does nothing. The nudge loop pushes any question still pending past
 the threshold as a backstop, for a timer lost to a restart.
 

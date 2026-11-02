@@ -52,8 +52,9 @@ cd ~/Repo/acme && claude --worktree acme-2 --remote-control "Acme 2"
   `isolation: "worktree"`). Say so when it applies; it avoids a new session but
   puts the result into the commander's context.
 
-Present the options with `AskUserQuestion` when there is more than one
-candidate or the trade-off is not clear, recommendation first. After the
+Ask with `/commander:notify` `ask` and the candidates in `--options`,
+recommendation first, when there is more than one candidate or the trade-off
+is not clear. Never `AskUserQuestion`; the `no-ask` hook refuses it. After the
 operator opens a session, add it to the roster only if it will be reused;
 a one-off session stays out of the roster and is closed when its handoff is
 done.

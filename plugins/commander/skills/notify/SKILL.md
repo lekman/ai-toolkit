@@ -1,6 +1,6 @@
 ---
 name: notify
-description: Push a message to the operator's phone through Pushover, at most once per key every threshold window, and track questions the operator has not answered so they are pushed even while the commander session is blocked. Used by /commander:nudge and around every AskUserQuestion the commander asks. Use when the user says "/commander:notify", "push this to my phone", "ping me", or "tell me on my phone".
+description: Push a message to the operator's phone through Pushover, at most once per key every threshold window, and track questions the operator has not answered so they are pushed even while the commander session is blocked. Used by /commander:nudge and for every question the commander asks with notify ask. Use when the user says "/commander:notify", "push this to my phone", "ping me", or "tell me on my phone".
 user-invocable: true
 ---
 
@@ -43,15 +43,22 @@ which needs retry handling the script does not do.
 
 ## Questions the Operator Has Not Answered
 
-While `AskUserQuestion` is open, the commander session is blocked, and no
-`/loop` tick fires. The nudge loop therefore cannot see its own unanswered
-question. Wrap every question the commander asks:
+The commander never asks with `AskUserQuestion`: it blocks the session, and
+while it waits nothing is relayed. The plugin's `no-ask` hook refuses it in the
+commander and its roster workers. Ask through the pending list instead, and
+carry on with other work:
 
 ```bash
-$NOTIFY ask --key <key> --question "<the question in one line>"
-# ... AskUserQuestion ...
+$NOTIFY ask --key <key> --question "<the question in one line>" \
+  --options '[{"label":"Yes","recommended":true},{"label":"No"}]'
+# ... the answer arrives later as a dash request with action "answer" ...
 $NOTIFY answered --key <key>
 ```
+
+`--options` is optional: up to four `{label, description?, recommended?}`.
+The Atlas sidebar shows the question under Waiting on you with those choices
+and an Other box. A closed question without options gets yes or no, once or
+for all future requests. An answer with `always: true` is a standing rule.
 
 `ask` records the question in `pending.json` and starts a detached timer, an
 operating-system process outside the session. When the threshold passes and

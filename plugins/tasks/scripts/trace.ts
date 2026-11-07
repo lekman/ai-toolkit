@@ -131,7 +131,7 @@ export function noTaskReason(): string {
 export function noDetailsReason(id: string, title: string | null): string {
   return [
     `Task ${id}${title ? ` ("${title}")` : ""} has no Details page. A task needs one before its pull request opens or it is completed, so a later question about what was done is answered from it.`,
-    "Write a Markdown page in the client's vault folder, usually Clients/<Client>/Initiatives/<repo>/tasks/<page>.md: what was done, why, and the evidence (pull requests, commits, files, results). One sentence is enough when there is little to say.",
+    "Write a Markdown page in the vault, beside the client's other Details pages (find one with task_search and the detailsId of a task that has it): what was done, why, and the evidence (pull requests, commits, files, results). One sentence is enough when there is little to say.",
     "Set the task's detailsId to the page's file name in lower case with hyphens and no .md (task_update, or `tasks set ID --details <page>`), then complete it again.",
   ].join(" ");
 }

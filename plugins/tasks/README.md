@@ -99,3 +99,29 @@ server's answer. The address comes from `TASKS_MCP_URL` or the `env` block of
 and it is never printed or put on a command line. Exit codes: 1 refused by
 the server, 2 usage, 3 configuration (address or token), 4 server not
 reachable.
+
+## Trace Hooks
+
+The plugin's hooks tie every piece of agent work to a task, so "what was done
+here" and "what did you do last weekend" are answered from the task's log,
+its pull requests and its Details page. The hook is
+[`scripts/trace.ts`](scripts/trace.ts), run with `bun`.
+
+| When the agent runs                                  | The hook needs                                 |
+| ---------------------------------------------------- | ---------------------------------------------- |
+| `git commit` or `git push`                           | A task this session claimed or added           |
+| `gh pr create`                                       | That, and a Details page on one of those tasks |
+| `task_complete`, `tasks done`, `tasks state ID done` | A Details page on that task                    |
+
+A refused call says what to do: find, add or claim the task, or write the
+Details page and set the task's `detailsId` to the page's file name. One
+sentence on the page is enough when there is little to say. Work with pull
+requests is completed by gh-events when it ships, not by the agent, so the
+pull request is the last point the agent can still add the page.
+
+The hook records each task a session claims or adds, by session id, in
+`~/.claude/tasks-trace/`. Claims through the MCP tools and through the
+`tasks` command both count.
+
+Every gate fails open. An unreadable hook input, or a task database that does
+not answer, lets the call through, so a database outage never stops work.

@@ -22,6 +22,14 @@ describe("ships", () => {
       expect(ships(c)).toBe("pr");
   });
 
+  it("answers at once on input built to make a pattern backtrack", () => {
+    const start = performance.now();
+    expect(ships(`\tgh -${"-- -".repeat(5000)}`)).toBe(null);
+    expect(ships(`\tgit${" -C --=!".repeat(5000)}`)).toBe(null);
+    expect(ships(`\tgit -${"-- -".repeat(5000)}`)).toBe(null);
+    expect(performance.now() - start).toBeLessThan(500);
+  });
+
   it("leaves reading and local git work alone", () => {
     for (const c of [
       "git status",

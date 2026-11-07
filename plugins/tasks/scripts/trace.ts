@@ -34,24 +34,76 @@ const TOOL = "mcp__plugin_tasks_tasks__";
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 
 /**
+ * A shell command as its simple commands, each a list of words. Splitting on
+ * separators and then on whitespace never backtracks, which matters for a
+ * hook that runs on every command an agent types.
+ */
+function simpleCommands(command: string): string[][] {
+  return command
+    .split(/[;&|()\n]/)
+    .map((part) => part.trim().split(/\s+/).filter(Boolean))
+    .filter((words) => words.length > 0);
+}
+
+/** The words after a program, from each simple command that runs it. */
+function argsOf(command: string, program: string): string[][] {
+  const out: string[][] = [];
+  for (const words of simpleCommands(command)) {
+    const at = words.findIndex(
+      (w) => w === program || w.endsWith(`/${program}`),
+    );
+    if (at >= 0) out.push(words.slice(at + 1));
+  }
+  return out;
+}
+
+/** The first word that is not a global option, skipping the values `withValue` options take. */
+function subcommand(
+  args: string[],
+  withValue: ReadonlySet<string>,
+): number | null {
+  for (let i = 0; i < args.length; i++) {
+    const w = args[i]!;
+    if (!w.startsWith("-")) return i;
+    if (withValue.has(w)) i++;
+  }
+  return null;
+}
+
+/** git's global options that take their value as the next word. */
+const GIT_VALUE = new Set([
+  "-C",
+  "-c",
+  "--git-dir",
+  "--work-tree",
+  "--namespace",
+]);
+/** gh's global options that take their value as the next word. */
+const GH_VALUE = new Set(["-R", "--repo", "--hostname"]);
+
+/**
  * What a shell command ships: `pr` when it opens a pull request, `commit`
  * when it commits or pushes, null when it does neither.
  */
 export function ships(command: string): "commit" | "pr" | null {
-  // gh's global flags take their value after a space: `gh --repo a/b pr create`.
-  const pr =
-    /(^|[\s;&|(])gh(\s+--?[\w-]+(=\S+|\s+[^\s-]\S*)?)*\s+pr\s+create\b/;
-  const git =
-    /(^|[\s;&|(])git(\s+(-C|-c)\s+\S+|\s+--?[\w-]+(=\S+)?)*\s+(commit|push)\b/;
-  if (pr.test(command)) return "pr";
-  return git.test(command) ? "commit" : null;
+  for (const args of argsOf(command, "gh")) {
+    const at = subcommand(args, GH_VALUE);
+    if (at !== null && args[at] === "pr" && args[at + 1] === "create")
+      return "pr";
+  }
+  for (const args of argsOf(command, "git")) {
+    const at = subcommand(args, GIT_VALUE);
+    if (at !== null && (args[at] === "commit" || args[at] === "push"))
+      return "commit";
+  }
+  return null;
 }
 
 /** The `tasks` command's subcommand and its arguments, if the command runs it. */
 function tasksArgs(command: string): string[] | null {
-  const m = /(^|[\s;&|(])(?:\S*\/)?tasks((?:\s+[^\s;&|]+)+)/.exec(command);
-  if (!m) return null;
-  const words = m[2]!.trim().split(/\s+/);
+  const runs = argsOf(command, "tasks");
+  if (!runs.length) return null;
+  const words = runs[0]!;
   const out: string[] = [];
   for (let i = 0; i < words.length; i++) {
     const w = words[i]!;

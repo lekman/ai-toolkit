@@ -35,6 +35,15 @@ const STORAGE_KEY = /^[\w.:-]{1,100}$/;
 /** The longest `localStorage` value kept. The page's are small JSON lists. */
 const STORAGE_VALUE_MAX = 100_000;
 
+/**
+ * A task as the worklist names it: `db:<id>` for the task database, or a
+ * Dashboard.md reference.
+ */
+const REF = /^[\w.:#/-]{1,200}$/;
+
+/** The longest editor tab title, before it is cut with an ellipsis. */
+const TITLE_MAX = 60;
+
 /** The page's key for the chosen client. */
 const FOCUS_KEY = "db.focus";
 
@@ -48,6 +57,25 @@ const BASE_STYLE =
 
 /** Pure logic behind the Atlas view. */
 export class Atlas {
+  /**
+   * The title for a task's details tab, from the worklist the page stored.
+   *
+   * @param worklist - The page's `board/tasks` document, or null.
+   * @param ref - The task's ref.
+   * @returns The task's title, cut to fit a tab, or a plain fallback.
+   */
+  static detailsTitle(worklist: unknown, ref: string): string {
+    const items =
+      isRecord(worklist) && Array.isArray(worklist.items) ? worklist.items : [];
+    const item = items.find((i) => isRecord(i) && i.ref === ref);
+    const title =
+      isRecord(item) && typeof item.title === "string" ? item.title.trim() : "";
+    if (!title) return "Atlas task";
+    return title.length > TITLE_MAX
+      ? `${title.slice(0, TITLE_MAX - 1).trimEnd()}…`
+      : title;
+  }
+
   /**
    * The page's client key for this workspace, so the page opens on the
    * repository's client the way the Today and Tomorrow panes filter to it.
@@ -133,7 +161,7 @@ export class Atlas {
    * @returns The HTML to set on the webview.
    */
   static page(source: string, options: AtlasPageOptions): string {
-    const { cspSource, nonce, storage } = options;
+    const { cspSource, mode, nonce, storage } = options;
     const csp = [
       "default-src 'none'",
       `img-src ${cspSource} https: data:`,
@@ -150,7 +178,7 @@ export class Atlas {
       '<meta name="viewport" content="width=device-width,initial-scale=1">',
       `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
       `<style>${BASE_STYLE}</style>`,
-      `<script nonce="${nonce}">${Shim.script(storage)}</script>`,
+      `<script nonce="${nonce}">${Shim.script(storage, mode ?? null)}</script>`,
       "</head><body>",
       body,
       "</body></html>",
@@ -179,6 +207,13 @@ export class Atlas {
       if (!isName(server) || !isName(tool)) return null;
       if (args !== undefined && args !== null && !isRecord(args)) return null;
       return { args: args ?? {}, id, kind, server, tool };
+    }
+
+    if (kind === "openDetails") {
+      const { ref } = message;
+      if (typeof ref !== "string" || !REF.test(ref)) return null;
+      if (ref.split("/").some((part) => part === "..")) return null;
+      return { id, kind, ref };
     }
 
     if (kind === "storageSet") {

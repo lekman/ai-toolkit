@@ -92,6 +92,39 @@ describe("page", () => {
     const again = Atlas.page("<!DOCTYPE html><p>x</p>", OPTIONS);
     expect(again.match(/<!doctype/gi)?.length).toBe(1);
   });
+
+  test("tells a details tab which task it shows, and the sidebar nothing", () => {
+    const tab = Atlas.page("<p>x</p>", {
+      ...OPTIONS,
+      mode: { ref: "db:01abc", view: "details" },
+    });
+    expect(tab).toContain('const mode = {"ref":"db:01abc","view":"details"};');
+    expect(html).toContain("const mode = null;");
+  });
+});
+
+describe("detailsTitle", () => {
+  const worklist = {
+    items: [
+      { ref: "db:a", title: "Ship the report" },
+      { ref: "db:b", title: "x".repeat(80) },
+    ],
+  };
+
+  test("names the tab after the task", () => {
+    expect(Atlas.detailsTitle(worklist, "db:a")).toBe("Ship the report");
+  });
+
+  test("cuts a long title with an ellipsis", () => {
+    const title = Atlas.detailsTitle(worklist, "db:b");
+    expect(title.length).toBe(60);
+    expect(title.endsWith("…")).toBe(true);
+  });
+
+  test("falls back when the task or the worklist is missing", () => {
+    expect(Atlas.detailsTitle(worklist, "db:zzz")).toBe("Atlas task");
+    expect(Atlas.detailsTitle(null, "db:a")).toBe("Atlas task");
+  });
 });
 
 describe("shim", () => {
@@ -103,6 +136,19 @@ describe("shim", () => {
 
   test("cannot close its own script tag", () => {
     expect(Shim.script({ x: "</script>" })).not.toContain("</script>");
+  });
+
+  test("gives a details tab's page its mode through host", async () => {
+    const window: Record<string, unknown> = { addEventListener: () => {} };
+    new Function(
+      "window",
+      "acquireVsCodeApi",
+      Shim.script({}, { ref: "db:01abc", view: "details" }),
+    )(window, () => ({ postMessage: () => {} }));
+    const claude = window.claude as { use: (n: string) => Promise<unknown> };
+    expect(await claude.use("host")).toMatchObject({
+      mode: { ref: "db:01abc", view: "details" },
+    });
   });
 
   test("keeps a value with $ patterns as written", () => {
@@ -159,6 +205,26 @@ describe("shim", () => {
     await expect(claude.use("files")).rejects.toMatchObject({
       code: "not_granted",
     });
+
+    // The sidebar has a host with no mode, and opening details asks the extension.
+    const page = (await claude.use("host")) as unknown as {
+      mode?: unknown;
+      openDetails: (ref: string) => Promise<unknown>;
+    };
+    expect(page.mode).toBeUndefined();
+    const opened = page.openDetails("db:01abc");
+    expect(sent.at(-1)).toMatchObject({
+      kind: "openDetails",
+      ref: "db:01abc",
+      type: "atlas",
+    });
+    deliver({
+      id: sent.at(-1)!.id,
+      ok: true,
+      result: null,
+      type: "atlas:reply",
+    });
+    expect(await opened).toBeNull();
     const mcp = await claude.use("mcp");
     const db = await claude.use("db");
 
@@ -216,6 +282,21 @@ describe("shim", () => {
 });
 
 describe("request", () => {
+  test("accepts opening a task's details and refuses a bad ref", () => {
+    expect(
+      Atlas.request({
+        id: 4,
+        kind: "openDetails",
+        ref: "db:01abc",
+        type: "atlas",
+      }),
+    ).toEqual({ id: 4, kind: "openDetails", ref: "db:01abc" });
+    for (const ref of ["", "../x", "a b", 7, "x".repeat(201)])
+      expect(
+        Atlas.request({ id: 4, kind: "openDetails", ref, type: "atlas" }),
+      ).toBeNull();
+  });
+
   test("accepts a tool call and defaults its arguments", () => {
     expect(
       Atlas.request({

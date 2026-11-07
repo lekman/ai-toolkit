@@ -15,6 +15,8 @@ import type { PaneState, ToggleRequest } from "./view/index.ts";
 
 import {
   Atlas,
+  AtlasBridge,
+  AtlasDetailsTabs,
   AtlasFiles,
   AtlasViewProvider,
   FileDocStore,
@@ -104,8 +106,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const store = new FileDocStore(
     join(context.globalStorageUri.fsPath, "atlas-store.json"),
   );
-  const atlasView = new AtlasViewProvider(
-    () => atlas,
+  const bridge = new AtlasBridge(
     {
       callTool: (tool, args) => host.callTool(tool, args),
       dispose: () => host.dispose(),
@@ -140,7 +141,11 @@ export function activate(context: vscode.ExtensionContext): void {
         void context.globalState.update(STORAGE_STATE, saved);
       },
     },
+    // Called only when a page asks, after the tabs below exist.
+    (ref) => detailsTabs.open(ref),
   );
+  const atlasView = new AtlasViewProvider(() => atlas, bridge);
+  const detailsTabs = new AtlasDetailsTabs(() => atlas, bridge);
 
   // The token goes to SecretStorage, the macOS Keychain, and never to the
   // settings, which are plain text and copied by Settings Sync. The page is
@@ -193,6 +198,7 @@ export function activate(context: vscode.ExtensionContext): void {
       atlas.source !== null,
     );
     atlasView.render();
+    detailsTabs.renderAll();
   };
 
   let watcher: undefined | vscode.FileSystemWatcher;
@@ -306,6 +312,7 @@ export function activate(context: vscode.ExtensionContext): void {
   };
 
   context.subscriptions.push(
+    detailsTabs,
     vscode.window.registerWebviewViewProvider("planner.today", today),
     vscode.window.registerWebviewViewProvider("planner.tomorrow", tomorrow),
     // Kept alive while hidden, so the page's timers and fetches carry on

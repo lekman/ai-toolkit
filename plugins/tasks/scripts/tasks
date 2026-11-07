@@ -20,6 +20,7 @@ on a command line. Writes are recorded under --by, or TASKS_BY.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import os
 import re
@@ -27,9 +28,11 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
-from datetime import date, timedelta
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 KEYCHAIN_SERVICE = "tasks-mcp-token"
 LAUNCHER = Path.home() / ".local" / "bin" / "tasks"
@@ -54,6 +57,7 @@ class Failure(Exception):
         self.code = code
 
 
+@functools.lru_cache(maxsize=None)
 def server_url() -> str:
     url = os.environ.get("TASKS_MCP_URL", "")
     if not url:
@@ -67,6 +71,7 @@ def server_url() -> str:
     return url
 
 
+@functools.lru_cache(maxsize=None)
 def token() -> str:
     value = os.environ.get("TASKS_MCP_TOKEN", "")
     if value:
@@ -218,6 +223,194 @@ def show(item: dict) -> str:
     return "\n".join(out)
 
 
+LONDON = ZoneInfo("Europe/London")
+ALL_STATES = ["todo", "doing", "review", "approved", "merged", "done", "dropped"]
+# task_search returns at most this many items, and has no paging.
+SEARCH_MAX = 200
+PERIODS = ("today", "yesterday", "this-week", "last-week", "last-weekend", "last-month")
+
+
+def span(value: str, today: date) -> tuple[date, date]:
+    """The first and last day that a --from or --to value names. Both days are included."""
+    monday = today - timedelta(days=today.weekday())
+    if value == "today":
+        return today, today
+    if value == "yesterday":
+        return today - timedelta(days=1), today - timedelta(days=1)
+    if value == "this-week":
+        return monday, monday + timedelta(days=6)
+    if value == "last-week":
+        return monday - timedelta(days=7), monday - timedelta(days=1)
+    if value == "last-weekend":
+        return monday - timedelta(days=2), monday - timedelta(days=1)
+    if value == "last-month":
+        end = today.replace(day=1) - timedelta(days=1)
+        return end.replace(day=1), end
+    try:
+        d = date.fromisoformat(value)
+    except ValueError:
+        raise Failure(f"not a day or period: {value} (use YYYY-MM-DD or {', '.join(PERIODS)})", EXIT_USAGE) from None
+    return d, d
+
+
+def window(start: str, end: str | None, today: date) -> tuple[date, date]:
+    """The report's first and last day. Without --to, the window ends where --from's period ends."""
+    first, last = span(start, today)
+    if end is not None:
+        last = span(end, today)[1]
+    if last < first:
+        raise Failure(f"the window ends ({last}) before it starts ({first})", EXIT_USAGE)
+    return first, last
+
+
+def local_time(value: str) -> datetime:
+    """A server time, such as 2026-10-31T10:05:00Z, in Europe/London."""
+    moment = datetime.fromisoformat(re.sub(r"\.\d+", "", value).replace("Z", "+00:00"))
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(LONDON)
+
+
+def entry_time(entry: dict) -> tuple[date, str]:
+    """The London day of a log or history entry, and how to show its time.
+
+    History entries written before times were recorded carry only the day.
+    """
+    if entry.get("at"):
+        moment = local_time(entry["at"])
+        return moment.date(), moment.strftime("%a %Y-%m-%d %H:%M")
+    day_ = date.fromisoformat(entry["on"])
+    return day_, day_.strftime("%a %Y-%m-%d")
+
+
+def activity(item: dict, first: date, last: date) -> dict | None:
+    """What happened to one item in the window: its state changes and log notes.
+
+    None when nothing did. A move to another day, an edit or a claim alone is
+    planning, so it does not count as activity.
+    """
+    changes, notes = [], []
+    for h in item.get("history") or []:
+        if h.get("kind") != "state":
+            continue
+        day_, shown = entry_time(h)
+        if first <= day_ <= last:
+            changes.append({"at": h.get("at"), "on": day_.isoformat(), "local": shown,
+                            "from": h.get("from"), "to": h.get("to"), "by": h.get("by")})
+    for e in item.get("log") or []:
+        day_, shown = entry_time(e)
+        if first <= day_ <= last:
+            notes.append({"at": e.get("at"), "on": day_.isoformat(), "local": shown,
+                          "status": e.get("status"), "note": e.get("note"), "by": e.get("by")})
+    if not changes and not notes:
+        return None
+    t = item.get("tracker")
+    return {"id": item["id"], "title": item["title"], "state": item["state"],
+            "tracker": {"key": t.get("key"), "url": t.get("url")} if t else None,
+            "detailsId": item.get("detailsId"), "pullRequests": item.get("pullRequests") or [],
+            "stateChanges": changes, "log": notes}
+
+
+def chronological(entry: dict) -> tuple[str, str]:
+    """Sort key: the London day, then the UTC time, which keeps the order within a day."""
+    return entry["on"], entry.get("at") or ""
+
+
+def scan(client_ids: list[str]) -> tuple[list[dict], list[dict]]:
+    """Every item of these clients, in any state, read in full; and the searches the server cut short.
+
+    One search per client. When a client has more items than one search
+    returns, it searches state by state instead.
+    """
+    found, short = [], []
+    for cid in client_ids:
+        res = call("task_search", {"clientId": cid, "states": ALL_STATES, "limit": SEARCH_MAX})
+        if res.get("count", 0) <= len(res.get("items", [])):
+            found += res.get("items", [])
+            continue
+        for s in ALL_STATES:
+            res = call("task_search", {"clientId": cid, "states": [s], "limit": SEARCH_MAX})
+            items = res.get("items", [])
+            found += items
+            if res.get("count", 0) > len(items):
+                short.append({"clientId": cid, "state": s, "count": res["count"], "read": len(items)})
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return list(pool.map(lambda s: call("task_get", {"id": s["id"]}), found)), short
+
+
+def build_report(clients: list[dict], items: list[dict], short: list[dict], first: date, last: date) -> dict:
+    """The report: per client, each item with activity in the window, oldest activity first."""
+    groups, gaps, count = [], [], 0
+    for c in clients:
+        active = [a for a in (activity(i, first, last) for i in items if i.get("clientId") == c["id"]) if a]
+        active.sort(key=lambda a: min(chronological(e) for e in a["stateChanges"] + a["log"]))
+        for a in active:
+            a["stateChanges"].sort(key=chronological)
+            a["log"].sort(key=chronological)
+            if not a["detailsId"]:
+                gaps.append({"clientId": c["id"], "id": a["id"], "title": a["title"]})
+        count += len(active)
+        if active:
+            groups.append({"id": c["id"], "name": c["name"], "tasks": active})
+    return {"from": first.isoformat(), "to": last.isoformat(), "timeZone": "Europe/London",
+            "clientIds": [c["id"] for c in clients], "scanned": len(items), "active": count,
+            "clients": groups, "missingDetails": gaps, "incomplete": short}
+
+
+def pr_link(ref: str) -> str:
+    repo, number = ref.split("#")
+    return f"[{ref}](https://github.com/{repo}/pull/{number})"
+
+
+def flat(text) -> str:
+    return " ".join(str(text or "").split())
+
+
+def markdown(r: dict) -> str:
+    """The report as Markdown, to read or to paste into an answer."""
+    when = r["from"] if r["from"] == r["to"] else f"{r['from']} to {r['to']}"
+    out = [f"# Work Report, {when}", "",
+           f"Times are Europe/London. Read {r['scanned']} tasks for {', '.join(r['clientIds']) or 'no clients'}. "
+           f"{r['active']} had activity in the window."]
+    for s in r["incomplete"]:
+        out += ["", f"**Incomplete:** {s['clientId']} has {s['count']} {s['state']} tasks, and only "
+                    f"{s['read']} could be read. Activity on the rest is missing from this report."]
+    if not r["clients"]:
+        out += ["", "No activity in this window."]
+    for g in r["clients"]:
+        out += ["", f"## {flat(g['name'])} ({g['id']})"]
+        for t in g["tasks"]:
+            facts = [f"`{t['id']}`", f"now {t['state']}"]
+            if t["tracker"]:
+                facts.append(f"[{t['tracker']['key']}]({t['tracker']['url']})")
+            facts.append(f"Details `{t['detailsId']}`" if t["detailsId"] else "no Details page")
+            out += ["", f"### {flat(t['title'])}", "", "- " + " · ".join(facts)]
+            if t["pullRequests"]:
+                out.append("- Pull requests " + ", ".join(pr_link(p) for p in t["pullRequests"]))
+            timeline = [(e, f"state {e['from']} → {e['to']}") for e in t["stateChanges"]]
+            timeline += [(e, f"{e['status']}: {flat(e['note'])}") for e in t["log"]]
+            for e, what in sorted(timeline, key=lambda pair: chronological(pair[0])):
+                out.append(f"- {e['local']} {what}" + (f" ({e['by']})" if e.get("by") else ""))
+    if r["missingDetails"]:
+        out += ["", "## Gaps", "", "These tasks had activity in the window but have no Details page:", ""]
+        out += [f"- {flat(g['title'])} (`{g['id']}`, {g['clientId']})" for g in r["missingDetails"]]
+    return "\n".join(out)
+
+
+def work_report(args) -> tuple[object, str]:
+    """The report command: read every item of the chosen clients and keep the activity in the window."""
+    first, last = window(args.start, args.end, datetime.now(LONDON).date())
+    known = call("client_list", {})
+    wanted = args.client or [c["id"] for c in known]
+    unknown = [w for w in wanted if w not in {c["id"] for c in known}]
+    if unknown:
+        raise Failure(f"no client {', '.join(unknown)}: `tasks clients` lists the ids", EXIT_USAGE)
+    clients = [c for c in known if c["id"] in wanted]
+    items, short = scan([c["id"] for c in clients])
+    r = build_report(clients, items, short, first, last)
+    return r, json.dumps(r, indent=2, ensure_ascii=False) if args.format == "json" else markdown(r)
+
+
 def install() -> tuple[object, str]:
     """Write the launcher to ~/.local/bin/tasks."""
     LAUNCHER.parent.mkdir(parents=True, exist_ok=True)
@@ -248,6 +441,8 @@ def run(args) -> tuple[object, str]:
     if c == "show":
         res = call("task_get", {"id": args.id})
         return res, show(res)
+    if c == "report":
+        return work_report(args)
     if c == "claim":
         res = call("task_claim", {"by": by(args), "id": args.id})
         return res, f"claimed {args.id}"
@@ -317,6 +512,12 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--claimed-by"); s.add_argument("--unclaimed", action="store_true")
     s.add_argument("--blocked", action="store_true"); s.add_argument("--until", help="scheduled up to this day")
     s.add_argument("--limit", type=int, default=25)
+    rp = sub.add_parser("report", help="what was done in a window, per client and task")
+    rp.add_argument("--from", dest="start", default="today", metavar="DAY",
+                    help=f"YYYY-MM-DD, or one of {', '.join(PERIODS)} (default today)")
+    rp.add_argument("--to", dest="end", metavar="DAY", help="the last day; default the end of what --from names")
+    rp.add_argument("--client", action="append", metavar="ID", help="only this client; repeat for more")
+    rp.add_argument("--format", choices=["md", "json"], default="md")
     for name, text in (("show", "one item in full"), ("claim", "claim an item before working on it")):
         sub.add_parser(name, help=text).add_argument("id")
     r = sub.add_parser("release", help="give a claim up"); r.add_argument("id"); r.add_argument("--force", action="store_true")

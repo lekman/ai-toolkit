@@ -92,6 +92,7 @@ python3 ~/.claude/plugins/cache/ai-toolkit/tasks/*/scripts/tasks install
 | `tasks log ID [--status S] NOTE`                                                                                             | Append a progress note                                                                                         |
 | `tasks add --client ID --title … [--day DAY] [--owner WHO] [--waiting-on WHO] [--pr REF] [--tracker KEY URL] [--details ID]` | Add an item                                                                                                    |
 | `tasks set ID [--pr REF] [--drop-pr REF] [--tracker KEY URL] [--details ID]`                                                 | Link pull requests (`owner/repo#number`, added to the list the item holds), a tracker ticket or a details page |
+| `tasks report [--from DAY] [--to DAY] [--client ID] [--format md\|json]`                                                     | What was done in a time window, per client and task. See [Report](#report)                                     |
 
 Writes need `--by <session name>` or `TASKS_BY`. Add `--json` for the
 server's answer. The address comes from `TASKS_MCP_URL` or the `env` block of
@@ -125,3 +126,41 @@ The hook records each task a session claims or adds, by session id, in
 
 Every gate fails open. An unreadable hook input, or a task database that does
 not answer, lets the call through, so a database outage never stops work.
+
+## Report
+
+`tasks report` answers "what was done here" and "what did you do last
+weekend" from the task database. The [report](skills/report/SKILL.md) skill
+tells a session how to use it.
+
+```bash
+tasks report --from last-weekend --client acme
+tasks report --from 2026-10-31 --to 2026-11-01 --client acme --client globex
+tasks report --from last-month --format json
+```
+
+`--from` takes a day (`YYYY-MM-DD`) or a period: `today`, `yesterday`,
+`this-week`, `last-week`, `last-weekend` or `last-month`. A week runs Monday
+to Sunday, and `last-weekend` is the Saturday and Sunday before this week.
+`--to` is the last day, and defaults to the end of what `--from` names. So
+`--from 2026-10-01` alone is one day, and `--from 2026-10-01 --to today` is
+everything since. Both days are included. Days and times are Europe/London.
+
+The report reads every task of the chosen clients, in every state, and keeps
+the tasks with activity in the window. Activity is a log note or a state
+change. A move to another day, an edit or a claim alone is planning, so it
+does not count. For each client, then each task, the report shows:
+
+- the title, the task id, the state now, and the tracker key with its link
+- the Details page id, or that there is none
+- the pull requests, linked
+- the state changes and log notes in the window, in time order, with who
+  made each one
+
+A last section lists, as gaps, the tasks with activity and no Details page.
+Markdown is the default. `--format json` (or `--json`) gives the same content
+for tools.
+
+`task_search` returns at most 200 items and cannot page. When a client has
+more tasks than that in one state, the report says it is incomplete and how
+many tasks it could not read.

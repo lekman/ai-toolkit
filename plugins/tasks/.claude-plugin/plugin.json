@@ -1,5 +1,5 @@
 {
   "name": "tasks",
-  "description": "Task MCP for every agent: search, read, add, claim, update, log and complete dashboard items in the shared Postgres dashboard database, over the tailnet. Replaces editing Dashboard.md by hand, with claims so two agents never work the same item, and revision checks so a stale write is refused, and hooks that refuse commits, pull requests and completions with no task or Details page behind them",
-  "version": "0.6.0"
+  "description": "Task MCP for every agent: search, read, add, claim, update, log and complete dashboard items in the shared Postgres dashboard database, over the tailnet. Replaces editing Dashboard.md by hand, with claims so two agents never work the same item, and revision checks so a stale write is refused, and hooks that refuse commits, pull requests and completions with no task or Details page behind them. Also reports what was done in a time window, per client",
+  "version": "0.7.0"
 }

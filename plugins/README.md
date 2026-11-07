@@ -92,11 +92,13 @@ Then invoke a skill, for example `/git:commit`.
   [calendar package](../packages/calendar/README.md), Office 365 over OAuth:
   meetings, admin-calendar checklists, and todo-style self-events. See
   [planner/README.md](planner/README.md).
-- **tasks**, [work](tasks/skills/work/SKILL.md): the task MCP
+- **tasks**, [work](tasks/skills/work/SKILL.md) and
+  [report](tasks/skills/report/SKILL.md): the task MCP
   server for every session, over the tailnet. Agents search a client's open
   items in computed priority order, claim one before working on it, log
   progress, update fields at the revision they read, and complete it, instead
-  of editing `Dashboard.md`. The server is
+  of editing `Dashboard.md`. The report answers "what was done" for a time
+  window and one or more clients, from the task log. The server is
   [packages/tasks-mcp](../packages/tasks-mcp). See
   [tasks/README.md](tasks/README.md).
 - **meeting**, [notes](meeting/skills/notes/SKILL.md): turn a meeting that

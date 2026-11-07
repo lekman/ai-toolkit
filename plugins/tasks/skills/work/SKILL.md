@@ -57,6 +57,15 @@ that refusal is the point: pick another item or ask that agent. Do not pass
 
 If you stop without finishing, `task_release` so someone else can pick it up.
 
+The plugin's trace hooks enforce this. `git commit` and `git push` are refused
+until this session has claimed or added a task. `gh pr create` and completing
+a task are also refused until the task has a Details page: a Markdown page in
+the vault beside the client's other Details pages (the `detailsId` of another
+task of the same client shows where), saying what was done, why, and the
+evidence (pull requests, commits, files, results). One sentence is enough when
+there is little to say. Set the task's `detailsId` to the page's file name in
+lower case with hyphens, without `.md`.
+
 ## Record Progress
 
 - `task_log` for a progress note: 160 characters, the status at the time

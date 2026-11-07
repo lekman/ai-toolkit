@@ -36,6 +36,21 @@ the rest apply in every window. The page also gets the base style the
 artifact host adds, so what it hides, such as another client's tabs, stays
 hidden.
 
+### Task Details in an Editor Tab
+
+The sidebar is too narrow for a task's details, so VS Code gives the page a
+third capability, `window.claude.use("host")`, which the Claude artifact does
+not have:
+
+- `openDetails(ref)` opens the task's details as a tab in the editor area,
+  named after the task. Opening the same task again shows its tab.
+- `mode` is `{ view: "details", ref }` in that tab, so the page there shows
+  only the details for that one task, at full width.
+
+A page without `host`, such as the artifact, shows details in its sidebar as
+before. The sidebar and every tab share one data store, and a write from any
+of them reaches all of them.
+
 The page is read from the vault on each change and never bundled, so the
 extension holds no client names and a republished page needs no rebuild.
 Each VS Code window starts its own copy of the dashboard server.

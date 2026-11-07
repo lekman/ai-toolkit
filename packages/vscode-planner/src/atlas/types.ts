@@ -26,7 +26,15 @@ export type AtlasRequest =
   | { data: unknown; id: number; kind: "dbSet"; path: string }
   | { id: number; kind: "dbDelete"; path: string }
   | { id: number; kind: "dbGet"; path: string }
-  | { id: number; key: string; kind: "storageSet"; value: null | string };
+  | { id: number; key: string; kind: "storageSet"; value: null | string }
+  | { id: number; kind: "openDetails"; ref: string };
+
+/** How a page was opened: the sidebar's full page, or one task's details in an editor tab. */
+export interface AtlasMode {
+  /** The task, as the worklist's `ref`. */
+  ref: string;
+  view: "details";
+}
 
 /** Where one of the page's `localStorage` keys is kept. */
 export type StorageScope = "global" | "workspace";
@@ -39,4 +47,6 @@ export interface AtlasPageOptions {
   storage: Record<string, string>;
   /** A fresh nonce; every script on the page gets it. */
   nonce: string;
+  /** Set for an editor tab that shows one task's details. */
+  mode?: AtlasMode;
 }

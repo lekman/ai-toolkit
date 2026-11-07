@@ -1,11 +1,11 @@
-/** VS Code webview adapter for the Atlas view. */
+/** VS Code webview adapters for the Atlas page: the sidebar view and task details tabs. */
 
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 
 import type { IConnectors } from "../connectors/index.ts";
 import type { IDocStore, IPageStorage, IToolHost } from "./interfaces.ts";
-import type { AtlasRequest, RuntimeError } from "./types.ts";
+import type { AtlasMode, AtlasRequest, RuntimeError } from "./types.ts";
 
 import { Atlas } from "./atlas.ts";
 
@@ -19,59 +19,80 @@ export interface AtlasState {
   source: null | string;
 }
 
-/** Hosts the Atlas page in a webview view and answers its runtime calls. */
-export class AtlasViewProvider implements vscode.WebviewViewProvider {
-  private view: undefined | vscode.WebviewView;
+/**
+ * Answers the runtime calls of every webview that hosts the Atlas page.
+ *
+ * The sidebar and each details tab run their own copy of the page, but they
+ * share one data store, so a write from one is announced to all of them.
+ */
+export class AtlasBridge {
+  private readonly webviews = new Set<vscode.Webview>();
 
   /**
-   * @param getState - Returns the page at render time.
    * @param host - Answers `host:dashboard` tool calls.
    * @param store - The page's data store.
    * @param connectors - Answers connector calls with direct API requests.
    * @param pageStorage - Keeps the page's `localStorage` across reloads.
+   * @param openDetails - Opens a task's details in an editor tab.
    */
   constructor(
-    private readonly getState: () => AtlasState,
     private readonly host: IToolHost,
     private readonly store: IDocStore,
     private readonly connectors: IConnectors,
     private readonly pageStorage: IPageStorage,
+    private readonly openDetails: (ref: string) => void,
   ) {}
 
-  /** Re-render the page from current state. Safe before the view exists. */
-  render(): void {
-    if (!this.view) return;
-    const { pagePath, source } = this.getState();
-    const webview = this.view.webview;
+  /**
+   * Answer a webview's runtime calls until it is disposed.
+   *
+   * @param webview - The webview to answer.
+   * @returns Stops answering it.
+   */
+  attach(webview: vscode.Webview): vscode.Disposable {
+    this.webviews.add(webview);
+    const listening = webview.onDidReceiveMessage((message: unknown) => {
+      const request = Atlas.request(message);
+      if (request) void this.answer(webview, request);
+    });
+    return new vscode.Disposable(() => {
+      listening.dispose();
+      this.webviews.delete(webview);
+    });
+  }
+
+  /**
+   * The page's HTML for a webview.
+   *
+   * @param state - The page at render time.
+   * @param webview - The webview it renders in.
+   * @param mode - Set for a task's details tab.
+   * @returns The HTML, or a short note when the page cannot be read.
+   */
+  html(state: AtlasState, webview: vscode.Webview, mode?: AtlasMode): string {
+    const { pagePath, source } = state;
     if (source === null) {
-      webview.html = `<!doctype html><meta charset="utf-8"><body style="font-family:var(--vscode-font-family);padding:8px 12px">Could not read the Atlas page${
+      return `<!doctype html><meta charset="utf-8"><body style="font-family:var(--vscode-font-family);padding:8px 12px">Could not read the Atlas page${
         pagePath ? ` at <code>${escapeHtml(pagePath)}</code>` : ""
       }. Set <code>planner.atlasPage</code>.</body>`;
-      return;
     }
-    webview.html = Atlas.page(source, {
+    return Atlas.page(source, {
       cspSource: webview.cspSource,
+      ...(mode ? { mode } : {}),
       nonce: randomBytes(16).toString("base64"),
       storage: this.pageStorage.snapshot(),
     });
   }
 
-  /**
-   * Called by VS Code when the view first becomes visible.
-   *
-   * @param webviewView - The view to populate.
-   */
-  resolveWebviewView(webviewView: vscode.WebviewView): void {
-    this.view = webviewView;
-    webviewView.webview.options = {
-      enableScripts: true,
-      localResourceRoots: [],
-    };
-    webviewView.webview.onDidReceiveMessage((message: unknown) => {
-      const request = Atlas.request(message);
-      if (request) void this.answer(webviewView.webview, request);
-    });
-    this.render();
+  /** @returns The page's stored worklist, for naming a details tab. */
+  worklist(): unknown {
+    return this.store.get("board/tasks");
+  }
+
+  private announce(path: string, data: unknown): void {
+    for (const webview of this.webviews) {
+      void webview.postMessage({ data, path, type: "atlas:doc" });
+    }
   }
 
   private async answer(
@@ -116,11 +137,7 @@ export class AtlasViewProvider implements vscode.WebviewViewProvider {
         case "dbDelete":
           this.store.delete(request.path);
           reply({ result: null });
-          void webview.postMessage({
-            data: null,
-            path: request.path,
-            type: "atlas:doc",
-          });
+          this.announce(request.path, null);
           return;
         case "dbGet":
           reply({ result: this.store.get(request.path) });
@@ -128,16 +145,121 @@ export class AtlasViewProvider implements vscode.WebviewViewProvider {
         case "dbSet":
           this.store.set(request.path, request.data);
           reply({ result: null });
-          void webview.postMessage({
-            data: request.data,
-            path: request.path,
-            type: "atlas:doc",
-          });
+          this.announce(request.path, request.data);
+          return;
+        case "openDetails":
+          this.openDetails(request.ref);
+          reply({ result: null });
           return;
       }
     } catch (error) {
       reply({ error: asRuntimeError(error) });
     }
+  }
+}
+
+/** Hosts the Atlas page in the sidebar view. */
+export class AtlasViewProvider implements vscode.WebviewViewProvider {
+  private view: undefined | vscode.WebviewView;
+
+  /**
+   * @param getState - Returns the page at render time.
+   * @param bridge - Answers the page's runtime calls.
+   */
+  constructor(
+    private readonly getState: () => AtlasState,
+    private readonly bridge: AtlasBridge,
+  ) {}
+
+  /** Re-render the page from current state. Safe before the view exists. */
+  render(): void {
+    if (!this.view) return;
+    this.view.webview.html = this.bridge.html(
+      this.getState(),
+      this.view.webview,
+    );
+  }
+
+  /**
+   * Called by VS Code when the view first becomes visible.
+   *
+   * @param webviewView - The view to populate.
+   */
+  resolveWebviewView(webviewView: vscode.WebviewView): void {
+    this.view = webviewView;
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [],
+    };
+    const attached = this.bridge.attach(webviewView.webview);
+    webviewView.onDidDispose(() => attached.dispose());
+    this.render();
+  }
+}
+
+/** Opens a task's details as a tab in the editor area, one tab per task. */
+export class AtlasDetailsTabs implements vscode.Disposable {
+  private readonly tabs = new Map<string, vscode.WebviewPanel>();
+
+  /**
+   * @param getState - Returns the page at render time.
+   * @param bridge - Answers the page's runtime calls.
+   */
+  constructor(
+    private readonly getState: () => AtlasState,
+    private readonly bridge: AtlasBridge,
+  ) {}
+
+  /** Close every open details tab. */
+  dispose(): void {
+    for (const tab of [...this.tabs.values()]) tab.dispose();
+  }
+
+  /**
+   * Show a task's details, in its open tab when it has one.
+   *
+   * @param ref - The task's ref.
+   */
+  open(ref: string): void {
+    const open = this.tabs.get(ref);
+    if (open) {
+      open.reveal();
+      return;
+    }
+    const tab = vscode.window.createWebviewPanel(
+      "planner.atlasDetails",
+      Atlas.detailsTitle(this.bridge.worklist(), ref),
+      vscode.ViewColumn.Active,
+      {
+        enableScripts: true,
+        localResourceRoots: [],
+        // The page keeps its own timers; a hidden tab keeps its place.
+        retainContextWhenHidden: true,
+      },
+    );
+    tab.iconPath = new vscode.ThemeIcon("tasklist");
+    const attached = this.bridge.attach(tab.webview);
+    tab.onDidDispose(() => {
+      attached.dispose();
+      this.tabs.delete(ref);
+    });
+    this.tabs.set(ref, tab);
+    this.render(ref);
+  }
+
+  /** Re-render every open tab, after the page or its server changed. */
+  renderAll(): void {
+    for (const ref of this.tabs.keys()) this.render(ref);
+  }
+
+  private render(ref: string): void {
+    const tab = this.tabs.get(ref);
+    if (!tab) return;
+    tab.title = Atlas.detailsTitle(this.bridge.worklist(), ref);
+    tab.webview.html = this.bridge.html(this.getState(), tab.webview, {
+      ref,
+      view: "details",
+    });
   }
 }
 

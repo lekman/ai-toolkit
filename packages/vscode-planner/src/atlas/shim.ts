@@ -8,13 +8,19 @@
  *
  * Only the calls the page makes are provided: `mcp.callTool`,
  * `mcp.watchTool`, and `db.doc(path)` with `get`, `set`, `delete` and
- * `onSnapshot`.
+ * `onSnapshot`. A third capability, `host`, is VS Code's own: `mode` says
+ * whether this page is one task's details in an editor tab, and
+ * `openDetails(ref)` asks the extension to open a task's details in one.
+ * The artifact runtime has no `host`, so the page falls back to showing
+ * details in its sidebar there.
  *
  * It also replaces `localStorage`, where the page keeps its chosen client,
  * tab, band and folds. A webview's own storage does not reliably survive a
  * reload, so reads come from a copy the extension hands over at render time
  * and every write is sent back to be kept in the extension's state.
  */
+
+import type { AtlasMode } from "./types.ts";
 
 const SOURCE = String.raw`(() => {
   "use strict";
@@ -98,9 +104,16 @@ const SOURCE = String.raw`(() => {
     },
   };
 
+  const mode = __MODE__;
+  const page = {
+    ...(mode ? { mode } : {}),
+    openDetails: (ref) => ask("openDetails", { ref: String(ref) }),
+  };
+
   window.claude = {
     use: (name) => name === "mcp" ? Promise.resolve(mcp)
       : name === "db" ? Promise.resolve(db)
+      : name === "host" ? Promise.resolve(page)
       : Promise.reject({ code: "not_granted", message: name + " is not available in VS Code." }),
   };
 })();`;
@@ -108,15 +121,26 @@ const SOURCE = String.raw`(() => {
 /** Builds the runtime stand-in script. */
 export class Shim {
   /**
-   * The script, with the page's saved storage filled in.
+   * The script, with the page's saved storage and its mode filled in.
    *
    * @param storage - The page's `localStorage` as last saved.
+   * @param mode - Set for an editor tab that shows one task's details.
    * @returns JavaScript source for an inline script tag.
    */
-  static script(storage: Record<string, string>): string {
-    // JSON is valid JavaScript; escaping `<` keeps a `</script>` in a value
-    // from closing the tag.
-    const literal = JSON.stringify(storage).replace(/</g, "\\u003c");
-    return SOURCE.replace("__STORAGE__", () => literal);
+  static script(
+    storage: Record<string, string>,
+    mode: AtlasMode | null = null,
+  ): string {
+    return SOURCE.replace("__STORAGE__", () => literal(storage)).replace(
+      "__MODE__",
+      () => literal(mode),
+    );
   }
+}
+
+/** A value as a JavaScript literal that cannot close its own script tag. */
+function literal(value: unknown): string {
+  // JSON is valid JavaScript; escaping `<` keeps a `</script>` in a value
+  // from closing the tag.
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }

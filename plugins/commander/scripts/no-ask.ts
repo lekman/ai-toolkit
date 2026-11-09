@@ -15,7 +15,7 @@
  * session id. A session started in screen may have no such record, so the
  * hook then reads `--remote-control <name>` or `--name <name>` from the
  * command line of the claude process above it. A roster name matches as a prefix,
- * without case, with spaces as hyphens ("Iviron" matches "iviron-69").
+ * without case, with spaces as hyphens ("Halcyon" matches "halcyon-69").
  * Sessions outside the roster, and any session when there is no roster,
  * keep AskUserQuestion. An unreadable input lets the call through, so a
  * broken hook never stops a session that is allowed to ask.

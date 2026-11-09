@@ -17,14 +17,14 @@ writeFileSync(
   roster,
   JSON.stringify({
     commander: "Commander",
-    agents: [{ name: "Iviron" }, { name: "Ops Portal" }],
+    agents: [{ name: "Halcyon" }, { name: "Ops Portal" }],
   }),
 );
 const sessions = join(dir, "sessions");
 mkdirSync(sessions);
 writeFileSync(
   join(sessions, "1.json"),
-  JSON.stringify({ sessionId: "s-1", name: "iviron-69" }),
+  JSON.stringify({ sessionId: "s-1", name: "halcyon-69" }),
 );
 writeFileSync(
   join(sessions, "2.json"),
@@ -35,7 +35,7 @@ describe("no-ask", () => {
   it("reads the commander and agents from the roster", () => {
     expect(rosterNames(roster)).toEqual({
       commander: "Commander",
-      names: ["Commander", "Iviron", "Ops Portal"],
+      names: ["Commander", "Halcyon", "Ops Portal"],
     });
     expect(rosterNames(join(dir, "missing.json"))).toEqual({
       commander: null,
@@ -44,15 +44,15 @@ describe("no-ask", () => {
   });
   it("matches roster names as a prefix, without case, spaces as hyphens", () => {
     const { names } = rosterNames(roster);
-    expect(rosterMatch("iviron-69", names)).toBe("Iviron");
+    expect(rosterMatch("halcyon-69", names)).toBe("Halcyon");
     expect(rosterMatch("Ops Portal", names)).toBe("Ops Portal");
     expect(rosterMatch("ops-portal", names)).toBe("Ops Portal");
     expect(rosterMatch("Commander", names)).toBe("Commander");
     expect(rosterMatch("Atlas", names)).toBeNull();
-    expect(rosterMatch("ivironx", names)).toBeNull();
+    expect(rosterMatch("halcyonx", names)).toBeNull();
   });
   it("finds a session's name by its id", () => {
-    expect(sessionName(sessions, "s-1")).toBe("iviron-69");
+    expect(sessionName(sessions, "s-1")).toBe("halcyon-69");
     expect(sessionName(sessions, "nope")).toBeNull();
   });
   it("reads the name from a claude command line", () => {

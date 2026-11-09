@@ -26,6 +26,8 @@ export type Kind = "issue" | "pr";
 export interface Item {
   /** Issues only: the item came from the assignee search. Set by the poller. */
   assigned?: true;
+  /** PRs only: the item came from the author search. Set by the poller. */
+  authored?: true;
   ci: Ci | null;
   /** Issues only: when it was closed, or null while open. */
   closedAt: null | string;
@@ -40,6 +42,8 @@ export interface Item {
   number: number;
   repo: string;
   review: null | Review;
+  /** PRs only: the item came from the review-requested search. Set by the poller. */
+  reviewRequested?: true;
   /** Set by the poller, never by GitHub. See `diffOpen`. */
   settling?: true;
   sha: null | string;

@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import type { Alert } from "../src/alerts";
 import type { Config } from "../src/config";
 import type { Item } from "../src/guard";
 
@@ -25,6 +26,8 @@ function files() {
 
 function source(open: Item[], nodes: Item[] = []): Source {
   return {
+    alert: async () => null,
+    alerts: async () => ({ alerts: [], denied: false, dropped: 0 }),
     contains: async () => false,
     nodes: async (_a, ids) =>
       new Map(nodes.filter((n) => ids.includes(n.id)).map((n) => [n.id, n])),
@@ -34,6 +37,52 @@ function source(open: Item[], nodes: Item[] = []): Source {
       items: new Map(open.map((s) => [s.id, s])),
     }),
     releases: async (_a, repos) => new Map(repos.map((r) => [r, null])),
+    repos: async () => [],
+  };
+}
+
+const alert = (overrides: Partial<Alert> = {}): Alert => ({
+  alertType: "dependabot",
+  number: 4,
+  package: "left-pad",
+  repo: "acme/api",
+  severity: "high",
+  state: "OPEN",
+  ...overrides,
+});
+
+/**
+ * A source with one watched repo, `acme/api`. `open` maps `type` to the open
+ * alerts a list call returns; `closed` answers the lookup of a single alert.
+ */
+function alertSource(
+  open: Partial<Record<Alert["alertType"], Alert[]>>,
+  closed: Alert[] = [],
+  denied: Alert["alertType"][] = [],
+): Source & { calls: string[] } {
+  const calls: string[] = [];
+  return {
+    ...source([]),
+    alert: async (_a, repo, type, number) => {
+      calls.push(`alert ${repo} ${type} ${number}`);
+      return (
+        closed.find((a) => a.alertType === type && a.number === number) ?? null
+      );
+    },
+    alerts: async (_a, repo, type) => {
+      calls.push(`alerts ${repo} ${type}`);
+      return denied.includes(type)
+        ? { denied: true }
+        : { alerts: open[type] ?? [], denied: false, dropped: 0 };
+    },
+    calls,
+    repos: async () => {
+      calls.push("repos");
+      return [
+        { nameWithOwner: "acme/api" },
+        { nameWithOwner: "acme/thing-sandbox" },
+      ];
+    },
   };
 }
 
@@ -336,4 +385,149 @@ test("a PR closed without merging gives closed, keyed by its head SHA", async ()
     }),
   );
   expect(registry(f.registry).items).toEqual([]);
+});
+
+describe("review events", () => {
+  test("review_requested and changes_requested reach the log", async () => {
+    const f = files();
+    await runPoll(config, source([pr({ authored: true })]), f);
+    await runPoll(
+      config,
+      source([
+        pr({ authored: true, review: "CHANGES_REQUESTED" }),
+        pr({ id: "PR_5", number: 5, reviewRequested: true }),
+      ]),
+      f,
+    );
+    expect(events(f.events)).toEqual([
+      expect.objectContaining({
+        event: "changes_requested",
+        key: `acme/api#12:changes_requested:${"a".repeat(40)}`,
+        kind: "pr",
+      }),
+      expect.objectContaining({
+        event: "review_requested",
+        key: `acme/api#5:review_requested:${"a".repeat(40)}`,
+        kind: "pr",
+      }),
+    ]);
+  });
+});
+
+describe("alerts", () => {
+  test("the first check is a baseline, then opened, fixed and dismissed", async () => {
+    const f = files();
+    const now = new Date("2026-01-02T03:04:05Z");
+    await runPoll(config, alertSource({ dependabot: [alert()] }), f, now);
+    expect(() => readFileSync(f.events)).toThrow();
+
+    const second = alertSource({
+      code_scanning: [
+        alert({
+          alertType: "code_scanning",
+          number: 30,
+          package: null,
+          severity: "medium",
+        }),
+      ],
+      dependabot: [alert(), alert({ number: 5, severity: "critical" })],
+    });
+    const [report] = await runPoll(config, second, f, now);
+    expect(report).toEqual(
+      expect.objectContaining({
+        alertChecks: 3,
+        alertErrors: 0,
+        alerts: 3,
+        alertsDenied: 0,
+      }),
+    );
+    // The repo list is refreshed hourly, not every poll.
+    expect(second.calls).not.toContain("repos");
+
+    const reg = registry(f.registry);
+    expect(reg.items.find((i) => i.number === 5)).toEqual({
+      account: "me",
+      alert_type: "dependabot",
+      ci: null,
+      client: "acme",
+      closes: [],
+      kind: "alert",
+      mergeable: null,
+      number: 5,
+      package: "left-pad",
+      repo: "acme/api",
+      review: null,
+      severity: "critical",
+      sha: null,
+      since: "2026-01-02T03:04:05.000Z",
+      state: "OPEN",
+      url: "https://github.com/acme/api/security/dependabot/5",
+    });
+
+    await runPoll(
+      config,
+      alertSource({ dependabot: [alert({ number: 5 })] }, [
+        alert({ state: "FIXED" }),
+        alert({
+          alertType: "code_scanning",
+          number: 30,
+          package: null,
+          state: "DISMISSED",
+        }),
+      ]),
+      f,
+      now,
+    );
+    expect(
+      events(f.events).map((e) => [e.event, (e as { key?: string }).key]),
+    ).toEqual([
+      ["opened", "acme/api#alert-dependabot-5:opened"],
+      ["opened", "acme/api#alert-code_scanning-30:opened"],
+      ["fixed", "acme/api#alert-dependabot-4:fixed"],
+      ["dismissed", "acme/api#alert-code_scanning-30:dismissed"],
+    ]);
+    expect(
+      registry(f.registry).items.map((i) => `${i.kind}:${i.number}`),
+    ).toEqual(["alert:5"]);
+  });
+
+  test("a repo without access is skipped quietly and counted", async () => {
+    const f = files();
+    const s = alertSource({}, [], ["code_scanning", "secret_scanning"]);
+    const [first] = await runPoll(config, s, f);
+    expect(first).toEqual(
+      expect.objectContaining({ alertChecks: 3, alertsDenied: 2 }),
+    );
+    expect(first?.error).toBeUndefined();
+    // Denied pairs wait a day; only Dependabot is checked again.
+    const again = alertSource({}, [], ["code_scanning", "secret_scanning"]);
+    const [second] = await runPoll(config, again, f);
+    expect(again.calls).toEqual(["alerts acme/api dependabot"]);
+    expect(second).toEqual(
+      expect.objectContaining({ alertChecks: 1, alertsDenied: 2 }),
+    );
+  });
+
+  test("a failing alert call keeps the open alerts and never fails the poll", async () => {
+    const f = files();
+    await runPoll(config, alertSource({ dependabot: [alert()] }), f);
+    const broken: Source = {
+      ...alertSource({}),
+      alerts: async () => {
+        throw new Error("GitHub alerts HTTP 502");
+      },
+    };
+    const [report] = await runPoll(config, broken, f);
+    expect(report?.error).toBeUndefined();
+    expect(report?.alertErrors).toBe(3);
+    expect(registry(f.registry).items.map((i) => i.kind)).toEqual(["alert"]);
+  });
+
+  test("an alert that cannot be looked up is dropped without an event", async () => {
+    const f = files();
+    await runPoll(config, alertSource({ dependabot: [alert()] }), f);
+    await runPoll(config, alertSource({}), f);
+    expect(() => readFileSync(f.events)).toThrow();
+    expect(registry(f.registry).items).toEqual([]);
+  });
 });

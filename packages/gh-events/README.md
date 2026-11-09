@@ -1,12 +1,15 @@
 # gh-events
 
-Brings GitHub pull request and issue state to this Mac as two local files:
+Brings GitHub pull request, issue and security alert state to this Mac as
+two local files:
 
-- `registry.json`: every PR and issue currently monitored, with its state,
-  rewritten after each poll.
+- `registry.json`: every PR, issue and open alert currently monitored, with
+  its state, rewritten after each poll.
 - `events.jsonl`: an append-only log of changes. The events are `approved`,
-  `ci_failed`, `conflict`, `merged`, `closed` and `released` for PRs, and
-  `issue_assigned` and `issue_closed` for issues.
+  `ci_failed`, `conflict`, `merged`, `closed`, `released`,
+  `review_requested` and `changes_requested` for PRs, `issue_assigned` and
+  `issue_closed` for issues, and `opened`, `fixed` and `dismissed` for
+  Dependabot, code scanning and secret scanning alerts.
 
 No model reads the GitHub data. A consumer, such as a dashboard, reads the
 two files. The one action gh-events takes itself is moving tasks in the
@@ -21,6 +24,10 @@ API, once per configured account, for:
 
 - open PRs the account authored or was asked to review
 - open issues the account authored or is assigned to
+
+It also reads open alerts from GitHub's REST API for up to 15 repo and alert
+type pairs per account, least recently checked first; see
+[Alerts](#alerts).
 
 It compares them with the previous poll, appends one line to `events.jsonl`
 per change, and rewrites `registry.json`.
@@ -71,6 +78,42 @@ GitHub GraphQL ──(outbound HTTPS)──▶ guard ──▶ diff ──▶ ev
   the two SHAs. The release query costs one request per poll for all waiting
   repos, and a compare runs only when a repo's latest release changes. Tag
   names are author text and are not read.
+- **Review events come from the searches already made.** `review_requested`
+  is a PR the account did not author entering the review-requested search.
+  `changes_requested` is the review decision on the account's own PR. Neither
+  adds a request.
+
+## Alerts
+
+GitHub has no GraphQL API for code scanning or secret scanning alerts. Its
+org-wide REST endpoints need an org owner or security manager, and a user
+account has none. So gh-events asks per repo and alert type, and spreads
+the repos over polls:
+
+- **Repo list.** Once an hour, one GraphQL request per owner per 100 repos
+  lists the owner's unarchived repos. The include and exclude filters apply.
+- **Checks.** Each poll checks up to 15 repo and alert type pairs per
+  account, least recently checked first, with one REST request per 100 open
+  alerts. With 20 repos, each repo is checked every 4 polls.
+- **Lookups.** An alert that left the open list costs one more request, to
+  learn whether it was fixed or dismissed. At most 50 per account per poll;
+  the rest wait for the next check.
+- **No access.** A 403 or 404 means the feature is off for the repo or the
+  token cannot read it. The pair is skipped quietly for 24 hours and counted
+  in the log line as `without alert access`. A rate-limit 403 or 429 is an
+  error instead. Observed on a private repo with the features off: 403 for
+  Dependabot and code scanning, 404 for secret scanning.
+- **Errors never fail the account.** A failed alert request is counted in
+  the log line and leaves that pair's alerts as they were.
+- **Budget.** At a 60-second interval, the checks make about 900 REST
+  requests per hour per account, plus one per extra page and per lookup,
+  against GitHub's 5,000 per hour.
+- **Baseline per pair.** The first successful read of a repo and alert type
+  stores the open alerts without events.
+
+The token needs the `repo` scope, which `gh auth login` asks for; GitHub
+lists it among the scopes these endpoints accept. Alerts are read only;
+gh-events never dismisses or changes one.
 
 ## Tasks
 
@@ -166,13 +209,13 @@ checkout or changing `intervalSeconds`. `uninstall` removes it.
 
 ## Files
 
-| Path                                     | What                                                                                |
-| ---------------------------------------- | ----------------------------------------------------------------------------------- |
-| `~/.config/gh-events/config.json`        | Accounts, owners, clients and repo filters                                          |
-| `~/.local/state/gh-events/registry.json` | Monitored items; see CONTRACT.md                                                    |
-| `~/.local/state/gh-events/events.jsonl`  | Event log; see CONTRACT.md                                                          |
-| `~/.local/state/gh-events/state.json`    | Internal: last poll's items, event keys, PRs awaiting a release, and the task queue |
-| `~/Library/Logs/gh-events.log`           | One summary line per account per poll                                               |
+| Path                                     | What                                                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `~/.config/gh-events/config.json`        | Accounts, owners, clients and repo filters                                                          |
+| `~/.local/state/gh-events/registry.json` | Monitored items; see CONTRACT.md                                                                    |
+| `~/.local/state/gh-events/events.jsonl`  | Event log; see CONTRACT.md                                                                          |
+| `~/.local/state/gh-events/state.json`    | Internal: last poll's items and open alerts, event keys, PRs awaiting a release, and the task queue |
+| `~/Library/Logs/gh-events.log`           | One summary line per account per poll                                                               |
 
 The log line names accounts and counts only. When a request fails, the line
 gives the HTTP status or the number of GraphQL errors, never the response
@@ -183,6 +226,12 @@ body.
 - Only items the account authored, was asked to review or is assigned to. A
   review request disappears from search once you review, so later events on
   that PR are seen only if you are also the author.
+- A review requested again on the same head commit gives no second
+  `review_requested`, because the key is the same.
+- `approved` and `changes_requested` read GitHub's review decision, which is
+  null on a repo that requires no review.
+- Alert events can lag by several polls, because repos are checked in turn.
+- An alert that is reopened and fixed again gives no second event.
 - GitHub search can lag behind a change by a short time.
 - `ci_failed` uses the combined state of the head commit, so one failing
   required or optional check is enough.

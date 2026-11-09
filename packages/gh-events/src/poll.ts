@@ -10,8 +10,29 @@ import { dirname } from "node:path";
 
 import type { Account, Config } from "./config";
 
+import {
+  type Alert,
+  alertEvent,
+  type AlertEventName,
+  type AlertFetch,
+  alertKey,
+  type AlertsState,
+  type AlertType,
+  alertUrl,
+  checkKey,
+  closedEvent,
+  diffAlerts,
+  parseRepos,
+  pickChecks,
+} from "./alerts";
 import { advance, type BridgeState, sync, type TasksApi } from "./bridge";
-import { diffGone, diffOpen, type GhEvent, toEvent } from "./diff";
+import {
+  diffGone,
+  diffOpen,
+  type EventName,
+  type GhEvent,
+  toEvent,
+} from "./diff";
 import { clientFor, type Item, itemUrl, unreleased } from "./guard";
 
 /** A merged PR waiting for a release that contains its merge commit. */
@@ -28,6 +49,8 @@ export interface Shipping {
 
 /** What the poller remembers about one account between runs. */
 export interface AccountState {
+  /** Open alerts and which repos and alert types were checked when. */
+  alerts?: AlertsState;
   /** Why the latest poll failed. Absent when it succeeded. */
   error?: string;
   items: Record<string, Item>;
@@ -50,14 +73,20 @@ export interface State {
 /** One row of `registry.json`. See CONTRACT.md. */
 export interface RegistryItem {
   account: string;
+  /** Alerts only. */
+  alert_type?: AlertType;
   ci: Item["ci"];
   client: null | string;
   closes: number[];
-  kind: Item["kind"];
+  kind: "alert" | Item["kind"];
   mergeable: Item["mergeable"];
   number: number;
+  /** Alerts only: the Dependabot package name, else null. */
+  package?: null | string;
   repo: string;
   review: Item["review"];
+  /** Alerts only. */
+  severity?: Alert["severity"];
   sha: null | string;
   since: string;
   state: Item["state"];
@@ -80,6 +109,15 @@ export interface Registry {
 
 /** Where item data comes from. Real runs use GitHub; tests pass a stub. */
 export interface Source {
+  /** One alert by number, to learn why it left the open list. */
+  alert(
+    account: Account,
+    repo: string,
+    type: AlertType,
+    number: number,
+  ): Promise<Alert | null>;
+  /** The open alerts of one type in one repo. */
+  alerts(account: Account, repo: string, type: AlertType): Promise<AlertFetch>;
   /** True when commit `head` contains commit `base`. */
   contains(
     account: Account,
@@ -96,10 +134,20 @@ export interface Source {
     account: Account,
     repos: readonly string[],
   ): Promise<Map<string, null | string>>;
+  /** Raw repository nodes under the account's owners, for the guard. */
+  repos(account: Account): Promise<unknown[]>;
 }
 
 /** One summary line per account, written to stdout for the launchd log. */
 export interface AccountReport {
+  /** Repo and alert type pairs checked this poll. */
+  alertChecks: number;
+  /** Alert requests that failed this poll. They never fail the account. */
+  alertErrors: number;
+  /** Open alerts. */
+  alerts: number;
+  /** Repo and alert type pairs GitHub refused with a 403 or 404. */
+  alertsDenied: number;
   cost: number;
   dropped: number;
   error?: string;
@@ -111,6 +159,13 @@ export interface AccountReport {
 }
 
 const SEEN_LIMIT = 5000;
+
+/** Repo and alert type pairs checked per account per poll. */
+const ALERT_CHECKS_PER_POLL = 15;
+/** Lookups of alerts that left the open list, per account per poll. */
+const ALERT_LOOKUPS_PER_POLL = 50;
+/** How often the list of repos to check for alerts is refreshed. */
+const REPOS_REFRESH_MS = 3_600_000;
 
 /** How long a merged PR is watched for a release before it is given up. */
 const SHIPPING_DAYS = 180;
@@ -129,6 +184,8 @@ export async function pollAccount(
   source: Source,
   now: Date,
 ): Promise<{
+  alerts: AlertsState;
+  alertsReport: { checks: number; denied: number; errors: number };
   cost: number;
   dropped: number;
   events: GhEvent[];
@@ -140,7 +197,7 @@ export async function pollAccount(
   const { cost, dropped, items: open } = await source.open(account);
   const events: GhEvent[] = [];
   const items: Record<string, Item> = {};
-  const emit = (item: Item, names: readonly GhEvent["event"][]): void => {
+  const emit = (item: Item, names: readonly EventName[]): void => {
     for (const name of names)
       events.push(
         toEvent(account.login, clientOf(account, item.repo), item, name, now),
@@ -181,7 +238,137 @@ export async function pollAccount(
   await checkReleases(account, shipping, source, now, (entry) =>
     emit(shipped(entry), ["released"]),
   );
-  return { cost, dropped, events, items, shipping };
+  const alerts = await pollAlerts(
+    account,
+    prev?.alerts,
+    source,
+    now,
+    (alert, name) =>
+      events.push(
+        alertEvent(
+          account.login,
+          clientOf(account, alert.repo),
+          alert,
+          name,
+          now,
+        ),
+      ),
+  );
+  return {
+    alerts: alerts.state,
+    alertsReport: alerts,
+    cost,
+    dropped: dropped + alerts.dropped,
+    events,
+    items,
+    shipping,
+  };
+}
+
+/**
+ * Checks up to ALERT_CHECKS_PER_POLL repo and alert type pairs, least
+ * recently checked first, so every repo is reached in turn at a bounded cost.
+ * The first successful read of a pair stores a baseline without events. An
+ * alert that left the open list is looked up, and gives `fixed` or
+ * `dismissed`; one that cannot be read is dropped without an event. A 403 or
+ * 404 marks the pair as denied, drops its alerts quietly and is counted. Any
+ * other error is counted and leaves the pair's alerts as they were, so alerts
+ * never fail the account's poll.
+ */
+async function pollAlerts(
+  account: Account,
+  prev: AlertsState | undefined,
+  source: Source,
+  now: Date,
+  emit: (alert: Alert, event: AlertEventName) => void,
+): Promise<{
+  checks: number;
+  denied: number;
+  dropped: number;
+  errors: number;
+  state: AlertsState;
+}> {
+  const at = now.toISOString();
+  const state: AlertsState = {
+    checked: { ...(prev?.checked ?? {}) },
+    open: { ...(prev?.open ?? {}) },
+    repos: prev?.repos ?? [],
+    reposAt: prev?.reposAt ?? null,
+  };
+  let errors = 0;
+  if (
+    !state.reposAt ||
+    now.getTime() - Date.parse(state.reposAt) >= REPOS_REFRESH_MS
+  ) {
+    try {
+      state.repos = parseRepos(await source.repos(account), account.owners);
+      state.reposAt = at;
+      // A repo that left scope takes its alerts with it, without events.
+      const keep = new Set(state.repos);
+      for (const [key, alert] of Object.entries(state.open))
+        if (!keep.has(alert.repo)) delete state.open[key];
+      for (const key of Object.keys(state.checked))
+        if (!keep.has(key.slice(0, key.lastIndexOf("|"))))
+          delete state.checked[key];
+    } catch {
+      errors++;
+    }
+  }
+
+  let checks = 0;
+  let dropped = 0;
+  let lookups = 0;
+  const pairs = pickChecks(
+    state.repos,
+    state.checked,
+    now,
+    ALERT_CHECKS_PER_POLL,
+  );
+  for (const { repo, type } of pairs) {
+    const key = checkKey(repo, type);
+    const last = state.checked[key];
+    const before = Object.values(state.open).filter(
+      (a) => a.repo === repo && a.alertType === type,
+    );
+    checks++;
+    let fetched: AlertFetch;
+    try {
+      fetched = await source.alerts(account, repo, type);
+    } catch {
+      errors++;
+      state.checked[key] = { at, ...(last?.read ? { read: true } : {}) };
+      continue;
+    }
+    for (const alert of before) delete state.open[alertKey(alert)];
+    if (fetched.denied) {
+      state.checked[key] = { at, denied: true };
+      continue;
+    }
+    dropped += fetched.dropped;
+    const diff = diffAlerts(before, fetched.alerts, !last?.read, at);
+    for (const alert of diff.next) state.open[alertKey(alert)] = alert;
+    for (const alert of diff.opened) emit(alert, "opened");
+    for (const alert of diff.gone) {
+      // Past the lookup limit, or on an error, the alert waits for the next check.
+      if (lookups >= ALERT_LOOKUPS_PER_POLL) {
+        state.open[alertKey(alert)] = alert;
+        continue;
+      }
+      lookups++;
+      try {
+        const found = await source.alert(account, repo, type, alert.number);
+        const event = closedEvent(found);
+        if (event) emit(alert, event);
+        else if (found?.state === "OPEN") state.open[alertKey(alert)] = alert;
+      } catch {
+        errors++;
+        state.open[alertKey(alert)] = alert;
+      }
+    }
+    state.checked[key] = { at, read: true };
+  }
+  const denied = Object.values(state.checked).filter((c) => c.denied).length;
+  return { checks, denied, dropped, errors, state };
 }
 
 /** The item a `released` event is built from. */
@@ -280,6 +467,30 @@ export function buildRegistry(
         url: itemUrl(item),
       });
     }
+    for (const alert of Object.values(
+      state.accounts[account.login]?.alerts?.open ?? {},
+    )) {
+      const key = alertKey(alert).toLowerCase();
+      if (items.has(key)) continue;
+      items.set(key, {
+        account: account.login,
+        alert_type: alert.alertType,
+        ci: null,
+        client: clientOf(account, alert.repo),
+        closes: [],
+        kind: "alert",
+        mergeable: null,
+        number: alert.number,
+        package: alert.package,
+        repo: alert.repo,
+        review: null,
+        severity: alert.severity,
+        sha: null,
+        since: alert.since ?? now.toISOString(),
+        state: "OPEN",
+        url: alertUrl(alert),
+      });
+    }
   }
   return {
     accounts: config.accounts.map((a) => ({
@@ -292,7 +503,11 @@ export function buildRegistry(
     generatedAt: now.toISOString(),
     intervalSeconds: config.intervalSeconds,
     items: [...items.values()].sort(
-      (a, b) => a.repo.localeCompare(b.repo) || a.number - b.number,
+      (a, b) =>
+        a.repo.localeCompare(b.repo) ||
+        a.number - b.number ||
+        a.kind.localeCompare(b.kind) ||
+        (a.alert_type ?? "").localeCompare(b.alert_type ?? ""),
     ),
     version: 1,
   };
@@ -329,11 +544,16 @@ export async function runPoll(
       for (const e of events) seen.add(e.key);
       fresh.push(...events);
       state.accounts[account.login] = {
+        alerts: result.alerts,
         items: result.items,
         polledAt: now.toISOString(),
         shipping: result.shipping,
       };
       reports.push({
+        alertChecks: result.alertsReport.checks,
+        alertErrors: result.alertsReport.errors,
+        alerts: Object.keys(result.alerts.open).length,
+        alertsDenied: result.alertsReport.denied,
         cost: result.cost,
         dropped: result.dropped,
         events: events.length,
@@ -344,12 +564,17 @@ export async function runPoll(
     } catch (err) {
       const error = err instanceof Error ? err.message : "unknown error";
       state.accounts[account.login] = {
+        ...(prev?.alerts ? { alerts: prev.alerts } : {}),
         error,
         items: prev?.items ?? {},
         polledAt: prev?.polledAt ?? null,
         shipping: prev?.shipping ?? {},
       };
       reports.push({
+        alertChecks: 0,
+        alertErrors: 0,
+        alerts: Object.keys(prev?.alerts?.open ?? {}).length,
+        alertsDenied: 0,
         cost: 0,
         dropped: 0,
         error,

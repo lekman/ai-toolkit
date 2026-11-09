@@ -139,6 +139,9 @@ export async function fetchOpen(
         }
         const known = items.get(item.id);
         if (alias === "issueAssigned" || known?.assigned) item.assigned = true;
+        if (alias === "prMine" || known?.authored) item.authored = true;
+        if (alias === "prReview" || known?.reviewRequested)
+          item.reviewRequested = true;
         items.set(item.id, item);
       }
       if (page?.pageInfo?.hasNextPage === true)
@@ -172,6 +175,43 @@ export async function fetchNodes(
     }
   }
   return found;
+}
+
+const REPOS_QUERY = `query($login: String!, $after: String) {
+  repositoryOwner(login: $login) {
+    repositories(first: 100, after: $after, isArchived: false, ownerAffiliations: [OWNER]) {
+      pageInfo { hasNextPage endCursor } nodes { nameWithOwner }
+    }
+  }
+}`;
+/** At most 1,000 repos per owner. */
+const REPO_PAGES = 10;
+
+/**
+ * The unarchived repos each owner holds that the account can see, as raw
+ * nodes for the guard. One request per owner per 100 repos.
+ */
+export async function fetchRepos(
+  account: Account,
+  auth: string,
+): Promise<unknown[]> {
+  const nodes: unknown[] = [];
+  for (const owner of account.owners) {
+    let after: null | string = null;
+    for (let page = 0; page < REPO_PAGES; page++) {
+      const data = await graphql(auth, REPOS_QUERY, {
+        after,
+        login: owner.name,
+      });
+      const repos = (
+        data.repositoryOwner as { repositories?: SearchPage } | null
+      )?.repositories;
+      nodes.push(...(repos?.nodes ?? []));
+      if (repos?.pageInfo?.hasNextPage !== true) break;
+      after = repos.pageInfo.endCursor ?? null;
+    }
+  }
+  return nodes;
 }
 
 const REPO = /^([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100})$/;

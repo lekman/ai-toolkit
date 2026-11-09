@@ -1,27 +1,40 @@
+import type { AlertEventName, AlertType, Severity } from "./alerts";
 import type { Ci, Item } from "./guard";
 
-/** The notifications this package emits. */
+/** The PR and issue notifications this package emits. */
 export type EventName =
   | "approved"
+  | "changes_requested"
   | "ci_failed"
   | "closed"
   | "conflict"
   | "issue_assigned"
   | "issue_closed"
   | "merged"
-  | "released";
+  | "released"
+  | "review_requested";
 
 /** One line of `events.jsonl`. See CONTRACT.md. */
 export interface GhEvent {
   account: string;
+  /** Alert events only. */
+  alert_type?: AlertType;
   at: string;
   client: null | string;
-  event: EventName;
-  /** `repo#number:event:discriminator`; never written twice. */
+  event: AlertEventName | EventName;
+  /**
+   * `repo#number:event:discriminator` for PRs and issues, and
+   * `repo#alert-type-number:event` for alerts; never written twice.
+   */
   key: string;
-  kind: Item["kind"];
+  kind: "alert" | Item["kind"];
+  /** PR or issue number, or the alert number. */
   number: number;
+  /** Alert events only: the Dependabot package name, else null. */
+  package?: null | string;
   repo: string;
+  /** Alert events only. */
+  severity?: null | Severity;
   sha: null | string;
   v: 1;
 }
@@ -60,8 +73,20 @@ export function diffOpen(
   if (settling && mergeable === "UNKNOWN") next.settling = true;
 
   const events: EventName[] = [];
+  // A PR the account did not author is open in its searches only while its
+  // review is requested, so a stored copy means the request was already seen.
+  // Because the test reads the stored copy, a state written before this event
+  // existed does not report every pending request again.
+  if (cur.reviewRequested && !cur.authored && !prev)
+    events.push("review_requested");
   if (cur.review === "APPROVED" && prev?.review !== "APPROVED")
     events.push("approved");
+  if (
+    cur.authored &&
+    cur.review === "CHANGES_REQUESTED" &&
+    prev?.review !== "CHANGES_REQUESTED"
+  )
+    events.push("changes_requested");
   if (failed(cur.ci) && !(prev && failed(prev.ci) && prev.sha === cur.sha))
     events.push("ci_failed");
   if (

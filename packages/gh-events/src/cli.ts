@@ -11,12 +11,14 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { fetchAlert, fetchAlerts } from "./alerts.system";
 import { loadConfig, paths } from "./config";
 import {
   contains,
   fetchNodes,
   fetchOpen,
   fetchReleases,
+  fetchRepos,
   token,
 } from "./github";
 import { LABEL, plist } from "./launchd";
@@ -70,11 +72,16 @@ async function poll(): Promise<number> {
     return value;
   };
   const source: Source = {
+    alert: (account, repo, type, number) =>
+      fetchAlert(auth(account.login), repo, type, number),
+    alerts: (account, repo, type) =>
+      fetchAlerts(auth(account.login), repo, type),
     contains: (account, repo, base, head) =>
       contains(auth(account.login), repo, base, head),
     nodes: (account, ids) => fetchNodes(account, auth(account.login), ids),
     open: (account) => fetchOpen(account, auth(account.login)),
     releases: (account, repos) => fetchReleases(auth(account.login), repos),
+    repos: (account) => fetchRepos(account, auth(account.login)),
   };
   const reports = await runPoll(config, source, {
     events: paths.events(),
@@ -86,7 +93,7 @@ async function poll(): Promise<number> {
     console.log(
       r.error
         ? `${at} ${r.login}: FAILED ${r.error}`
-        : `${at} ${r.login}: ${r.open} open items, ${r.dropped} dropped by guard, ${r.cost} point(s), ${r.events} event(s), ${r.shipping} awaiting release`,
+        : `${at} ${r.login}: ${r.open} open items, ${r.dropped} dropped by guard, ${r.cost} point(s), ${r.events} event(s), ${r.shipping} awaiting release, ${r.alerts} open alert(s), ${r.alertChecks} alert check(s), ${r.alertsDenied} without alert access, ${r.alertErrors} alert error(s)`,
     );
   }
   const api = tasksApi();

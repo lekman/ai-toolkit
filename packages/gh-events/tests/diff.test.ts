@@ -53,6 +53,58 @@ describe("diffOpen: pull requests", () => {
   });
 });
 
+describe("diffOpen: review requests and requested changes", () => {
+  test("review_requested when a PR the account did not author enters the review search", () => {
+    expect(diffOpen(undefined, pr({ reviewRequested: true })).events).toEqual([
+      "review_requested",
+    ]);
+    // Still requested on the next poll: no repeat.
+    expect(
+      diffOpen(pr({ reviewRequested: true }), pr({ reviewRequested: true }))
+        .events,
+    ).toEqual([]);
+    // A state from before this event existed has no flag, and still no repeat.
+    expect(diffOpen(pr(), pr({ reviewRequested: true })).events).toEqual([]);
+  });
+
+  test("no review_requested on a PR the account authored", () => {
+    expect(
+      diffOpen(undefined, pr({ authored: true, reviewRequested: true })).events,
+    ).toEqual([]);
+  });
+
+  test("changes_requested on the transition, for the account's own PR only", () => {
+    expect(
+      diffOpen(
+        pr({ authored: true }),
+        pr({ authored: true, review: "CHANGES_REQUESTED" }),
+      ).events,
+    ).toEqual(["changes_requested"]);
+    expect(
+      diffOpen(
+        pr({ authored: true, review: "CHANGES_REQUESTED" }),
+        pr({ authored: true, review: "CHANGES_REQUESTED", sha: SHA_B }),
+      ).events,
+    ).toEqual([]);
+    expect(
+      diffOpen(
+        pr({ reviewRequested: true }),
+        pr({ review: "CHANGES_REQUESTED", reviewRequested: true }),
+      ).events,
+    ).toEqual([]);
+  });
+
+  test("keys both by the head SHA", () => {
+    const at = new Date();
+    expect(toEvent("me", null, pr(), "review_requested", at).key).toBe(
+      `acme/api#12:review_requested:${SHA_A}`,
+    );
+    expect(toEvent("me", null, pr(), "changes_requested", at).key).toBe(
+      `acme/api#12:changes_requested:${SHA_A}`,
+    );
+  });
+});
+
 describe("diffOpen: issues", () => {
   test("emits issue_assigned once, when the issue enters the assignee search", () => {
     expect(diffOpen(undefined, issue({ assigned: true })).events).toEqual([

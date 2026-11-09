@@ -36,10 +36,12 @@ const server = Bun.serve({
       answer = { questionId: "q-1", state: "open" };
     if (call.name === "message_inbox") {
       polls++;
-      answer =
-        polls > inboxAfterPolls
-          ? inbox.filter((m) => m.to === call.arguments.to)
-          : [];
+      answer = {
+        messages:
+          polls > inboxAfterPolls
+            ? inbox.filter((m) => m.to === call.arguments.to)
+            : [],
+      };
     }
     if (call.name === "message_delivered")
       answer = { delivered: call.arguments.ids };

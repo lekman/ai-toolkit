@@ -275,8 +275,10 @@ export async function readInbox(
       { limit: 50, to, undelivered: true },
       timeoutMs,
     );
-    if (Array.isArray(answer))
-      for (const m of answer)
+    // The tasks server answers `{ messages: [...] }`.
+    const messages = (answer as null | { messages?: unknown })?.messages;
+    if (Array.isArray(messages))
+      for (const m of messages)
         if (typeof m?.id === "string" && typeof m?.text === "string")
           out.push(m as InboxMessage);
   }

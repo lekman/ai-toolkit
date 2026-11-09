@@ -22,8 +22,14 @@ const PATHS: Record<AlertType, string> = {
 };
 
 // hide_secret keeps the secret itself out of the response.
-const extra = (type: AlertType): string =>
-  type === "secret_scanning" ? "&hide_secret=true" : "";
+const extra = (type: AlertType): Record<string, string> =>
+  type === "secret_scanning" ? { hide_secret: "true" } : {};
+
+/** A query string from parameters, "" when there are none. */
+function query(params: Record<string, string>): string {
+  const text = new URLSearchParams(params).toString();
+  return text ? `?${text}` : "";
+}
 
 async function get(auth: string, url: string): Promise<Response> {
   return fetch(url, {
@@ -65,7 +71,7 @@ export async function fetchAlerts(
   const alerts: Alert[] = [];
   let dropped = 0;
   let url: null | string =
-    `${API}/repos/${repo}/${PATHS[type]}/alerts?state=open&per_page=${PER_PAGE}${extra(type)}`;
+    `${API}/repos/${repo}/${PATHS[type]}/alerts${query({ state: "open", per_page: String(PER_PAGE), ...extra(type) })}`;
   for (let page = 0; url && page < MAX_PAGES; page++) {
     const res = await get(auth, url);
     if (refused(res)) return { denied: true };
@@ -92,10 +98,9 @@ export async function fetchAlert(
 ): Promise<Alert | null> {
   if (!REPO.test(repo) || !Number.isInteger(number))
     throw new Error("alert: invalid repo or number");
-  const query = extra(type).replace("&", "?");
   const res = await get(
     auth,
-    `${API}/repos/${repo}/${PATHS[type]}/alerts/${number}${query}`,
+    `${API}/repos/${repo}/${PATHS[type]}/alerts/${number}${query(extra(type))}`,
   );
   if (refused(res)) return null;
   if (!res.ok) throw new Error(`GitHub alert HTTP ${res.status}`);

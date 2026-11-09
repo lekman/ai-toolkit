@@ -52,6 +52,13 @@ describe("session addresses", () => {
       "session-abcd1234",
     ]);
   });
+  it("are built at once from a long run of hyphens", () => {
+    const started = performance.now();
+    expect(
+      addressesOf("abcd1234", { name: "-".repeat(100_000) }, null),
+    ).toEqual(["session-abcd1234"]);
+    expect(performance.now() - started).toBeLessThan(100);
+  });
   it("always have an id address", () => {
     expect(idAddress("")).toBe("session-unknown");
   });

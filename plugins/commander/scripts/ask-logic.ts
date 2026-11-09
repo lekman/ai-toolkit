@@ -123,14 +123,15 @@ export function addressesOf(
 
 /** A name in the tasks server's form: lower-case words joined by hyphens, at most 96 characters. */
 export function address(name: string): null | string {
-  const value = name
-    .trim()
+  const words = name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 96)
-    .replace(/-+$/, "");
-  return value || null;
+    .split(/[^a-z0-9]/)
+    .filter(Boolean)
+    .join("-")
+    .slice(0, 96);
+  let end = words.length;
+  while (end > 0 && words[end - 1] === "-") end -= 1;
+  return words.slice(0, end) || null;
 }
 
 /** Where a card-only client keeps its questions, in the agent's words. */

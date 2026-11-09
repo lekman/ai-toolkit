@@ -44,9 +44,10 @@ which needs retry handling the script does not do.
 ## Questions the Operator Has Not Answered
 
 The commander never asks with `AskUserQuestion`: it blocks the session, and
-while it waits nothing is relayed. The plugin's `no-ask` hook refuses it in the
-commander and its roster workers. Ask through the pending list instead, and
-carry on with other work:
+while it waits nothing is relayed. Ask with [`/commander:ask`](../ask/SKILL.md)
+first. When Atlas cannot be reached, the plugin's `no-ask` hook refuses
+`AskUserQuestion` in the commander and its roster workers and points here:
+ask through the pending list instead, and carry on with other work:
 
 ```bash
 $NOTIFY ask --key <key> --question "<the question in one line>" \

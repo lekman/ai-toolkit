@@ -42,6 +42,9 @@ act in without you.
   even while the commander session is blocked on it.
 - [scale](skills/scale/SKILL.md): recommend another session, with its start
   command, when queued work could run in parallel. It never starts one.
+- [ask](skills/ask/SKILL.md): ask the owner through Atlas and keep working,
+  message another agent on any machine or account, and read this session's
+  messages. Its hooks run in every session, not only the commander's.
 
 The [commander agent](agents/commander.md) sets the session's role: plan,
 delegate, watch, and do not do the work.
@@ -88,11 +91,10 @@ the roster's `notify.threshold_minutes` (default 30):
 - a `decision` row in the ledger;
 - a question the commander asked with `notify ask`.
 
-The commander and its roster workers never ask with `AskUserQuestion`. The
-plugin's `no-ask` hook ([scripts/no-ask.ts](scripts/no-ask.ts)) refuses it in
-any session whose name is the roster's commander or one of its agents,
-because a session blocked on a question relays nothing and does no work. The
-refusal tells the session how to ask instead:
+No session waits on `AskUserQuestion`. See
+[Questions and Messages Across Accounts](#questions-and-messages-across-accounts).
+When Atlas cannot be reached, the commander and its roster workers fall back
+to the older way, which the refusal explains:
 
 - **The commander** runs `notify ask`, with up to four choices in
   `--options`. The question goes to `pending.json`, which the Atlas sidebar
@@ -101,10 +103,9 @@ refusal tells the session how to ask instead:
   operator's name, or sends the question to the commander with
   `message_send`.
 
-Sessions outside the roster keep `AskUserQuestion`. A question asked with
-`notify ask` also starts a detached timer, an operating-system process
-outside the session, and is removed from `pending.json` when the answer
-arrives. A timer that fires on an answered
+A question asked with `notify ask` also starts a detached timer, an
+operating-system process outside the session, and is removed from
+`pending.json` when the answer arrives. A timer that fires on an answered
 question does nothing. The nudge loop pushes any question still pending past
 the threshold as a backstop, for a timer lost to a restart.
 
@@ -179,3 +180,78 @@ links. No transcripts, because every reply lands in the commander's context.
 - `~/.claude/commander/idle.json`: when `/commander:nudge` first saw each
   worker idle, and when it last nudged it. Safe to delete; the next tick
   starts again.
+
+## Questions and Messages Across Accounts
+
+These hooks run in every session where the plugin is enabled, on every
+Claude account and machine, not only in the commander and its roster.
+
+| Hook               | Script                             | Does                                                                                 |
+| ------------------ | ---------------------------------- | ------------------------------------------------------------------------------------ |
+| `PreToolUse`       | [no-ask.ts](scripts/no-ask.ts)     | Turns `AskUserQuestion` into an Atlas question, then refuses the call and says why   |
+| `SessionStart`     | [deliver.ts](scripts/deliver.ts)   | Adds new messages for this session as context                                        |
+| `UserPromptSubmit` | [deliver.ts](scripts/deliver.ts)   | The same, beside the prompt                                                          |
+| `Stop`             | [deliver.ts](scripts/deliver.ts)   | Blocks the stop with new messages as its reason, so the agent reads them and goes on |
+| `Stop`, background | `deliver.ts watch` (`asyncRewake`) | Waits up to an hour while the session is idle, and wakes it when a message arrives   |
+
+The refusal says the call was automated, names the Atlas question and the
+[ask](skills/ask/SKILL.md) skill, and tells the agent to keep working. The
+owner answers in Atlas. Atlas closes the question on its first answer and
+sends the answer to the session as a message through the tasks server,
+which every machine and account reaches. The delivery hooks show it and
+mark it delivered, and Atlas reads that back.
+
+**Addresses.** A session goes by the name the owner gave it, in the tasks
+server's form ("Ops Portal" is `ops-portal`), and always also by `session-`
+and the first eight characters of its id. A session with only an automatic
+title goes by the id form. Names must be unique across machines and
+accounts, as roster names already are.
+
+**Accounts.** The hooks read the session records in `CLAUDE_CONFIG_DIR`
+(default `~/.claude`), so a session under a second account folder is found.
+The account is the folder's name without `.claude-`.
+
+**Fails open.** No Atlas address, or an Atlas that does not answer within
+five seconds, lets `AskUserQuestion` through, except in a roster session,
+which gets the older refusal above. No tasks server means no messages this
+time.
+
+### Configuration
+
+Atlas's address is `ATLAS_MCP_URL` (or `atlasUrl` below, or the `env` block
+of `settings.json`), and its machine token is the Keychain item
+`atlas-token` (or `ATLAS_TOKEN`), as the Atlas plugin uses. An address on
+localhost needs no token. The tasks server is `TASKS_MCP_URL` and the
+Keychain item `tasks-mcp-token` (or `TASKS_MCP_TOKEN`), as the
+[tasks plugin](../tasks/README.md) sets up.
+
+`ask.json` in the account folder, else `~/.claude/ask.json`, holds the rest.
+Every field is optional, and the file stays out of this repository because
+it names clients:
+
+```json
+{
+  "hook": "on",
+  "watch": true,
+  "optOut": ["Scratch"],
+  "client": "home-client-id",
+  "clients": { "/path/to/client/repositories": "client-id" },
+  "cardOnly": ["client-id"],
+  "askIn": { "client-id": "as a comment on the task's ticket" },
+  "links": { "client-id": "https://tracker.example/browse/{task}" }
+}
+```
+
+- **Opt out** one session with `ASK_HOOK=off` in its environment, or with
+  its name in `optOut` (matched as a prefix, as roster names are). `"hook":
+"off"` opts out every session that reads the file. `ASK_WATCH=off` or
+  `"watch": false` turns the background watcher off.
+- **The client** comes from `clients` (the longest folder prefix), then the
+  folders in `~/.claude/obsidian.json`, then `client`, then the dashboard's
+  default client. Atlas files a question with none under its home client.
+- **A card-only client** keeps its questions inside its own tools. Its
+  sessions send Atlas a fixed title, the task the session claimed last and a
+  link made from `links`, and never the question. The refusal tells the
+  agent to write the question as `askIn` says. The owner answers there and
+  closes the card in Atlas, and the session is told where to read the
+  answer.

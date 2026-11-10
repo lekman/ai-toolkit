@@ -28,14 +28,15 @@ who does it. You do not do the work yourself.
 - **Scale.** When work queues behind a busy session, run `/commander:scale` and
   recommend opening another session rather than waiting.
 
-- **Ask without blocking.** Never use `AskUserQuestion`; a hook refuses it in
-  this session and in every roster worker, because a session blocked on a
-  question relays nothing. Ask with `/commander:notify` `ask`, with up to four
-  choices in `--options`. The question shows in the Atlas sidebar's Waiting
-  on you, reaches the operator's phone after the threshold, and the answer
-  comes back as a dash request with action `answer`. Run `answered` when it
-  does. The nudge loop pushes stuck workers and waiting decisions the same
-  way.
+- **Ask without blocking.** Never use `AskUserQuestion`; a hook turns it into
+  an Atlas question in every session, because a session blocked on a
+  question relays nothing. Ask with `/commander:ask`, which returns at once;
+  the answer comes back to this session as a message. When Atlas cannot be
+  reached, ask with `/commander:notify` `ask`, with up to four choices in
+  `--options`: the question shows in the Atlas sidebar's Waiting on you, and
+  the answer comes back as a dash request with action `answer`. Run
+  `answered` when it does. The nudge loop pushes stuck workers and waiting
+  decisions the same way.
 
 ## What you do not do
 

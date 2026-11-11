@@ -53,13 +53,13 @@ memory at roughly 75% of RAM by default, so on 48 GB the working budget is about
 
 | Model               | Key                      | Size   | Notes                                                                                                                                      |
 | ------------------- | ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Qwen3-Coder 30B A3B | `qwen/qwen3-coder-30b`   | ~17 GB | The default. MoE, 3.3B active, so it runs at roughly 30 tok/s. Trained for agentic coding: tool calls and file edits, not just completion. |
+| Qwen3.8 27B         | `qwen/qwen3.8-27b`       | ~16 GB | The default. Dense 27B, so slower per token than the MoE models. |
 | Gemma 4 26B A4B     | `google/gemma-4-26b-a4b` | ~16 GB | Stronger general reasoning, weaker at tool-call discipline. Good second opinion, poor driver.                                              |
 | Gemma 4 31B         | `google/gemma-4-31b`     | ~19 GB | Dense, so higher per-token quality and noticeably slower.                                                                                  |
 | Gemma 4 E4B         | `google/gemma-4-e4b`     | ~6 GB  | Installed as the background model, for titles and summaries. Not for real work.                                                            |
 
-Setup pre-checks the first and the last: Qwen3-Coder as the model you work with,
-Gemma 4 E4B as the background one, ~23 GB together. The other two are unchecked,
+Setup pre-checks the first and the last: Qwen3.8 27B as the model you work with,
+Gemma 4 E4B as the background one, ~22 GB together. The other two are unchecked,
 because only one model fits in memory at a time: adding them means swapping,
 not running both.
 
@@ -83,7 +83,7 @@ lms load google/gemma-4-26b-a4b --context-length 65536 --gpu max
 
 **Not on this machine:** Qwen3-Coder-Next (80B MoE) is the best local option for
 Claude Code, but even at 4-bit it needs more than 48 GB once context is added.
-The 8-bit build of Qwen3-Coder 30B is ~32 GB, which leaves nothing for context.
+An 8-bit build of a 30B model is ~32 GB, which leaves nothing for context.
 Worth trying at 96 GB and up, not here.
 
 ## What to Expect

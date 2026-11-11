@@ -46,7 +46,7 @@ ${pc.bold("claude-local")} — run Claude Code against a local model
 
 ${pc.dim("Anything else is passed to claude untouched:")}
   claude-local -p "fix the failing test"
-  claude-local --model qwen/qwen3-coder-30b --resume
+  claude-local --model qwen/qwen3.8-27b --resume
   claude-local -- --help          ${pc.dim("claude's help, not this")}
 `;
 

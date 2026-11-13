@@ -1,0 +1,18 @@
+{
+  "name": "@lekman/status-plugin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Check whether the services you depend on are in an outage, from official status feeds and HTTP probes.",
+  "scripts": {
+    "build": "echo 'status: nothing to build'",
+    "typecheck": "bun --bun tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run typecheck && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/node": "^26.2.0",
+    "typescript": "^5.7.0"
+  }
+}

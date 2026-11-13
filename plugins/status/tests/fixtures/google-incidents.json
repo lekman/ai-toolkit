@@ -1,0 +1,180 @@
+[
+  {
+    "id": "BoKRw5LNb3Vb2NadUJRU",
+    "number": "4540119311768408175",
+    "begin": "2026-09-25T15:47:00+00:00",
+    "created": "2026-09-25T16:29:32+00:00",
+    "end": "2026-09-25T16:40:00+00:00",
+    "modified": "2026-09-25T16:53:22+00:00",
+    "external_desc": "**Summary:**\nMitigating elevated error rate with Google Workspace Studio web.\n**Description:**\nMitigation work is currently underway by our engineering team.\nWe do not have an ETA for mitigation at this point.\nWe will provide more information by Friday, 2026-09-25 10:30 PDT.\n**Symptoms:**\nCustomers may experience an endless loading screen when attempting to access Google Workspace Studio on the web.\n**Workaround:**\nNone at this time.",
+    "updates": [
+      {
+        "created": "2026-09-25T16:52:54+00:00",
+        "modified": "2026-09-25T16:53:22+00:00",
+        "when": "2026-09-25T16:52:54+00:00",
+        "text": "**Summary:**\nMitigated elevated error rate with Google Workspace Studio web.\n**Description:**\nThe issue with Google Workspace Studio has been resolved for all affected users as of Friday, 2026-09-25 09:40 PDT.\nFrom preliminary analysis, the root cause of the issue is a recent rollout. Our engineering team has rolled back which mitigated the issue.\nWe thank you for your patience while we worked on resolving the issue.\n**Symptoms:**\nCustomers may have experienced an endless loading screen when attempting to access Google Workspace Studio on the web.\n**Workaround:**\nThe issue is now mitigated.",
+        "status": "AVAILABLE"
+      },
+      {
+        "created": "2026-09-25T16:29:32+00:00",
+        "modified": "2026-09-25T16:52:54+00:00",
+        "when": "2026-09-25T16:29:32+00:00",
+        "text": "**Summary:**\nMitigating elevated error rate with Google Workspace Studio web.\n**Description:**\nMitigation work is currently underway by our engineering team.\nWe do not have an ETA for mitigation at this point.\nWe will provide more information by Friday, 2026-09-25 10:30 PDT.\n**Symptoms:**\nCustomers may experience an endless loading screen when attempting to access Google Workspace Studio on the web.\n**Workaround:**\nNone at this time.",
+        "status": "SERVICE_INFORMATION"
+      }
+    ],
+    "most_recent_update": {
+      "created": "2026-09-25T16:52:54+00:00",
+      "modified": "2026-09-25T16:53:22+00:00",
+      "when": "2026-09-25T16:52:54+00:00",
+      "text": "**Summary:**\nMitigated elevated error rate with Google Workspace Studio web.\n**Description:**\nThe issue with Google Workspace Studio has been resolved for all affected users as of Friday, 2026-09-25 09:40 PDT.\nFrom preliminary analysis, the root cause of the issue is a recent rollout. Our engineering team has rolled back which mitigated the issue.\nWe thank you for your patience while we worked on resolving the issue.\n**Symptoms:**\nCustomers may have experienced an endless loading screen when attempting to access Google Workspace Studio on the web.\n**Workaround:**\nThe issue is now mitigated.",
+      "status": "AVAILABLE"
+    },
+    "status_impact": "SERVICE_INFORMATION",
+    "severity": "low",
+    "service_key": "m5tLdjJLc4EL8ZTnL5RZ",
+    "service_name": "Google Workspace Studio",
+    "affected_products": [
+      {
+        "title": "Google Workspace Studio",
+        "id": "m5tLdjJLc4EL8ZTnL5RZ"
+      }
+    ],
+    "uri": "incidents/BoKRw5LNb3Vb2NadUJRU"
+  },
+  {
+    "id": "B5V4MfnVp97nxoTYbxdX",
+    "number": "9353823205405529898",
+    "begin": "2026-09-18T05:00:00+00:00",
+    "created": "2026-09-22T21:38:51+00:00",
+    "end": "2026-09-24T18:00:00+00:00",
+    "modified": "2026-09-25T00:04:37+00:00",
+    "external_desc": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is actively working on mitigating the issue.\nWe will provide more information by Tuesday, 2026-09-22 18:00 PDT.\n**Symptoms:**\n- Users on the Gmail Android app are finding that their accounts unexpectedly appear logged out.\n- Upon re-login, the process completes but the app fails to recognize the account.\n- Users receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+    "updates": [
+      {
+        "created": "2026-09-25T00:04:24+00:00",
+        "modified": "2026-09-25T00:04:37+00:00",
+        "when": "2026-09-25T00:04:24+00:00",
+        "text": "**summary**\nGmail Android App users on the previous Gmail Android release may have experienced issues accessing their inbox.\n**Description**\nThe issue with Gmail Android App has been resolved for all affected users as of Thursday, 2026-09-24 11:00 PDT.\nWe thank you for your patience while we worked on resolving the issue.\n**Symptoms**\nUsers on the Gmail Android app may observe sudden, unexpected account logout.\nUpon re-login, the process completes but the app may fail to recognize the account.\nUsers may receive an error message stating the account is already added.\n**Workaround**\nA fix has been rolled out with the latest version of the Gmail Android app. Users can update to the latest version within the Play Store to resolve this issue.",
+        "status": "AVAILABLE"
+      },
+      {
+        "created": "2026-09-24T22:29:58+00:00",
+        "modified": "2026-09-25T00:04:24+00:00",
+        "when": "2026-09-24T22:29:58+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is rolling out a fix. The updated version of the Gmail app is currently available to an initial group of users to ensure stability, before a global rollout is initiated.\nWe will provide our next update by Thursday, 2026-09-24 18:30 PDT.\n**Symptoms:**\n- Users on the Gmail Android app may observe sudden, unexpected account logout.\n- Upon re-login, the process completes but the app may fail to recognize the account.\n- Users may receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      },
+      {
+        "created": "2026-09-24T16:02:15+00:00",
+        "modified": "2026-09-24T22:29:58+00:00",
+        "when": "2026-09-24T16:02:15+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is rolling out a fix. The updated version of the Gmail app is currently available to an initial group of users to ensure stability, before a global rollout is initiated.\nWe will provide our next update by Thursday, 2026-09-24 16:00 PDT.\n**Symptoms:**\n- Users on the Gmail Android app may observe sudden, unexpected account logout.\n- Upon re-login, the process completes but the app may fail to recognize the account.\n- Users may receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      },
+      {
+        "created": "2026-09-24T00:10:38+00:00",
+        "modified": "2026-09-24T16:02:15+00:00",
+        "when": "2026-09-24T00:10:38+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is rolling out a fix. The updated version of the Gmail app is currently available to an initial group of users to ensure stability, before a global rollout is initiated.\nWe will provide our next update by Thursday, 2026-09-24 10:00 PDT\n**Symptoms:**\n- Users on the Gmail Android app may observe sudden, unexpected account logout.\n- Upon re-login, the process completes but the app may fail to recognize the account.\n- Users may receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      },
+      {
+        "created": "2026-09-23T16:35:28+00:00",
+        "modified": "2026-09-24T00:10:38+00:00",
+        "when": "2026-09-23T16:35:28+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is actively working on mitigating the issue.\nWe will provide more information by Wednesday, 2026-09-23 17:00 PDT.\n**Symptoms:**\n- Users on the Gmail Android app may observe sudden, unexpected account logout.\n- Upon re-login, the process completes but the app may fail to recognize the account.\n- Users may receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      },
+      {
+        "created": "2026-09-23T02:56:03+00:00",
+        "modified": "2026-09-23T16:35:28+00:00",
+        "when": "2026-09-23T02:56:03+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is actively working on mitigating the issue.\nWe will provide more information by Wednesday, 2026-09-23 10:00 PDT.\n**Symptoms:**\n- Users on the Gmail Android app may observe sudden, unexpected account logout.\n- Upon re-login, the process completes but the app may fail to recognize the account.\n- Users may receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      },
+      {
+        "created": "2026-09-23T00:49:34+00:00",
+        "modified": "2026-09-23T02:56:03+00:00",
+        "when": "2026-09-23T00:49:34+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is actively working on mitigating the issue.\nWe will provide more information by Tuesday, 2026-09-22 20:30 PDT.\n**Symptoms:**\n- Users on the Gmail Android app are finding that their accounts unexpectedly appear logged out.\n- Upon re-login, the process completes but the app fails to recognize the account.\n- Users receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      },
+      {
+        "created": "2026-09-22T21:38:51+00:00",
+        "modified": "2026-09-23T00:49:34+00:00",
+        "when": "2026-09-22T21:38:51+00:00",
+        "text": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is actively working on mitigating the issue.\nWe will provide more information by Tuesday, 2026-09-22 18:00 PDT.\n**Symptoms:**\n- Users on the Gmail Android app are finding that their accounts unexpectedly appear logged out.\n- Upon re-login, the process completes but the app fails to recognize the account.\n- Users receive an error message stating the account is already added.\n**Workaround:**\nThe workaround for the Gmail app issue is to uninstall recent application updates and revert to the system's base version of Gmail. Optionally reinstall the latest version of the Gmail app from play store.\nAlternatively, users can access https://mail.google.com on their mobile browsers.",
+        "status": "SERVICE_INFORMATION"
+      }
+    ],
+    "most_recent_update": {
+      "created": "2026-09-25T00:04:24+00:00",
+      "modified": "2026-09-25T00:04:37+00:00",
+      "when": "2026-09-25T00:04:24+00:00",
+      "text": "**summary**\nGmail Android App users on the previous Gmail Android release may have experienced issues accessing their inbox.\n**Description**\nThe issue with Gmail Android App has been resolved for all affected users as of Thursday, 2026-09-24 11:00 PDT.\nWe thank you for your patience while we worked on resolving the issue.\n**Symptoms**\nUsers on the Gmail Android app may observe sudden, unexpected account logout.\nUpon re-login, the process completes but the app may fail to recognize the account.\nUsers may receive an error message stating the account is already added.\n**Workaround**\nA fix has been rolled out with the latest version of the Gmail Android app. Users can update to the latest version within the Play Store to resolve this issue.",
+      "status": "AVAILABLE"
+    },
+    "status_impact": "SERVICE_INFORMATION",
+    "severity": "low",
+    "service_key": "prPt2Yra2CbGsbEm9cpC",
+    "service_name": "Gmail",
+    "affected_products": [
+      {
+        "title": "Gmail",
+        "id": "prPt2Yra2CbGsbEm9cpC"
+      }
+    ],
+    "uri": "incidents/B5V4MfnVp97nxoTYbxdX"
+  },
+  {
+    "id": "PbhPjRTjzPMk4whvjtmJ",
+    "number": "1965115762587368760",
+    "begin": "2026-09-16T14:04:00+00:00",
+    "created": "2026-09-16T16:36:16+00:00",
+    "end": "2026-09-16T14:41:00+00:00",
+    "modified": "2026-09-18T10:06:01+00:00",
+    "external_desc": "**Summary:**\nWe experienced intermittent latency with Google Drive\n**Description:**\nThe issue with Google Drive has been resolved for all affected customers as of Wednesday, 2026-09-16 07:41 PDT.\nWe thank you for your patience while we worked on resolving the issue. **Customer Symptoms:**\nUsers may have been unable to access Google Drive, experienced intermittent latency, or were unexpectedly prompted with CAPTCHAs when attempting to use the service.\n**Workaround:**\nUsers were advised to retry actions.",
+    "updates": [
+      {
+        "created": "2026-09-18T10:06:01+00:00",
+        "modified": "2026-09-18T10:06:01+00:00",
+        "when": "2026-09-18T10:06:01+00:00",
+        "text": "# Incident Report\n## Summary\nOn Wednesday, 16 September 2026, Google Drive experienced an issue where a subset of traffic was dropped for a duration of 39 minutes.\nWe sincerely apologize for the disruption this incident caused to your business. We recognize the critical role Google Cloud plays in your operations and deeply regret the impact on your services. Our engineering teams have resolved the issue and have taken immediate measures to address the incident. Additionally, engineering teams are conducting a comprehensive review of the incident to fully address the root cause and prevent the recurrence of such an event.\n## Root Cause\nThis incident was triggered by a planned capacity test which temporarily reduced Google Drive's serving capacity.\nThe sequence of events leading to the impact was as follows:\nEngineers initiated a routine capacity test, causing Drive to operate with reduced capacity.\nThe remaining available capacity was insufficient to handle peak user traffic.\nAs traffic exceeded capacity, the capacity protection system was triggered and began blocking legitimate Drive requests.\n## Remediation and Prevention\nThe issue was detected on Wednesday 16 September 2026 at 7:03 via our automated outage detector systems that monitor error rates and user queries.\nTo mitigate the symptoms, Google engineers initiated an immediate rollback of the capacity test to restore serving capacity. Additionally, engineers upsized available capacity and updated the system load limit threshold to add more capacity headroom.\nGoogle is committed to preventing a repeat of this issue in the future and is completing the following immediate actions:\n- Resilience and Resourcing: Ensure sufficient buffer capacity is available globally during capacity tests.\n- Address the Root Cause: Engineering is conducting a comprehensive review of capacity modeling and protection thresholds to ensure they correctly account for capacity tests during peak traffic periods.\n## Detailed Description of Impact\nOn Wednesday, 16 September 2026, from 07:03 to 07:43 US/Pacific, customers were unable to access Google Drive. A subset of overall traffic to Google Drive was dropped during this window.\nAffected users experienced failures, elevated latency, or timeouts when attempting to access, upload, or sync files in Google Drive.\n**Additional Information for Customers:**\nCustomers who experienced impact during this window are encouraged to review their deployment logs. If you continue to see lingering issues beyond the incident window, please file a support ticket via the Google Workspace support portal.",
+        "status": "AVAILABLE"
+      },
+      {
+        "created": "2026-09-16T20:14:08+00:00",
+        "modified": "2026-09-18T10:06:01+00:00",
+        "when": "2026-09-16T20:14:08+00:00",
+        "text": "# Preliminary Incident Report\nWe sincerely apologize for the disruption this incident caused to your business. We know how much you rely on Google Workspace, and we regret the impact on your productivity. We are working to address the root cause and prevent this from occurring in the future.\nPlease note, this information is based on our best knowledge at the time of posting and is subject to change as our investigation continues. A final Incident Report with preventative actions will be posted once our investigation is complete.\nIf you have experienced an impact outside of what is listed below, please reach out to Google Workspace Support using the help article https://support.google.com/a/answer/1047213.\nDate/Time of the Issue (All time US/Pacific)\n- Incident Start: 16 September 2026 07:03\n- Incident End: 16 September 2026 07:51\n- Duration: 0 hours, 47 minutes\n## Summary\nOn Wednesday, 16 September 2026, Google Workspace (specifically Google Drive) experienced an issue where a subset of traffic was dropped for a duration of 48 minutes.\n## Preliminary Root Cause\nThis incident was triggered by a planned capacity test, which temporarily reduced Google Drive's serving capacity.\nThe sequence of events leading to the impact was as follows:\nEngineers initiated a routine capacity test, causing Drive to operate with reduced capacity.\nThe remaining available capacity was insufficient to handle peak user traffic.\nAs traffic exceeded capacity, the capacity protection system was triggered and began blocking legitimate Drive requests.\n## Remediation\nThe issue was detected on Wednesday 16 September 2026 at 7:03 via automated outage detectors monitoring error rates and user queries.\nTo mitigate the symptoms, Google engineers initiated an immediate rollback of the capacity test to restore serving capacity. Additionally, engineers performed manual upsizing operations to provide more capacity headroom.\nGoogle is committed to preventing a repeat of this issue in the future and is completing the following immediate actions:\nResilience and Resourcing: Ensure sufficient buffer capacity is available globally during capacity tests.\nAddress the Root Cause: Engineering will conduct a comprehensive review of capacity modeling and capacity protection thresholds to ensure they correctly account for capacity tests during peak traffic periods.\n## Description of Impact\nOn Wednesday, 16 September 2026, from 07:03 to 07:51 US/Pacific, Drive customers were unable to access Drive. A subset of overall traffic to Google Drive was dropped during this window.\nAffected users would have experienced failures, elevated latency, or timeouts when attempting to access, upload, or sync files in Google Drive.\nAdditional Information for Customers:\nCustomers who experienced impact during this window are encouraged to review their deployment logs. If you continue to see lingering issues after the incident window, please file a support ticket via the Google Workspace support portal.",
+        "status": "AVAILABLE"
+      },
+      {
+        "created": "2026-09-16T16:36:16+00:00",
+        "modified": "2026-09-16T20:14:08+00:00",
+        "when": "2026-09-16T16:36:16+00:00",
+        "text": "**Summary:**\nWe experienced intermittent latency with Google Drive\n**Description:**\nThe issue with Google Drive has been resolved for all affected customers as of Wednesday, 2026-09-16 07:41 PDT.\nWe thank you for your patience while we worked on resolving the issue. **Customer Symptoms:**\nUsers may have been unable to access Google Drive, experienced intermittent latency, or were unexpectedly prompted with CAPTCHAs when attempting to use the service.\n**Workaround:**\nUsers were advised to retry actions.",
+        "status": "SERVICE_DISRUPTION"
+      }
+    ],
+    "most_recent_update": {
+      "created": "2026-09-18T10:06:01+00:00",
+      "modified": "2026-09-18T10:06:01+00:00",
+      "when": "2026-09-18T10:06:01+00:00",
+      "text": "# Incident Report\n## Summary\nOn Wednesday, 16 September 2026, Google Drive experienced an issue where a subset of traffic was dropped for a duration of 39 minutes.\nWe sincerely apologize for the disruption this incident caused to your business. We recognize the critical role Google Cloud plays in your operations and deeply regret the impact on your services. Our engineering teams have resolved the issue and have taken immediate measures to address the incident. Additionally, engineering teams are conducting a comprehensive review of the incident to fully address the root cause and prevent the recurrence of such an event.\n## Root Cause\nThis incident was triggered by a planned capacity test which temporarily reduced Google Drive's serving capacity.\nThe sequence of events leading to the impact was as follows:\nEngineers initiated a routine capacity test, causing Drive to operate with reduced capacity.\nThe remaining available capacity was insufficient to handle peak user traffic.\nAs traffic exceeded capacity, the capacity protection system was triggered and began blocking legitimate Drive requests.\n## Remediation and Prevention\nThe issue was detected on Wednesday 16 September 2026 at 7:03 via our automated outage detector systems that monitor error rates and user queries.\nTo mitigate the symptoms, Google engineers initiated an immediate rollback of the capacity test to restore serving capacity. Additionally, engineers upsized available capacity and updated the system load limit threshold to add more capacity headroom.\nGoogle is committed to preventing a repeat of this issue in the future and is completing the following immediate actions:\n- Resilience and Resourcing: Ensure sufficient buffer capacity is available globally during capacity tests.\n- Address the Root Cause: Engineering is conducting a comprehensive review of capacity modeling and protection thresholds to ensure they correctly account for capacity tests during peak traffic periods.\n## Detailed Description of Impact\nOn Wednesday, 16 September 2026, from 07:03 to 07:43 US/Pacific, customers were unable to access Google Drive. A subset of overall traffic to Google Drive was dropped during this window.\nAffected users experienced failures, elevated latency, or timeouts when attempting to access, upload, or sync files in Google Drive.\n**Additional Information for Customers:**\nCustomers who experienced impact during this window are encouraged to review their deployment logs. If you continue to see lingering issues beyond the incident window, please file a support ticket via the Google Workspace support portal.",
+      "status": "AVAILABLE"
+    },
+    "status_impact": "SERVICE_DISRUPTION",
+    "severity": "medium",
+    "service_key": "VHNA7p3Z5p3iakj5sA8V",
+    "service_name": "Google Drive",
+    "affected_products": [
+      {
+        "title": "Google Drive",
+        "id": "VHNA7p3Z5p3iakj5sA8V"
+      }
+    ],
+    "uri": "incidents/PbhPjRTjzPMk4whvjtmJ"
+  }
+]

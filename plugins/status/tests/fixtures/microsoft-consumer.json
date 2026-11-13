@@ -1,0 +1,112 @@
+[
+  {
+    "ServiceDisplayName": "Microsoft 365 (Consumer)",
+    "ServiceWorkloadName": "M365Consumer",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T06:24:32.457+00:00",
+    "Title": "Users may be unable to access or perform several actions in Microsoft 365 services",
+    "Message": "User impact: Users may be unable to access or perform several actions in Microsoft 365 services.\r\n\r\nCurrent status: We\u2019re pursuing multiple workstreams to pinpoint the source of the issue and ensure the recovery of the affected environment. This issue impacts Outlook.com, OneDrive, OneNote, Microsoft To Do, Teams, and Microsoft 365 for the web although you may also see issues in other Microsoft 365 services.\r\n\r\nNext update by: Friday, November 13, 2026, at 8:30 AM UTC",
+    "Status": "Service degradation"
+  },
+  {
+    "ServiceDisplayName": "Microsoft Copilot",
+    "ServiceWorkloadName": "CopilotConsumer",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127391+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Microsoft Lists",
+    "ServiceWorkloadName": "ConsumerList",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127393+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Microsoft Teams Free",
+    "ServiceWorkloadName": "TeamsforLife",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127394+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Microsoft To-Do",
+    "ServiceWorkloadName": "microsofttodo",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127395+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Microsoft Whiteboard",
+    "ServiceWorkloadName": "Whiteboard",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127396+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Office for the web (Consumer)",
+    "ServiceWorkloadName": "OfficeOnlineConsumer",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127397+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "OneDrive",
+    "ServiceWorkloadName": "OneDriveConsumer",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127398+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Outlook.com",
+    "ServiceWorkloadName": "Outlook.com",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.6127399+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  },
+  {
+    "ServiceDisplayName": "Phone Link",
+    "ServiceWorkloadName": "YourPhone",
+    "Id": null,
+    "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+    "InternalDateTime": "0001-01-01T00:00:00+00:00",
+    "LastUpdatedTime": "2026-11-13T09:00:00.61274+00:00",
+    "Title": "",
+    "Message": "",
+    "Status": "Operational"
+  }
+]

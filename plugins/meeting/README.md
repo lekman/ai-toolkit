@@ -120,7 +120,7 @@ Mac and the note links to it with a delete-by date.
 
 ## Known Gaps
 
-### Samurai Scribe
+### Samurai Scribe gaps
 
 - Unnamed speakers appear as `Sys Speaker 2` and similar. The note keeps those
   labels until the transcript or the calendar event names the person. Naming
@@ -131,7 +131,7 @@ Mac and the note links to it with a delete-by date.
 - Where Samurai Scribe keeps audio, and whether deleting a meeting removes
   every copy, has not been checked.
 
-### Meetily
+### Meetily gaps
 
 - Meetily 0.4.1's database has a `speaker` column (`mic` or `system`), but the
   code paths that save transcript segments do not fill it. A test recording

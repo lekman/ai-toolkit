@@ -98,7 +98,8 @@ between the two steps, so each client decides which model may read its
 transcripts.
 
 - [Meetings](meetings/README.md): local capture and transcription with
-  Meetily, the export that keeps transcript text out of the session, the
+  Samurai Scribe or Meetily, the handling that keeps transcript text out of
+  the session, the
   per-client local-only rule, and every copy left on disk. Driven by the
   [meeting plugin](../plugins/meeting/README.md).
 

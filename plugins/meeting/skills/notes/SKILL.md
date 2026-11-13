@@ -1,40 +1,55 @@
 ---
 name: notes
-description: Turn a meeting recorded and transcribed locally by Meetily into a meeting note in the active client's Obsidian vault folder, with summary, decisions, actions and open questions, plus the full transcript beside it. Respects a per-client rule that the transcript may only be read by a local model. Use when the user says "/meeting:notes", "write up the meeting", "notes from the call", or "summarise the meeting I just had".
+description: Turn a meeting recorded and transcribed locally by Samurai Scribe or Meetily into a meeting note in the active client's Obsidian vault folder, with summary, decisions, actions and open questions. Respects a per-client rule that the transcript may only be read by a local model. Use when the user says "/meeting:notes", "write up the meeting", "notes from the call", or "summarise the meeting I just had".
 user-invocable: true
-allowed-tools: Read, Write, Bash
+allowed-tools: Read, Write, Bash, mcp__samurai-scribe__list_meetings, mcp__samurai-scribe__get_meeting, mcp__samurai-scribe__read_transcript
 ---
 
 <!-- This skill follows the Agent Skills open standard: https://agentskills.io -->
 
 # Meeting Notes
 
-Meetily records and transcribes the meeting on this Mac. This skill exports one
-meeting from Meetily's database into the vault and writes the note from it.
+Samurai Scribe or Meetily records and transcribes the meeting on this Mac. This
+skill writes the note from one meeting into the client's vault folder.
 
-The export script writes the transcript to a file and prints only metadata, so
-exporting never puts what was said into this session. Whether this session may
-then **read** the transcript depends on the client (Step 2).
+- **Samurai Scribe** keeps the transcript in its own vault and gives it to this
+  session through its MCP server. Nothing is exported.
+- **Meetily** keeps the transcript in a database. The export script writes it to
+  a file and prints only metadata.
 
-## Step 1: Resolve the Client and the Meeting
+In both cases, whether this session may **read** the transcript depends on the
+client (Step 2). Listing meetings never puts what was said into the session.
+
+## Step 1: Resolve the Client, the Source and the Meeting
 
 Resolve the client the same way the obsidian plugin does: an argument naming a
 client wins, then the working directory against `clients` in
 `~/.claude/obsidian.json`, then `default_client`. If none of those resolves,
 ask with AskUserQuestion, listing the client names from the config.
 
-List recent meetings:
+Pick the source. An argument naming `samurai` or `meetily` wins. Otherwise use
+Samurai Scribe when the `mcp__samurai-scribe__list_meetings` tool is available,
+and Meetily when it is not.
 
-```bash
-bun "${CLAUDE_PLUGIN_ROOT}/scripts/export.ts" --list --limit 5
-```
+List recent meetings.
+
+- **Samurai Scribe:** call `list_meetings` with `limit` 5. The result has each
+  meeting's date, title, speakers and id.
+- **Meetily:**
+
+  ```bash
+  bun "${CLAUDE_PLUGIN_ROOT}/scripts/export.ts" --list --limit 5
+  ```
 
 Use the newest meeting unless the user named another, or the newest has zero
-segments, or it started more than 12 hours ago. In those cases show the list
-and ask which meeting with AskUserQuestion.
+segments (Meetily) or no speakers (Samurai Scribe), or it started more than 12
+hours ago. In those cases show the list and ask which meeting with
+AskUserQuestion.
 
-An error that the database is not found means Meetily has not recorded
-anything on this machine yet. Say so and stop.
+If Samurai Scribe's tools fail to connect, ask the user to open the Samurai
+Scribe app and try again. An error that
+Meetily's database is not found means Meetily has not recorded anything on this
+machine yet. Say so and stop.
 
 ## Step 2: Decide Who May Read the Transcript
 
@@ -46,17 +61,22 @@ names, absent means empty).
 - **Client in the list, session on a local model** (`ANTHROPIC_BASE_URL`
   points at `localhost` or `127.0.0.1`): this session reads the transcript and
   writes the note.
-- **Client in the list, session on the hosted model**: export the transcript
-  (Step 3), then **stop without reading it**. Tell the user to run
-  `/meeting:notes` again from a `claude-local` session, which finds the
-  transcript already in place and continues from Step 4.
+- **Client in the list, session on the hosted model**: **stop without reading
+  it**. For Meetily, export the transcript first (Step 3). For Samurai Scribe,
+  call no tool except `list_meetings`, because `get_meeting`,
+  `read_transcript`, `read_document`, `search` and `speaker_stats` return what
+  was said or summarised. Tell the user to run `/meeting:notes` again from a
+  `claude-local` session, which continues from Step 3 (Meetily) or Step 4
+  (Samurai Scribe).
 
 ```bash
 jq -r '.meetings.local_only // [] | .[]' ~/.claude/obsidian.json
 echo "${ANTHROPIC_BASE_URL:-hosted}"
 ```
 
-## Step 3: Export the Transcript
+## Step 3: Export the Transcript (Meetily Only)
+
+Skip this step for Samurai Scribe.
 
 ```bash
 VAULT=$(jq -r .vault ~/.claude/obsidian.json)
@@ -71,9 +91,21 @@ as it is and do not export again.
 
 ## Step 4: Write the Note
 
-Read the transcript. Lines are labelled **Me** (the user's microphone) and
-**Them** (everyone heard through the speakers) when Meetily recorded the
-source, and unlabelled otherwise. Meetily 0.4.1 leaves them unlabelled.
+Read the transcript.
+
+- **Samurai Scribe:** call `get_meeting` for the linked calendar event
+  (organiser, attendees) and the speakers, then `read_transcript`. Lines read
+  `[time] Speaker: text`. A long transcript is cut with a note giving the
+  `from_seconds` to continue from, so call it again until the end. Speakers
+  that Samurai Scribe has named are used as named. Generic labels such as
+  `Mic Speaker` (the user's microphone) and `Sys Speaker 2` (someone heard
+  through the speakers) stay generic. Use a person's name for a generic label
+  only when the transcript or the calendar event makes it clear.
+- **Meetily:** read the exported file. Lines are labelled **Me** (the user's
+  microphone) and **Them** (everyone heard through the speakers) when Meetily
+  recorded the source, and unlabelled otherwise. Meetily 0.4.1 leaves them
+  unlabelled.
+
 Segments can run 30 seconds or more, so a time points to the segment, not the
 exact sentence. Name people only when the transcript names
 them. Do not guess who said a line from its content.
@@ -114,10 +146,14 @@ Rules for the content:
 - Write nothing the transcript does not support. Transcription mishears names,
   product terms and numbers. Mark anything that looks misheard with `(?)`
   instead of correcting it silently.
-- **Audio link:** link the Meetily audio file with a `file://` URL and set
-  `audio_delete_by` (default: one week after the meeting). Do not copy the
-  audio into the vault. When the file is deleted, replace the link with
-  "Audio deleted on {date}".
+- **Transcript link:** for Meetily, link the exported transcript file. For
+  Samurai Scribe there is no file, so name the meeting id and leave out the
+  link.
+- **Audio link (Meetily only):** link the Meetily audio file with a `file://`
+  URL and set `audio_delete_by` (default: one week after the meeting). Do not
+  copy the audio into the vault. When the file is deleted, replace the link
+  with "Audio deleted on {date}". Leave the audio line and `audio_delete_by`
+  out for Samurai Scribe.
 - Write each paragraph and each list item on one line. Obsidian shows a line
   break inside a paragraph as a visible break, so wrapped lines read as stray
   breaks.

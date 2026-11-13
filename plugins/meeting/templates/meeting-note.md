@@ -3,15 +3,19 @@ date: "{YYYY-MM-DD}"
 client: "{Client}"
 type: meeting
 series: "{recurring meeting name, or leave out}"
-source: meetily
-meetily_id: "{id}"
-audio_delete_by: "{YYYY-MM-DD}"
+source: "{samurai-scribe or meetily}"
+meeting_id: "{id}"
+audio_delete_by: "{YYYY-MM-DD, Meetily only; leave out for Samurai Scribe}"
 tags: [meeting]
 ---
 
 # {Title}, {D Month YYYY}
 
-Transcript: [[{transcript file name without .md}|full transcript]] · Audio: [audio.mp4](file://{URL-encoded path to the Meetily audio file}) (on this Mac only, delete by {D Mon YYYY})
+Meetily: Transcript: [[{transcript file name without .md}|full transcript]] · Audio: [audio.mp4](file://{URL-encoded path to the Meetily audio file}) (on this Mac only, delete by {D Mon YYYY})
+
+Samurai Scribe: Transcript: in Samurai Scribe, meeting id {id}
+
+Keep only the line for the source and delete the other.
 
 {Start to end time with time zone, meeting tool, who hosted, who was expected but absent.}
 

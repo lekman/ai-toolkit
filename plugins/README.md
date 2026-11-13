@@ -102,8 +102,8 @@ Then invoke a skill, for example `/git:commit`.
   [packages/tasks-mcp](../packages/tasks-mcp). See
   [tasks/README.md](tasks/README.md).
 - **meeting**, [notes](meeting/skills/notes/SKILL.md): turn a meeting that
-  [Meetily](https://github.com/Zackriya-Solutions/meetily) recorded and
-  transcribed on your Mac into a note in the client's vault folder, with
+  Samurai Scribe or [Meetily](https://github.com/Zackriya-Solutions/meetily)
+  recorded and transcribed on your Mac into a note in the client's vault folder, with
   summary, decisions, actions and open questions, each stamped with its
   transcript time. Works for meetings you cannot record in the meeting tool.
   Clients listed as local-only have their transcript read by a local model

@@ -5,13 +5,18 @@ cases come up often. You join another organisation's Teams or Google Meet and
 recording is turned off for guests. Or the meeting tool could record, but its
 recording would then sit on a server you do not control.
 
-[Meetily](https://github.com/Zackriya-Solutions/meetily) (MIT licence) records
-and transcribes on your Mac. It hears your microphone and everything played
-through your speakers, so it works with any meeting tool and needs no bot in
-the call. This plugin takes Meetily's transcript into your Obsidian vault and
-writes the note from it with `/meeting:notes`. The practice behind it, and
-the approaches not taken, are in
+Samurai Scribe and [Meetily](https://github.com/Zackriya-Solutions/meetily)
+(MIT licence) both record and transcribe on your Mac. They hear your
+microphone and everything played through your speakers, so they work with any
+meeting tool and need no bot in the call. This plugin writes the note from
+either one into your Obsidian vault with `/meeting:notes`. It uses Samurai
+Scribe when its MCP server is installed, and Meetily otherwise. The practice
+behind it, and the approaches not taken, are in
 [practices/meetings](../../practices/meetings/README.md).
+
+Samurai Scribe labels speakers in the transcript and gives the session the
+meeting's calendar event, through an MCP server. Meetily 0.4.1 does neither, so
+its notes name people only where the transcript does.
 
 ## Tell People
 
@@ -22,14 +27,30 @@ meeting records, whatever tool makes them.
 
 ## Setup
 
+Install the plugin: `/plugin install meeting@ai-toolkit`. It reads the vault
+and client map from the obsidian plugin's `~/.claude/obsidian.json`. Then set
+up one of the two recorders.
+
+**Samurai Scribe**
+
+1. Install and open the Samurai Scribe app. Grant the permissions macOS asks
+   for.
+2. Add its MCP server for all projects:
+
+   ```bash
+   claude mcp add --scope user samurai-scribe -- "/Applications/Samurai Scribe.app/Contents/MacOS/Samurai Scribe Helper" --mcp
+   ```
+
+3. Start a new session. The Samurai Scribe tools load when a session starts.
+
+**Meetily**
+
 1. Install Meetily: `brew install --cask meetily`.
 2. Open it once and allow **Microphone** and **System Audio Recording** in
    System Settings › Privacy & Security.
 3. In Meetily's settings, pick the transcription model. Whisper large-v3-turbo
    handles Swedish and other languages. Parakeet is faster and good for
    English. Leave Meetily's own summary off: this plugin writes the summary.
-4. Install the plugin: `/plugin install meeting@ai-toolkit`. It reads the
-   vault and client map from the obsidian plugin's `~/.claude/obsidian.json`.
 
 ## Audio
 
@@ -58,14 +79,22 @@ machine, list it under `meetings.local_only`:
 }
 ```
 
-For those clients a hosted session exports the transcript into the vault and
-stops without reading it. Run `/meeting:notes` again from `claude-local`
+For those clients a hosted session stops without reading the transcript. Run
+`/meeting:notes` again from `claude-local`
 ([practices/local-models](../../practices/local-models/README.md)) to write the
-note.
+note. `claude-local` needs the Samurai Scribe MCP server too, so check that
+`claude mcp list` shows it from a `claude-local` session.
 
-The export script ([scripts/export.ts](scripts/export.ts)) prints only metadata
-to the session. It reads a copy of Meetily's database and never changes
-Meetily's own files.
+- **Samurai Scribe:** the hosted session calls only `list_meetings`, which
+  returns titles, dates and speaker names. It does not call `get_meeting`,
+  `read_transcript`, `read_document`, `search` or `speaker_stats`, because
+  those return what was said or summarised. The skill instructs this. Nothing
+  in Samurai Scribe's MCP server enforces it, so the hosted model could still
+  call them.
+- **Meetily:** the hosted session exports the transcript into the vault with
+  [scripts/export.ts](scripts/export.ts), which prints only metadata to the
+  session. It reads a copy of Meetily's database and never changes Meetily's
+  own files.
 
 ## Where Notes Go
 
@@ -73,6 +102,10 @@ Meetily's own files.
 Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md
 Clients/<Client>/Meetings/Transcripts/<YYYY-MM-DD> <Title> — transcript.md
 ```
+
+The transcript file exists for Meetily only. A Samurai Scribe transcript stays
+in Samurai Scribe, and the note names the meeting id instead of linking a
+file.
 
 If the note already exists, for example meeting prep written earlier, the
 skill adds a `## Notes from the call` section at the end and leaves the rest
@@ -82,10 +115,23 @@ Every note follows [templates/meeting-note.md](templates/meeting-note.md). Its
 **Shareable** part (attendees, summary, mood and momentum, decisions, actions)
 is ready to paste into Teams or email. Its **Record** part is internal: the
 same decisions and actions with transcript times and quotes, the evidence for
-the mood, open questions and observations. The audio stays on the Mac; the
-note links to it with a delete-by date.
+the mood, open questions and observations. For Meetily, the audio stays on the
+Mac and the note links to it with a delete-by date.
 
 ## Known Gaps
+
+**Samurai Scribe**
+
+- Unnamed speakers appear as `Sys Speaker 2` and similar. The note keeps those
+  labels until the transcript or the calendar event names the person. Naming
+  them in Samurai Scribe (`rename_person` or `edit_transcript`) improves later
+  notes.
+- This plugin has not been run end to end on a Samurai Scribe recording. Only
+  the MCP server's meeting list and tool names have been checked.
+- Where Samurai Scribe keeps audio, and whether deleting a meeting removes
+  every copy, has not been checked.
+
+**Meetily**
 
 - Meetily 0.4.1's database has a `speaker` column (`mic` or `system`), but the
   code paths that save transcript segments do not fill it. A test recording

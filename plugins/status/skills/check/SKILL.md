@@ -37,6 +37,7 @@ The exit code says what it found:
 | 1    | At least one service is degraded or in an outage              |
 | 2    | Bad arguments or services file: the message names the problem |
 | 3    | Nothing affected, but at least one feed couldn't be read      |
+| 4    | This machine is offline: nothing answered at all              |
 
 ## Step 2: Report
 
@@ -48,6 +49,10 @@ The exit code says what it found:
   work waits on the provider. Offer to record what is blocked so it can resume.
 - **Exit 3**: say which feed couldn't be read. That says nothing about the
   service itself.
+- **Exit 4**: the user's own connection is down, not the services. Say so,
+  and repeat the connections the report lists (status page and phone line),
+  so the user can check them from a phone on mobile data. Stop retrying any
+  network call until the user says the connection is back.
 
 A provider's page can lag its outage by several minutes, and a status page
 says nothing about a fault in your own tenant or account. So "ok" means no
@@ -63,6 +68,7 @@ the plugin README for each kind's fields.
 ## Rules
 
 - Never scrape Downdetector or similar crowd-report sites. They block scripts
-  (Downdetector answered 403 to plain requests on 13 Nov 2026) and their
-  terms forbid it.
+  (downdetector.com and downdetector.co.uk answered with a Cloudflare bot
+  challenge on 13 Nov 2026), their terms forbid it, and getting past a bot
+  challenge is not allowed.
 - Read-only: the check only makes GET requests.

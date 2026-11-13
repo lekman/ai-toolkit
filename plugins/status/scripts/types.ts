@@ -27,6 +27,8 @@ export interface ServiceResult {
   level: Level;
   /** The service's name from the configuration. */
   name: string;
+  /** False when the request got no answer at all: a network error or a timeout. */
+  reached: boolean;
   /** The page a person opens to read more. */
   source: string;
   /** One line for the report. */
@@ -93,8 +95,25 @@ export type Service =
   | MicrosoftService
   | StatuspageService;
 
+/**
+ * A connection of your own with no public status feed, such as a home
+ * broadband line or a mobile network. Listed when this machine looks offline.
+ */
+export interface Connection {
+  /** The provider, such as a broadband company. */
+  name: string;
+  /** Where the provider's own status checker is. */
+  page?: string;
+  /** A phone line that reports outages. */
+  phone?: string;
+  /** What the connection is for, such as "broadband" or "mobile". */
+  role?: string;
+}
+
 /** The configuration file's shape. */
 export interface StatusConfig {
+  /** Your own connections, shown when nothing at all can be reached. */
+  connections?: Connection[];
   /** The services to check, in report order. */
   services: Service[];
 }

@@ -41,6 +41,7 @@ bun plugins/status/scripts/cli.ts --list          # services and their feeds
 | 1    | At least one service is degraded or in an outage         |
 | 2    | Bad arguments or services file                           |
 | 3    | Nothing affected, but at least one feed couldn't be read |
+| 4    | This machine is offline: nothing answered at all         |
 
 ## Configure Your Services
 
@@ -71,6 +72,32 @@ Cloudflare (`https://www.cloudflarestatus.com`), Tailscale
 Services that share a feed share one request, so listing several Microsoft
 services costs one call.
 
+## Your Own Connections
+
+Home broadband and mobile networks rarely publish a status feed: their
+checkers need an account login. When your own line is down, no feed answers,
+so the script then asks Apple's and Google's connectivity pages too. If those
+fail as well, it reports the machine as offline (exit 4) instead of a list of
+unknown services, and prints the connections you list under `connections`:
+
+```json
+{
+  "connections": [
+    {
+      "name": "Your broadband provider",
+      "role": "broadband",
+      "page": "https://isp.example/service-status",
+      "phone": "0800 000 0000"
+    },
+    { "name": "Your mobile network", "role": "mobile" }
+  ],
+  "services": []
+}
+```
+
+Only `name` is required. A phone line that reports outages is the most useful
+field, because a phone on mobile data still works when the broadband is down.
+
 ## Levels
 
 | Level         | From                                                                                                   |
@@ -89,8 +116,10 @@ outage and 1 or 2 as degraded.
 
 - A status page can lag an outage by several minutes, and it says nothing
   about a fault in your own tenant or account. "ok" means no known outage.
-- Crowd-report sites such as Downdetector are not a source. They answered 403
-  to plain requests on 13 Nov 2026, and their terms forbid scraping.
+- Crowd-report sites such as Downdetector are not a source. On 13 Nov 2026
+  downdetector.com and downdetector.co.uk answered every request, robots.txt
+  included, with a Cloudflare bot challenge (HTTP 403), and their terms forbid
+  scraping.
 - Read-only: the script only makes GET requests.
 
 ## Development

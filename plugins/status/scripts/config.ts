@@ -1,6 +1,6 @@
 /** Validates the services file. Pure: the caller reads the file. */
 
-import type { Service, StatusConfig } from "./types.ts";
+import type { Connection, Service, StatusConfig } from "./types.ts";
 
 const KINDS = new Set([
   "aws",
@@ -75,7 +75,24 @@ export class StatusConfigReader {
         if (entry[list] !== undefined && !Array.isArray(entry[list]))
           throw new Error(`${where} (${entry.name}): ${list} must be a list`);
     });
-    return { services: services as Service[] };
+    const connections = (raw as { connections?: unknown }).connections;
+    if (connections !== undefined) {
+      if (!Array.isArray(connections))
+        throw new Error('"connections" must be a list');
+      connections.forEach((c: unknown, index) => {
+        const entry = c as Record<string, unknown>;
+        if (typeof entry?.name !== "string" || !entry.name.trim())
+          throw new Error(`connections[${index}] needs a name`);
+        if (entry.page !== undefined && !StatusConfigReader.isUrl(entry.page))
+          throw new Error(
+            `connections[${index}] (${entry.name}): page must be an http(s) url`,
+          );
+      });
+    }
+    return {
+      connections: connections as Connection[] | undefined,
+      services: services as Service[],
+    };
   }
 
   private static isUrl(value: unknown): boolean {

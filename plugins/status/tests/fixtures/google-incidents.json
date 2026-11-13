@@ -1,6 +1,6 @@
 [
   {
-    "id": "BoKRw5LNb3Vb2NadUJRU",
+    "id": "fixture-product-2",
     "number": "4540119311768408175",
     "begin": "2026-09-25T15:47:00+00:00",
     "created": "2026-09-25T16:29:32+00:00",
@@ -32,18 +32,18 @@
     },
     "status_impact": "SERVICE_INFORMATION",
     "severity": "low",
-    "service_key": "m5tLdjJLc4EL8ZTnL5RZ",
+    "service_key": "fixture-product-5",
     "service_name": "Google Workspace Studio",
     "affected_products": [
       {
         "title": "Google Workspace Studio",
-        "id": "m5tLdjJLc4EL8ZTnL5RZ"
+        "id": "fixture-product-5"
       }
     ],
-    "uri": "incidents/BoKRw5LNb3Vb2NadUJRU"
+    "uri": "incidents/fixture-product-2"
   },
   {
-    "id": "B5V4MfnVp97nxoTYbxdX",
+    "id": "fixture-product-1",
     "number": "9353823205405529898",
     "begin": "2026-09-18T05:00:00+00:00",
     "created": "2026-09-22T21:38:51+00:00",
@@ -117,18 +117,18 @@
     },
     "status_impact": "SERVICE_INFORMATION",
     "severity": "low",
-    "service_key": "prPt2Yra2CbGsbEm9cpC",
+    "service_key": "fixture-product-6",
     "service_name": "Gmail",
     "affected_products": [
       {
         "title": "Gmail",
-        "id": "prPt2Yra2CbGsbEm9cpC"
+        "id": "fixture-product-6"
       }
     ],
-    "uri": "incidents/B5V4MfnVp97nxoTYbxdX"
+    "uri": "incidents/fixture-product-1"
   },
   {
-    "id": "PbhPjRTjzPMk4whvjtmJ",
+    "id": "fixture-product-3",
     "number": "1965115762587368760",
     "begin": "2026-09-16T14:04:00+00:00",
     "created": "2026-09-16T16:36:16+00:00",
@@ -167,14 +167,14 @@
     },
     "status_impact": "SERVICE_DISRUPTION",
     "severity": "medium",
-    "service_key": "VHNA7p3Z5p3iakj5sA8V",
+    "service_key": "fixture-product-4",
     "service_name": "Google Drive",
     "affected_products": [
       {
         "title": "Google Drive",
-        "id": "VHNA7p3Z5p3iakj5sA8V"
+        "id": "fixture-product-4"
       }
     ],
-    "uri": "incidents/PbhPjRTjzPMk4whvjtmJ"
+    "uri": "incidents/fixture-product-3"
   }
 ]

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { IFetcher } from "../scripts/interfaces.ts";
 import type { FetchedResponse, Service } from "../scripts/types.ts";
 
-import { StatusCheck } from "../scripts/check.ts";
+import { CONNECTIVITY_URLS, StatusCheck } from "../scripts/check.ts";
 import { StatusConfigReader } from "../scripts/config.ts";
 import { StatusReport } from "../scripts/report.ts";
 
@@ -82,7 +82,9 @@ describe("StatusCheck.run", () => {
       options,
     );
     expect(results[0]?.level).toBe("unknown");
+    expect(results[0]?.reached).toBe(false);
     expect(results[0]?.summary).toContain("timed out");
+    expect(results[1]?.reached).toBe(true);
     expect(results[1]?.level).toBe("ok");
     expect(StatusReport.exitCode(results)).toBe(3);
   });
@@ -100,6 +102,7 @@ describe("StatusCheck.run", () => {
       options,
     );
     expect(r?.level).toBe("unknown");
+    expect(r?.reached).toBe(true);
     expect(r?.summary).toContain("HTTP 503");
   });
 
@@ -114,6 +117,43 @@ describe("StatusCheck.run", () => {
     );
     expect(r?.level).toBe("outage");
     expect(StatusReport.exitCode(r ? [r] : [])).toBe(1);
+  });
+});
+
+describe("offline", () => {
+  const services: Service[] = [
+    { feed: "mac", kind: "microsoft", name: "M365" },
+    { kind: "http", name: "Mine", url: "http://127.0.0.1:9/health" },
+  ];
+
+  test("no answer from any service or connectivity page is offline, exit 4", async () => {
+    const fetcher = new FakeFetcher({});
+    const results = await StatusCheck.run(services, fetcher, options);
+    expect(results.every((r) => !r.reached)).toBe(true);
+    expect(await StatusCheck.online(fetcher, 1000)).toBe(false);
+    expect(StatusReport.exitCode(results, true)).toBe(4);
+    const text = StatusReport.text(results, options.now, {
+      connections: [
+        {
+          name: "Home broadband",
+          page: "https://isp.example/status",
+          phone: "0800 000 0000",
+          role: "broadband",
+        },
+      ],
+    });
+    expect(text).toContain("OFFLINE");
+    expect(text).toContain(
+      "- Home broadband (broadband): https://isp.example/status, 0800 000 0000",
+    );
+    expect(text).not.toContain("M365");
+  });
+
+  test("a connectivity page that answers means online, even with every feed down", async () => {
+    const fetcher = new FakeFetcher({
+      [CONNECTIVITY_URLS[1] ?? ""]: { body: new Uint8Array(), status: 204 },
+    });
+    expect(await StatusCheck.online(fetcher, 1000)).toBe(true);
   });
 });
 
@@ -148,6 +188,12 @@ describe("StatusConfigReader", () => {
       }),
     ).toThrow("twice");
     expect(() => StatusConfigReader.parse("not json")).toThrow("not JSON");
+    const one = [{ feed: "mac", kind: "microsoft", name: "A" }];
+    expect(parse({ connections: {}, services: one })).toThrow("must be a list");
+    expect(parse({ connections: [{}], services: one })).toThrow("needs a name");
+    expect(
+      parse({ connections: [{ name: "B", page: "nope" }], services: one }),
+    ).toThrow("http(s) url");
   });
 
   test("--only matches name words, case-insensitive", () => {
@@ -179,6 +225,7 @@ describe("StatusReport", () => {
           kind: "statuspage",
           level: "ok",
           name: "GitHub",
+          reached: true,
           source: "https://www.githubstatus.com",
           summary: "All Systems Operational",
         },
@@ -187,6 +234,7 @@ describe("StatusReport", () => {
           kind: "microsoft",
           level: "outage",
           name: "Microsoft 365",
+          reached: true,
           source: "https://status.cloud.microsoft/",
           summary: "Mail down",
         },
@@ -209,6 +257,7 @@ describe("StatusReport", () => {
       kind: "http" as const,
       level,
       name: level,
+      reached: true,
       source: "",
       summary: "",
     });

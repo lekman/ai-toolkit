@@ -12,6 +12,12 @@ const GOOGLE_PAGE = "https://www.google.com/appsstatus/dashboard/";
 const AWS_FEED = "https://health.aws.amazon.com/public/currentevents";
 const AWS_PAGE = "https://health.aws.amazon.com/health/status";
 
+/** Pages that answer from almost anywhere, to tell "offline" from "every feed is down". */
+export const CONNECTIVITY_URLS = [
+  "https://captive.apple.com/hotspot-detect.html",
+  "https://www.gstatic.com/generate_204",
+];
+
 /** Runs the checks. */
 export class StatusCheck {
   /**
@@ -32,6 +38,21 @@ export class StatusCheck {
       case "statuspage":
         return `${service.url.replace(/\/+$/, "")}/api/v2/summary.json`;
     }
+  }
+
+  /**
+   * Whether this machine can reach the internet: true when any connectivity
+   * page answers with any status. Call it only when no service answered, to
+   * tell a dead connection from many feeds failing at once.
+   * @param fetcher - How to fetch.
+   * @param timeoutMs - Per-request timeout.
+   * @returns True when a connectivity page answered.
+   */
+  static async online(fetcher: IFetcher, timeoutMs: number): Promise<boolean> {
+    const answers = await Promise.allSettled(
+      CONNECTIVITY_URLS.map((url) => fetcher.get(url, timeoutMs)),
+    );
+    return answers.some((a) => a.status === "fulfilled");
   }
 
   /**
@@ -63,25 +84,33 @@ export class StatusCheck {
       services.map(async (service): Promise<ServiceResult> => {
         const url = StatusCheck.feedUrl(service);
         const source = StatusCheck.pageUrl(service);
-        try {
-          const response = await fetchOnce(url);
-          const reading = StatusCheck.read(service, response, options.now);
-          return { kind: service.kind, name: service.name, source, ...reading };
-        } catch (error) {
+        const base = { kind: service.kind, name: service.name, source };
+        const failed = (error: unknown, reached: boolean): ServiceResult => {
           const message =
             error instanceof Error ? error.message : String(error);
           const probe = service.kind === "http";
           return {
+            ...base,
             error: message,
             incidents: [],
-            kind: service.kind,
             level: probe ? "outage" : "unknown",
-            name: service.name,
-            source,
+            reached,
             summary: probe
               ? `No answer: ${message}`
               : `Couldn't read the status feed: ${message}`,
           };
+        };
+        let response;
+        try {
+          response = await fetchOnce(url);
+        } catch (error) {
+          return failed(error, false);
+        }
+        try {
+          const reading = StatusCheck.read(service, response, options.now);
+          return { ...base, reached: true, ...reading };
+        } catch (error) {
+          return failed(error, true);
         }
       }),
     );

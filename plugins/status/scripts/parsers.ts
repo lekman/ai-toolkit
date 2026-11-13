@@ -403,10 +403,14 @@ export class StatusParsers {
   }
 
   private static text(html: null | string | undefined): string {
+    // The result is printed to a terminal, never rendered as HTML. Angle
+    // brackets left after the tags are removed are dropped too, so a nested
+    // tag such as "<scr<b>ipt>" cannot survive as "<script>".
     return (html ?? "")
       .replace(/<br\s*\/?>/gi, "  ")
       .replace(/<\/div>/gi, "  ")
       .replace(/<[^>]+>/g, "")
+      .replace(/[<>]/g, "")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&");
   }

@@ -18,7 +18,7 @@
  *
  * Exit codes: 0 nothing affected; 1 a service is degraded or in an outage;
  * 2 bad arguments or services file; 3 nothing affected, but a feed couldn't be
- * read.
+ * read; 4 this machine is offline.
  */
 
 import { dirname, join } from "node:path";
@@ -63,8 +63,9 @@ async function main(): Promise<number> {
       `No services file; using the example. Copy it to ~/.config/status/services.json and edit it.`,
     );
   let services;
+  let config;
   try {
-    const config = StatusConfigReader.parse(readText(path));
+    config = StatusConfigReader.parse(readText(path));
     services = StatusConfigReader.filter(config, (args.only ?? "").split(","));
   } catch (error) {
     console.error(
@@ -79,6 +80,8 @@ async function main(): Promise<number> {
   if (args.list) {
     for (const s of services)
       console.log(`${s.name}\t${s.kind}\t${StatusCheck.feedUrl(s)}`);
+    for (const c of config.connections ?? [])
+      console.log(`${c.name}\tconnection\t${c.page ?? "(no page)"}`);
     return 0;
   }
   const now = new Date();
@@ -86,12 +89,25 @@ async function main(): Promise<number> {
     now,
     timeoutMs,
   });
+  const offline =
+    results.every((r) => !r.reached) &&
+    !(await StatusCheck.online(new HttpFetcher(), timeoutMs));
+  const connections = config.connections ?? [];
   console.log(
     args.json
-      ? JSON.stringify({ checkedAt: now.toISOString(), results }, null, 2)
-      : StatusReport.text(results, now),
+      ? JSON.stringify(
+          {
+            checkedAt: now.toISOString(),
+            offline,
+            ...(offline ? { connections } : {}),
+            results,
+          },
+          null,
+          2,
+        )
+      : StatusReport.text(results, now, offline ? { connections } : undefined),
   );
-  return StatusReport.exitCode(results);
+  return StatusReport.exitCode(results, offline);
 }
 
 process.exit(await main());

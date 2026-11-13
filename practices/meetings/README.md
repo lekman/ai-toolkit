@@ -28,10 +28,10 @@ That puts the record in the open, where a recording bot would have been.
 ```mermaid
 flowchart LR
     subgraph mac["Your Mac"]
-        A["meeting audio<br/>mic + speakers"] --> M["Meetily<br/>transcribes locally"]
-        M --> DB[("Meetily database")]
-        DB --> X["export script<br/>prints metadata only"]
-        X --> T["transcript in the<br/>client's vault folder"]
+        A["meeting audio<br/>mic + speakers"] --> M["Samurai Scribe or Meetily<br/>transcribes locally"]
+        M --> DB[("recorder's own store")]
+        DB --> X["metadata only:<br/>export script or list_meetings"]
+        X --> T["transcript stays with the<br/>recorder until a permitted<br/>model reads it"]
     end
     T --> S{"client listed<br/>local only?"}
     S -- no --> H["hosted Claude<br/>writes the note"]
@@ -40,17 +40,21 @@ flowchart LR
     L --> N
 ```
 
-1. **Capture.** [Meetily](https://github.com/Zackriya-Solutions/meetily) (MIT
-   licence) records your microphone and the system audio through a Core Audio
-   tap (macOS 14.2 or later). It works with any meeting tool, and headphones
-   work as they are, AirPods included. A virtual audio driver such as BlackHole
-   is not needed.
-2. **Transcribe.** Meetily transcribes on the Mac. Parakeet is fast and
-   accurate for English. Whisper large-v3-turbo handles Swedish and other
-   languages.
-3. **Export.** The [meeting plugin](../../plugins/meeting/README.md) copies one
-   meeting's transcript into the client's vault folder. The script prints only
-   metadata, so the transcript text does not reach the agent at this step.
+1. **Capture.** Samurai Scribe or
+   [Meetily](https://github.com/Zackriya-Solutions/meetily) (MIT licence)
+   records your microphone and the system audio. Meetily does it through a Core
+   Audio tap (macOS 14.2 or later). Both work with any meeting tool, and
+   headphones work as they are, AirPods included. A virtual audio driver such
+   as BlackHole is not needed.
+2. **Transcribe.** Both transcribe on the Mac. Samurai Scribe labels speakers.
+   For Meetily, Parakeet is fast and accurate for English, and Whisper
+   large-v3-turbo handles Swedish and other languages.
+3. **Export or list.** For Meetily, the
+   [meeting plugin](../../plugins/meeting/README.md) copies one meeting's
+   transcript into the client's vault folder. The script prints only metadata,
+   so the transcript text does not reach the agent at this step. For Samurai
+   Scribe the transcript stays in the app and the agent lists meetings through
+   its MCP server, which returns titles, dates and speaker names.
 4. **Write the note.** The agent reads the transcript and writes summary,
    decisions, actions and open questions, each with the transcript time it came
    from.
@@ -104,6 +108,11 @@ model if the first transcript is poor.
   and later sessions read.
 
 ## Known Limits
+
+Samurai Scribe's MCP server has no setting that withholds transcript text from a
+hosted session. The local-only rule for it rests on the skill's instruction to
+call `list_meetings` and nothing else. For Meetily the export step keeps the
+text out of the session by construction.
 
 Meetily 0.4.1 transcribes the microphone and the system audio into one stream
 without saying which source a line came from. The note says who spoke only

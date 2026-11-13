@@ -1,21 +1,22 @@
 ---
+samurai_id: "{meeting id}"
+samurai_kind: document
+meeting: "[[{meeting folder name}]]"
 date: "{YYYY-MM-DD}"
 client: "{Client}"
 type: meeting
 series: "{recurring meeting name, or leave out}"
 source: "{samurai-scribe or meetily}"
-meeting_id: "{id}"
-audio_delete_by: "{YYYY-MM-DD, Meetily only; leave out for Samurai Scribe}"
 tags: [meeting]
 ---
 
 # {Title}, {D Month YYYY}
 
+Samurai Scribe: Transcript: [[{meeting folder name}/Transcript|full transcript]] · Audio: [[{meeting folder name}/_playback.m4a|playback]] (kept by Samurai Scribe) · Samurai's summary: [[{meeting folder name}/Summary|Summary]] · Notes and screenshots: [[{meeting folder name}/Notes|Notes]]
+
 Meetily: Transcript: [[{transcript file name without .md}|full transcript]] · Audio: [audio.mp4](file://{URL-encoded path to the Meetily audio file}) (on this Mac only, delete by {D Mon YYYY})
 
-Samurai Scribe: Transcript: in Samurai Scribe, meeting id {id}
-
-Keep only the line for the source and delete the other.
+Keep only the line for the source and delete the other. For Samurai Scribe, link only the files the meeting folder holds, and keep the three `samurai_` and `meeting` keys, which the app uses to tie the note to the meeting. For Meetily, drop the three `samurai_` and `meeting` keys, add `meetily_id: "{id}"` and `audio_delete_by: "{YYYY-MM-DD}"`.
 
 {Start to end time with time zone, meeting tool, who hosted, who was expected but absent.}
 

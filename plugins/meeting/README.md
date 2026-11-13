@@ -103,9 +103,9 @@ Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md
 Clients/<Client>/Meetings/Transcripts/<YYYY-MM-DD> <Title> — transcript.md
 ```
 
-The transcript file exists for Meetily only. A Samurai Scribe transcript stays
-in Samurai Scribe, and the note names the meeting id instead of linking a
-file.
+Meetily notes go there. A Samurai Scribe note is `Meeting Note.md` in the
+meeting's own folder in the Samurai Scribe vault, beside `Transcript.md`, and
+links the transcript, audio, summary and notes with wikilinks.
 
 If the note already exists, for example meeting prep written earlier, the
 skill adds a `## Notes from the call` section at the end and leaves the rest

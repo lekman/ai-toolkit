@@ -110,12 +110,23 @@ Segments can run 30 seconds or more, so a time points to the segment, not the
 exact sentence. Name people only when the transcript names
 them. Do not guess who said a line from its content.
 
-Write `$VAULT/Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md` from
+Write the note from
 [`templates/meeting-note.md`](../../templates/meeting-note.md),
-replacing every `{placeholder}`. If that file
-exists (for example, prep notes written before the meeting), add the template's
-sections under a `## Notes from the call` heading at the end and change nothing
-above it.
+replacing every `{placeholder}`.
+
+- **Samurai Scribe:** write `Meeting Note.md` in the meeting's own folder,
+  beside `Transcript.md` (the folder is `Meetings/<YYYY-MM-DD> <Title>` in the
+  Samurai Scribe vault, which `get_meeting` reports). Keep the keys
+  `samurai_id` (the meeting's id), `samurai_kind: document` and `meeting`
+  (a wikilink to the meeting note), because the app uses them to tie the note
+  to the meeting. Take the client from the argument, then from the attendee
+  email domains against the clients in `~/.claude/obsidian.json`, and ask when
+  neither names one.
+- **Meetily:** write `$VAULT/Clients/<Client>/Meetings/<YYYY-MM-DD> <Title>.md`.
+
+If that file exists (for example, prep notes written before the meeting), add
+the template's sections under a `## Notes from the call` heading at the end and
+change nothing above it.
 
 The note has two parts:
 
@@ -146,14 +157,12 @@ Rules for the content:
 - Write nothing the transcript does not support. Transcription mishears names,
   product terms and numbers. Mark anything that looks misheard with `(?)`
   instead of correcting it silently.
-- **Transcript link:** for Meetily, link the exported transcript file. For
-  Samurai Scribe there is no file, so name the meeting id and leave out the
-  link.
-- **Audio link (Meetily only):** link the Meetily audio file with a `file://`
-  URL and set `audio_delete_by` (default: one week after the meeting). Do not
-  copy the audio into the vault. When the file is deleted, replace the link
-  with "Audio deleted on {date}". Leave the audio line and `audio_delete_by`
-  out for Samurai Scribe.
+- **Links:** for Samurai Scribe, link the meeting folder's `Transcript`,
+  `_playback.m4a`, `Summary` and `Notes` with wikilinks, only for files that
+  exist. For Meetily, link the exported transcript file, and link the Meetily
+  audio file with a `file://` URL and set `audio_delete_by` (default: one week
+  after the meeting). Do not copy audio into the vault. When the file is
+  deleted, replace the link with "Audio deleted on {date}".
 - Write each paragraph and each list item on one line. Obsidian shows a line
   break inside a paragraph as a visible break, so wrapped lines read as stray
   breaks.

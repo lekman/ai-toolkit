@@ -31,7 +31,7 @@ Install the plugin: `/plugin install meeting@ai-toolkit`. It reads the vault
 and client map from the obsidian plugin's `~/.claude/obsidian.json`. Then set
 up one of the two recorders.
 
-**Samurai Scribe**
+### Samurai Scribe
 
 1. Install and open the Samurai Scribe app. Grant the permissions macOS asks
    for.
@@ -43,7 +43,7 @@ up one of the two recorders.
 
 3. Start a new session. The Samurai Scribe tools load when a session starts.
 
-**Meetily**
+### Meetily
 
 1. Install Meetily: `brew install --cask meetily`.
 2. Open it once and allow **Microphone** and **System Audio Recording** in
@@ -120,7 +120,7 @@ Mac and the note links to it with a delete-by date.
 
 ## Known Gaps
 
-**Samurai Scribe**
+### Samurai Scribe
 
 - Unnamed speakers appear as `Sys Speaker 2` and similar. The note keeps those
   labels until the transcript or the calendar event names the person. Naming
@@ -131,7 +131,7 @@ Mac and the note links to it with a delete-by date.
 - Where Samurai Scribe keeps audio, and whether deleting a meeting removes
   every copy, has not been checked.
 
-**Meetily**
+### Meetily
 
 - Meetily 0.4.1's database has a `speaker` column (`mic` or `system`), but the
   code paths that save transcript segments do not fill it. A test recording

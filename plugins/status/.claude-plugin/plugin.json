@@ -1,0 +1,5 @@
+{
+  "name": "status",
+  "description": "Check whether the services you depend on are in an outage before retrying or debugging (/status:check): reads the official status feeds of Atlassian Statuspage sites (GitHub, Claude, Cloudflare and many more), Microsoft 365 and Azure, Google Workspace and AWS, plus HTTP probes of your own endpoints, from one services file. A Bun script with no dependencies does the work",
+  "version": "0.1.0"
+}

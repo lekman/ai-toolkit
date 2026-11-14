@@ -111,6 +111,13 @@
       "description": "Meeting notes from meetings recorded and transcribed on your Mac by Samurai Scribe or Meetily: a note in the client's vault folder, a shareable summary with mood and momentum, decisions and actions, an internal record with the evidence, and a per-client rule that only a local model reads the transcript",
       "category": "productivity",
       "tags": ["meetings", "transcription", "notes", "obsidian", "privacy"]
+    },
+    {
+      "name": "status",
+      "source": "./plugins/status",
+      "description": "Check whether the services you depend on are in an outage, from official status feeds (Atlassian Statuspage sites, Microsoft 365 and Azure, Google Workspace, AWS) and HTTP probes of your own endpoints, before retrying or debugging a failing call",
+      "category": "productivity",
+      "tags": ["status", "outage", "incident", "monitoring", "statuspage"]
     }
   ]
 }

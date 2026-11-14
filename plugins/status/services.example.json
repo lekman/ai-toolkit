@@ -1,0 +1,39 @@
+{
+  "services": [
+    {
+      "name": "Microsoft 365",
+      "kind": "microsoft",
+      "feed": "mac"
+    },
+    {
+      "name": "Azure",
+      "kind": "microsoft",
+      "feed": "azure"
+    },
+    {
+      "name": "GitHub",
+      "kind": "statuspage",
+      "url": "https://www.githubstatus.com"
+    },
+    {
+      "name": "Claude",
+      "kind": "statuspage",
+      "url": "https://status.claude.com"
+    },
+    {
+      "name": "Cloudflare",
+      "kind": "statuspage",
+      "url": "https://www.cloudflarestatus.com"
+    },
+    {
+      "name": "Google Workspace",
+      "kind": "google-workspace",
+      "products": ["Gmail", "Google Calendar", "Google Drive"]
+    },
+    {
+      "name": "AWS eu-west-1",
+      "kind": "aws",
+      "regions": ["eu-west-1"]
+    }
+  ]
+}

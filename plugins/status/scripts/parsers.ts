@@ -403,15 +403,24 @@ export class StatusParsers {
   }
 
   private static text(html: null | string | undefined): string {
-    // The result is printed to a terminal, never rendered as HTML. Angle
-    // brackets left after the tags are removed are dropped too, so a nested
-    // tag such as "<scr<b>ipt>" cannot survive as "<script>".
-    return (html ?? "")
-      .replace(/<br\s*\/?>/gi, "  ")
-      .replace(/<\/div>/gi, "  ")
-      .replace(/<[^>]+>/g, "")
-      .replace(/[<>]/g, "")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&");
+    // The result is printed to a terminal, never rendered as HTML. Tags are
+    // removed one character at a time, and a "<" inside a tag starts a new
+    // tag, so a nested tag such as "<scr<b>ipt>" cannot leave "<script>".
+    let out = "";
+    let tag: null | string = null;
+    for (const ch of html ?? "") {
+      if (tag === null) {
+        if (ch === "<") tag = "";
+        else if (ch !== ">") out += ch;
+      } else if (ch === "<") {
+        tag = "";
+      } else if (ch === ">") {
+        if (/^(br|\/div)\b/i.test(tag.trim())) out += "  ";
+        tag = null;
+      } else {
+        tag += ch;
+      }
+    }
+    return out.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
   }
 }

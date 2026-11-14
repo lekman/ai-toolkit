@@ -128,6 +128,20 @@ describe("microsoft", () => {
     ).toBe("unknown");
   });
 
+  test("tags are stripped from the message, nested ones too", () => {
+    const r = StatusParsers.microsoft(
+      json({
+        Message:
+          "<p>Current status:</p><div>Mail&nbsp;is <scr<b>ipt>back</div><br/>Scope of impact: all",
+        Status: "Service degradation",
+        Title: "Mail slow",
+      }),
+      service,
+    );
+    expect(r.summary).toContain("Mail is iptback");
+    expect(r.summary).not.toMatch(/[<>]/);
+  });
+
   test("an interruption is an outage", () => {
     const r = StatusParsers.microsoft(
       json({ Status: "Service interruption", Title: "Mail down" }),

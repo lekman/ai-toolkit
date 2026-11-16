@@ -56,7 +56,7 @@ jobs:
       # so failing loudly here blocks nothing else. The path filters must
       # match the App-only lines in .github/CODEOWNERS.
       - name: Approve Release PR
-        uses: lekman/auto-approve-action@7e3541665721018403435268702d9ae74860ec47 # v1
+        uses: lekman/auto-approve-action@a936b84a6b145980623b78998fca2e6a2a311413 # v1.3.5
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           allowed-authors: app/lekman-release-please-bot

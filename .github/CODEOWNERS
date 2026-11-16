@@ -1,10 +1,18 @@
 # CODEOWNERS for ai-toolkit
+# Each line is a file pattern followed by one or more owners. The last
+# matching line wins.
 
 # Default owner for all files
 * @lekman
 
-# Release-related files owned by the release bot
-/CHANGELOG.md @app/lekman-release-please-bot
-/.github/release-manifest.json @app/lekman-release-please-bot
-/packages/*/CHANGELOG.md @app/lekman-release-please-bot
-/packages/rag/*/CHANGELOG.md @app/lekman-release-please-bot
+# Release-please outputs, owned by the approver App alone. GitHub does not
+# resolve an App as a code owner, so a file whose last matching line names only
+# the App has no code owner, and the App's ordinary approval satisfies the
+# review rule. Do not add a person or team to these lines: a resolvable owner
+# brings the code-owner requirement back and the release pull request waits for
+# a human. The globs match packages added later. The approve workflow's file
+# check is the real control: it approves only when every changed file is one of
+# these.
+**/CHANGELOG.md                  @app/lekman-approver-bot
+packages/**/package.json         @app/lekman-approver-bot
+/.github/release-manifest.json   @app/lekman-approver-bot

@@ -11,7 +11,6 @@ name: Auto Approve Release Please PR
 
 permissions:
   contents: read
-  pull-requests: write
 
 on:
   pull_request:
@@ -19,31 +18,58 @@ on:
 
 jobs:
   auto-approve:
+    name: Approve Release PR
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     # Only pull requests from release-please branches.
     if: startsWith(github.head_ref, 'release-please--')
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # No continue-on-error. In lekman/auto-approve-action that flag let an
-      # expired token report success for three weeks while nothing was being
-      # approved. This job only runs on release-please branches, so failing
-      # loudly here blocks nothing else.
-      - name: Auto approve and merge
-        uses: lekman/auto-approve-action@67402de4e778ed240d3dfe95613da9d337a52dce # v1.3.2
+      # The approver GitHub App, not a personal token: a personal token
+      # expires, and when it did in lekman/auto-approve-action the step
+      # answered 401 for weeks. GitHub refuses a review from the pull
+      # request's author, and release-please runs as the APP_ID app, so the
+      # approval comes from a second app.
+      - name: Generate the approver token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          # Not the App token that opens the pull request: GitHub refuses a
-          # self-approval, so the approver must be a different identity.
-          github-token: ${{ secrets.CODE_OWNER_TOKEN }}
-          # The login the API reports. `gh pr view --json author` prints
-          # "app/lekman-release-please-bot" for the same account, and the
-          # action compares exactly, so the two forms are not interchangeable
-          # until lekman/auto-approve-action#37 lands.
-          allowed-authors: "lekman-release-please-bot[bot]"
+          app-id: ${{ vars.APPROVER_APP_ID }}
+          private-key: ${{ secrets.APPROVER_APP_PRIVATE_KEY }}
+
+      - name: Check the approver is not the author
+        shell: bash
+        env:
+          APPROVER: ${{ steps.app-token.outputs.app-slug }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+          if [ "${APPROVER}[bot]" = "$AUTHOR" ]; then
+            echo "::error title=Auto-Approve::the approving app and the pull request author are both '$AUTHOR'. Set APPROVER_APP_ID and APPROVER_APP_PRIVATE_KEY to a second GitHub App."
+            exit 1
+          fi
+          echo "::notice title=Auto-Approve::approving as ${APPROVER}[bot], author is $AUTHOR"
+
+      # No continue-on-error: this job only runs on release-please branches,
+      # so failing loudly here blocks nothing else. The path filters must
+      # match the App-only lines in .github/CODEOWNERS.
+      - name: Approve Release PR
+        uses: lekman/auto-approve-action@7e3541665721018403435268702d9ae74860ec47 # v1
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          allowed-authors: app/lekman-release-please-bot
           required-labels: "autorelease: pending"
-          label-match-mode: "all"
-          merge-method: "squash"
-          # This is a manifest release across six packages, so a release pull
-          # request touches thirteen files, not four. Globs rather than a
-          # literal list: adding a package should not silently stop approvals.
+          label-match-mode: all
+          merge-method: squash
+          # A manifest release across several packages touches more than four
+          # files. Globs rather than a literal list: adding a package should
+          # not silently stop approvals.
           path-filters: ".github/release-manifest.json,**/CHANGELOG.md,packages/**/package.json"
+
+      - name: Enable auto-merge
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge "$PR_URL" --auto --squash

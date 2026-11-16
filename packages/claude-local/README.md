@@ -52,7 +52,7 @@ them ends the parsing, and everything from there goes to `claude` untouched:
 
 ```bash
 claude-local -p "fix the failing test"
-claude-local --model qwen/qwen3-coder-30b --resume
+claude-local --model qwen/qwen3.8-27b --resume
 claude-local -- --help              # claude's help, not this one
 ```
 
@@ -66,8 +66,8 @@ own `--model`, put it after `--`.
 ◆  What should be installed?
 │  ◼ Core pack
 │     LM Studio and its lms CLI — always installed
-│  ◼ Qwen3-Coder 30B A3B  17 GB
-│     The one you work with. MoE, 3.3B active, ~30 tok/s.
+│  ◼ Qwen3.8 27B  16 GB
+│     The one you work with. Dense 27B, slower per token than MoE.
 │  ◼ Gemma 4 E4B  6 GB
 │     Background model for titles and summaries.
 │  ◻ Gemma 4 26B A4B  16 GB

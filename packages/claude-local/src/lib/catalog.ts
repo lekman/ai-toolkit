@@ -22,13 +22,13 @@ export interface Model {
 
 export const MODELS: Model[] = [
   {
-    key: "qwen/qwen3-coder-30b",
-    label: "Qwen3-Coder 30B A3B",
-    sizeGb: 17,
+    key: "qwen/qwen3.8-27b",
+    label: "Qwen3.8 27B",
+    sizeGb: 16,
     minRamGb: 32,
     role: "main",
     recommended: true,
-    note: "The one you work with. MoE, 3.3B active, ~30 tok/s. Trained for tool calls and file edits.",
+    note: "The one you work with. Dense 27B, so slower per token than the MoE models.",
   },
   {
     key: "google/gemma-4-e4b",

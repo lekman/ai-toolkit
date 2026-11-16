@@ -1,0 +1,108 @@
+{
+  "page": {
+    "id": "tn2dcgpy021r",
+    "name": "FreeAgent",
+    "url": "https://status.freeagent.com",
+    "time_zone": "Europe/London",
+    "updated_at": "2026-11-13T07:39:22.737+00:00"
+  },
+  "components": [
+    {
+      "id": "r4xvb7yysbkb",
+      "name": "FreeAgent Web App",
+      "status": "operational",
+      "created_at": "2017-03-27T14:02:30.711+01:00",
+      "updated_at": "2026-11-04T23:00:07.502+00:00",
+      "position": 1,
+      "description": null,
+      "showcase": false,
+      "start_date": null,
+      "group_id": null,
+      "page_id": "tn2dcgpy021r",
+      "group": false,
+      "only_show_if_degraded": false
+    },
+    {
+      "id": "g31fd9pqr9b3",
+      "name": "iOS app",
+      "status": "operational",
+      "created_at": "2020-03-03T16:02:06.460+00:00",
+      "updated_at": "2026-11-04T23:00:08.199+00:00",
+      "position": 1,
+      "description": "The native iOS mobile application.",
+      "showcase": false,
+      "start_date": null,
+      "group_id": "2n95pnvj93rf",
+      "page_id": "tn2dcgpy021r",
+      "group": false,
+      "only_show_if_degraded": false
+    },
+    {
+      "id": "9mygyb8zwyn4",
+      "name": "API",
+      "status": "operational",
+      "created_at": "2017-03-27T14:02:30.674+01:00",
+      "updated_at": "2026-11-04T23:00:09.117+00:00",
+      "position": 2,
+      "description": null,
+      "showcase": false,
+      "start_date": null,
+      "group_id": null,
+      "page_id": "tn2dcgpy021r",
+      "group": false,
+      "only_show_if_degraded": false
+    },
+    {
+      "id": "qzczcyfs1l8y",
+      "name": "Android app",
+      "status": "operational",
+      "created_at": "2020-03-03T16:03:44.342+00:00",
+      "updated_at": "2026-11-04T23:00:10.277+00:00",
+      "position": 2,
+      "description": "The native Android mobile application.",
+      "showcase": false,
+      "start_date": null,
+      "group_id": "2n95pnvj93rf",
+      "page_id": "tn2dcgpy021r",
+      "group": false,
+      "only_show_if_degraded": false
+    },
+    {
+      "id": "q9n8f87yjc3h",
+      "name": "Website",
+      "status": "operational",
+      "created_at": "2017-03-27T14:03:35.272+01:00",
+      "updated_at": "2025-02-18T16:30:52.501+00:00",
+      "position": 3,
+      "description": null,
+      "showcase": false,
+      "start_date": null,
+      "group_id": null,
+      "page_id": "tn2dcgpy021r",
+      "group": false,
+      "only_show_if_degraded": false
+    },
+    {
+      "id": "2n95pnvj93rf",
+      "name": "Mobile",
+      "status": "operational",
+      "created_at": "2020-03-03T16:02:06.447+00:00",
+      "updated_at": "2020-03-03T16:02:06.447+00:00",
+      "position": 4,
+      "description": null,
+      "showcase": false,
+      "start_date": null,
+      "group_id": null,
+      "page_id": "tn2dcgpy021r",
+      "group": true,
+      "only_show_if_degraded": false,
+      "components": ["g31fd9pqr9b3", "qzczcyfs1l8y"]
+    }
+  ],
+  "incidents": [],
+  "scheduled_maintenances": [],
+  "status": {
+    "indicator": "none",
+    "description": "All Systems Operational"
+  }
+}

@@ -18,6 +18,7 @@ path, or a spec.
 /plugin install share@ai-toolkit
 /plugin install tasks@ai-toolkit
 /plugin install meeting@ai-toolkit
+/plugin install status@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -115,6 +116,13 @@ Then invoke a skill, for example `/git:commit`.
   site. The site groups each set under the Claude Code session that shared it
   and shows when it was shared and when it is removed. See
   [share/README.md](share/README.md).
+- **status**, [check](status/skills/check/SKILL.md): check whether the
+  services you depend on are in an outage before retrying or debugging a
+  failing call. A Bun script with no dependencies reads the official status
+  feeds of Atlassian Statuspage sites (GitHub, Claude, Cloudflare and many
+  more), Microsoft 365 and Azure, Google Workspace and AWS, and probes your
+  own endpoints, from one services file in `~/.config/status`. See
+  [status/README.md](status/README.md).
 - **tone**, [write](tone/skills/write/SKILL.md): the house documentation
   tone for markdown, Word, PDF, and HTML deliverables: plain language, banned
   filler and empty modifiers, UK English, title case headings, and export-safe

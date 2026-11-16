@@ -1,0 +1,9 @@
+{
+  "Id": "fbe622ec-6e30-451e-a1ff-22a3e64711d2",
+  "AuthoredDateTime": "2026-11-13T07:29:09+00:00",
+  "InternalDateTime": "2026-11-13T08:51:53+00:00",
+  "LastUpdatedTime": "2026-11-13T07:29:09+00:00",
+  "Title": "Users may be unable to connect to multiple Microsoft 365 services",
+  "Message": "<div>User impact: Users may be unable to connect to multiple Microsoft 365 services. <div><br></div><div>More info: Features of the Microsoft 365 services below that interact with Exchange Online and email services are impacted. Elements of those services that do not depend on interaction with Exchange Online remain functional.</div><div>&nbsp;</div><div>- Exchange Online: Users may be unable to access their mailbox using Outlook on the web, Outlook desktop (MAPI), Exchange ActiveSync (EAS), or REST-based connections, and email delivery may be delayed.</div><div>Current status: We\u2019re seeing positive results for server stability after applying an upstream authentication/routing configuration component patch to a portion of our infrastructure. We\u2019ll continue to monitor its progress and are working to expand it to servers supporting active regions coming online. &nbsp; </div><div>&nbsp;</div><div>As of now, we are not aware of any malicious activity that is causing this incident. We will continue to treat this incident with urgency and priority until full resolution. Once mitigated, we will provide full details of the root cause, defense-in-depth repair items, and more within a Post-Incident Report.</div><div><br></div><div>Scope of impact: This issue may affect users attempting to access the affected Microsoft 365 services.</div><div><br></div>Next update by: Friday, November 13, 2026, at 8:30 AM UTC<br></div>",
+  "Status": "Service degradation"
+}

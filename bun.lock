@@ -158,12 +158,21 @@
     },
     "packages/vscode-planner": {
       "name": "planner",
-      "version": "0.1.0",
+      "version": "0.5.0",
       "devDependencies": {
         "@types/bun": "^1.3.14",
         "@types/node": "^26.2.0",
         "@types/vscode": "^1.90.0",
         "@vscode/vsce": "^4.0.0",
+        "typescript": "^5.7.0",
+      },
+    },
+    "plugins/status": {
+      "name": "@lekman/status-plugin",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "@types/node": "^26.2.0",
         "typescript": "^5.7.0",
       },
     },
@@ -385,6 +394,8 @@
     "@lekman/rag-core": ["@lekman/rag-core@workspace:packages/rag/core"],
 
     "@lekman/rag-local": ["@lekman/rag-local@workspace:packages/rag/local"],
+
+    "@lekman/status-plugin": ["@lekman/status-plugin@workspace:plugins/status"],
 
     "@lekman/tasks-mcp": ["@lekman/tasks-mcp@workspace:packages/tasks-mcp"],
 

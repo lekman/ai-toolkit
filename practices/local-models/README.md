@@ -51,12 +51,12 @@ Unified memory holds the model weights _and_ the context. macOS caps GPU-wired
 memory at roughly 75% of RAM by default, so on 48 GB the working budget is about
 36 GB. A 4-bit 30B model at 64k context lands near 24 GB, which is comfortable.
 
-| Model               | Key                      | Size   | Notes                                                                                                                                      |
-| ------------------- | ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Qwen3.8 27B         | `qwen/qwen3.8-27b`       | ~16 GB | The default. Dense 27B, so slower per token than the MoE models. |
-| Gemma 4 26B A4B     | `google/gemma-4-26b-a4b` | ~16 GB | Stronger general reasoning, weaker at tool-call discipline. Good second opinion, poor driver.                                              |
-| Gemma 4 31B         | `google/gemma-4-31b`     | ~19 GB | Dense, so higher per-token quality and noticeably slower.                                                                                  |
-| Gemma 4 E4B         | `google/gemma-4-e4b`     | ~6 GB  | Installed as the background model, for titles and summaries. Not for real work.                                                            |
+| Model           | Key                      | Size   | Notes                                                                                         |
+| --------------- | ------------------------ | ------ | --------------------------------------------------------------------------------------------- |
+| Qwen3.8 27B     | `qwen/qwen3.8-27b`       | ~16 GB | The default. Dense 27B, so slower per token than the MoE models.                              |
+| Gemma 4 26B A4B | `google/gemma-4-26b-a4b` | ~16 GB | Stronger general reasoning, weaker at tool-call discipline. Good second opinion, poor driver. |
+| Gemma 4 31B     | `google/gemma-4-31b`     | ~19 GB | Dense, so higher per-token quality and noticeably slower.                                     |
+| Gemma 4 E4B     | `google/gemma-4-e4b`     | ~6 GB  | Installed as the background model, for titles and summaries. Not for real work.               |
 
 Setup pre-checks the first and the last: Qwen3.8 27B as the model you work with,
 Gemma 4 E4B as the background one, ~22 GB together. The other two are unchecked,

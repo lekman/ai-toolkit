@@ -197,7 +197,14 @@ export class AtlasViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
-/** Opens a task's details as a tab in the editor area, one tab per task. */
+/** The tab key of the whole console, opened full width in the editor area. */
+const CONSOLE = "\u0000console";
+
+/**
+ * Tabs in the editor area: a task's details, one tab per task, and the
+ * whole console at full width, where its list and detail sit side by side
+ * and the Map has room.
+ */
 export class AtlasDetailsTabs implements vscode.Disposable {
   private readonly tabs = new Map<string, vscode.WebviewPanel>();
 
@@ -221,14 +228,30 @@ export class AtlasDetailsTabs implements vscode.Disposable {
    * @param ref - The task's ref.
    */
   open(ref: string): void {
+    this.show(ref);
+  }
+
+  /** Show the whole console in an editor tab, in its open tab when it has one. */
+  openConsole(): void {
+    this.show(CONSOLE);
+  }
+
+  private titleOf(key: string): string {
+    return key === CONSOLE
+      ? "Atlas"
+      : Atlas.detailsTitle(this.bridge.worklist(), key);
+  }
+
+  private show(key: string): void {
+    const ref = key;
     const open = this.tabs.get(ref);
     if (open) {
       open.reveal();
       return;
     }
     const tab = vscode.window.createWebviewPanel(
-      "planner.atlasDetails",
-      Atlas.detailsTitle(this.bridge.worklist(), ref),
+      key === CONSOLE ? "planner.atlasConsole" : "planner.atlasDetails",
+      this.titleOf(key),
       vscode.ViewColumn.Active,
       {
         enableScripts: true,
@@ -237,7 +260,9 @@ export class AtlasDetailsTabs implements vscode.Disposable {
         retainContextWhenHidden: true,
       },
     );
-    tab.iconPath = new vscode.ThemeIcon("tasklist");
+    tab.iconPath = new vscode.ThemeIcon(
+      key === CONSOLE ? "compass" : "tasklist",
+    );
     const attached = this.bridge.attach(tab.webview);
     tab.onDidDispose(() => {
       attached.dispose();
@@ -255,11 +280,14 @@ export class AtlasDetailsTabs implements vscode.Disposable {
   private render(ref: string): void {
     const tab = this.tabs.get(ref);
     if (!tab) return;
-    tab.title = Atlas.detailsTitle(this.bridge.worklist(), ref);
-    tab.webview.html = this.bridge.html(this.getState(), tab.webview, {
-      ref,
-      view: "details",
-    });
+    tab.title = this.titleOf(ref);
+    tab.webview.html =
+      ref === CONSOLE
+        ? this.bridge.html(this.getState(), tab.webview)
+        : this.bridge.html(this.getState(), tab.webview, {
+            ref,
+            view: "details",
+          });
   }
 }
 

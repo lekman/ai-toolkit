@@ -5,13 +5,14 @@ the repository you have open.
 
 The sidebar shows one of two things:
 
-- **The Atlas page**, when it can be read. This is the same HTML page the
-  [live dashboard](../../practices/live-dashboard/README.md) Claude artifact
-  is published from, built from the
-  [Atlas sidebar](https://github.com/lekman/atlas) (`apps/sidebar`), so the
-  sidebar matches the artifact: next meeting,
-  worklist with Today, Tomorrow and Backlog, item menus, details, and the
-  tracker and release tabs.
+- **The Atlas page**, when it can be read. This is the Atlas Console, the
+  same HTML page the Claude artifact is published from, built from
+  [Atlas](https://github.com/lekman/atlas) (`apps/sidebar`, `build:console`),
+  so the sidebar matches the artifact: Map, Radar, Missions, Agents, Beam,
+  Shields and Log. `bun run publish:vault` in Atlas copies the build to
+  `_Dashboard Sync/console.html` in the vault. While the vault has no console
+  page, the older Atlas sidebar page, `_Dashboard Sync/sidebar.html`, is shown
+  instead.
 - **Today and Tomorrow panes** otherwise, read from the Obsidian
   `Dashboard.md`, as described under [Today and Tomorrow](#today-and-tomorrow).
 
@@ -36,11 +37,19 @@ the rest apply in every window. The page also gets the base style the
 artifact host adds, so what it hides, such as another client's tabs, stays
 hidden.
 
+### Atlas in an Editor Tab
+
+**Atlas: Open in Editor**, the button on the view's title bar, opens the whole
+console as a tab in the editor area. There it has the width for its list and
+detail side by side, and for the Map. The tab and the sidebar share one data
+store and one dashboard server.
+
 ### Task Details in an Editor Tab
 
-The sidebar is too narrow for a task's details, so VS Code gives the page a
-third capability, `window.claude.use("host")`, which the Claude artifact does
-not have:
+The older sidebar page is too narrow for a task's details, so VS Code gives the
+page a third capability, `window.claude.use("host")`, which the Claude artifact
+does not have. The console does not use it; it shows details in its own
+detail pane:
 
 - `openDetails(ref)` opens the task's details as a tab in the editor area,
   named after the task. Opening the same task again shows its tab.
@@ -139,8 +148,8 @@ repository's `.vscode/settings.json` to pin a repository to specific clients:
 | `planner.pollSeconds`        | `30`          | Fallback re-read interval.                     |
 | `planner.vaultRoot`          | `""`          | Vault path, for links.                         |
 
-An empty `planner.atlasPage` uses `_Dashboard Sync/sidebar.html` in
-the vault. The dashboard server is the `mcpServers` entry the Claude desktop
+An empty `planner.atlasPage` uses `_Dashboard Sync/console.html` in the
+vault, or `_Dashboard Sync/sidebar.html` while the console page is missing. The dashboard server is the `mcpServers` entry the Claude desktop
 app starts for the artifact, read from
 `~/Library/Application Support/Claude/claude_desktop_config.json`. With one
 client resolved for the repository, the Atlas page opens on it; the client
@@ -153,10 +162,12 @@ or `never` to force it.
 
 ## Commands
 
-All of them sit on the view title bar. Over the Atlas page it shows Toggle
-Hidden Files, Refresh and Open Dashboard; the page has its own show-done
-checkbox.
+All of them sit on the view title bar. Over the Atlas page it shows Open in
+Editor, Toggle Hidden Files, Refresh and Open Dashboard; the page has its own
+show-done filter.
 
+- **Atlas: Open in Editor**: the external-link button. Opens the whole console
+  in an editor tab, or shows its tab when it is open.
 - **Hide / Show Completed Tasks**: the eye button. Drops `- [x]` tasks from
   both panes, and drops a client group left with nothing. Writes
   `planner.showCompleted` in your user settings, so it is remembered and

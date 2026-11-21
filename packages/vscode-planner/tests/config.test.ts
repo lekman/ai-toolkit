@@ -162,3 +162,31 @@ describe("vaultRoot", () => {
     ).toBe(null);
   });
 });
+
+describe("the Atlas page", () => {
+  test("defaults to the console page in the vault, with the sidebar page as fallback", () => {
+    const config = Config.resolve(
+      DEFAULTS,
+      SHARED,
+      "/Users/me/Repo/lekman",
+      SHARED_PATH,
+    );
+    expect(config.atlasPagePath).toBe(
+      "/Users/me/Vault/_Dashboard Sync/console.html",
+    );
+    expect(config.atlasFallbackPath).toBe(
+      "/Users/me/Vault/_Dashboard Sync/sidebar.html",
+    );
+  });
+
+  test("a set page has no fallback", () => {
+    const config = Config.resolve(
+      { ...DEFAULTS, atlasPage: "/tmp/page.html" },
+      SHARED,
+      "/Users/me/Repo/lekman",
+      SHARED_PATH,
+    );
+    expect(config.atlasPagePath).toBe("/tmp/page.html");
+    expect(config.atlasFallbackPath).toBeNull();
+  });
+});

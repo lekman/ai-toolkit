@@ -1,8 +1,8 @@
 {
   "name": "planner",
   "displayName": "Atlas",
-  "description": "Sidebar view of the Atlas work dashboard, the same page as the Claude artifact, with a read-only Today and Tomorrow fallback from the Obsidian dashboard.",
-  "version": "0.5.0",
+  "description": "Sidebar view of Atlas, the same Atlas Console page as the Claude artifact, with the whole console in an editor tab and a read-only Today and Tomorrow fallback from the Obsidian dashboard.",
+  "version": "0.6.0",
   "publisher": "lekman",
   "license": "MIT",
   "private": true,
@@ -55,6 +55,11 @@
     },
     "commands": [
       {
+        "command": "planner.openAtlas",
+        "title": "Atlas: Open in Editor",
+        "icon": "$(link-external)"
+      },
+      {
         "command": "planner.refresh",
         "title": "Atlas: Refresh",
         "icon": "$(refresh)"
@@ -101,6 +106,11 @@
       ],
       "view/title": [
         {
+          "command": "planner.openAtlas",
+          "when": "view == planner.atlas",
+          "group": "navigation"
+        },
+        {
           "command": "planner.hideCompleted",
           "when": "(view == planner.today || view == planner.tomorrow) && planner.completedVisible",
           "group": "navigation@1"
@@ -133,7 +143,7 @@
         "planner.atlasPage": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Absolute path to the Atlas page, the HTML the Claude artifact is published from. Leave empty to use `_Dashboard Sync/sidebar.html` in the vault, the build of the Atlas sidebar (github.com/lekman/atlas). When the page cannot be read, the sidebar shows the Today and Tomorrow panes instead."
+          "markdownDescription": "Absolute path to the Atlas page, the HTML the Claude artifact is published from. Leave empty to use `_Dashboard Sync/console.html` in the vault, the Atlas Console build (github.com/lekman/atlas, `bun run publish:vault`), or `_Dashboard Sync/sidebar.html` while the console page is missing. When neither can be read, the sidebar shows the Today and Tomorrow panes instead."
         },
         "planner.atlasServer": {
           "type": "string",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/lekman/ai-toolkit/compare/claude-local@v0.2.3...claude-local@v0.3.0) (2026-11-21)
+
+
+### Features
+
+* **claude-local:** default to Qwen3.8 27B ([#147](https://github.com/lekman/ai-toolkit/issues/147)) ([79fa43a](https://github.com/lekman/ai-toolkit/commit/79fa43ad7bb078ced5e4ad59010837e7172df8df))
+
 ## [0.2.3](https://github.com/lekman/ai-toolkit/compare/claude-local@v0.2.2...claude-local@v0.2.3) (2026-08-18)
 
 

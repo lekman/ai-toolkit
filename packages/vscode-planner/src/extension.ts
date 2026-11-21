@@ -180,7 +180,7 @@ export function activate(context: vscode.ExtensionContext): void {
       atlasServerKey = serverKey;
     }
 
-    const pagePath = config.atlasPagePath;
+    const pagePath = atlasPageFor(config);
     const modified = pagePath ? AtlasFiles.modifiedAt(pagePath) : null;
     const focus = Atlas.focusKey(config.clients);
     const key = JSON.stringify([pagePath, modified, focus, serverKey]);
@@ -232,7 +232,7 @@ export function activate(context: vscode.ExtensionContext): void {
     tomorrow.render();
     reloadAtlas(config, false);
     watch(config.dashboardPath);
-    poll(config.dashboardPath, config.pollSeconds, config.atlasPagePath);
+    poll(config.dashboardPath, config.pollSeconds, atlasPageFor(config));
   };
 
   // The dashboard lives in the vault, outside the workspace, so the watcher is
@@ -320,6 +320,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.registerWebviewViewProvider("planner.atlas", atlasView, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
+    vscode.commands.registerCommand("planner.openAtlas", () =>
+      detailsTabs.openConsole(),
+    ),
     vscode.commands.registerCommand("planner.refresh", () => {
       reload();
       reloadAtlas(Config.load(source), true);
@@ -362,6 +365,22 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   reload();
+}
+
+/**
+ * The page to show: the console page when it exists, else the older sidebar
+ * page, else the console path so the view can say what is missing.
+ */
+function atlasPageFor(config: {
+  atlasFallbackPath: null | string;
+  atlasPagePath: null | string;
+}): null | string {
+  const { atlasFallbackPath, atlasPagePath } = config;
+  if (atlasPagePath && AtlasFiles.modifiedAt(atlasPagePath) !== null)
+    return atlasPagePath;
+  if (atlasFallbackPath && AtlasFiles.modifiedAt(atlasFallbackPath) !== null)
+    return atlasFallbackPath;
+  return atlasPagePath;
 }
 
 /** Called by VS Code on shutdown. Disposables are handled by the context. */

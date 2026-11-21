@@ -10,6 +10,8 @@ export interface PlannerConfig {
    * null when neither the setting nor the vault gives one.
    */
   atlasPagePath: null | string;
+  /** The older sidebar page, read when `atlasPagePath` is missing; null when the page is set. */
+  atlasFallbackPath: null | string;
   /** Key of the local dashboard server under `mcpServers` in the Claude desktop config. */
   atlasServer: string;
   /** Client headings to show. Empty means show every client. */

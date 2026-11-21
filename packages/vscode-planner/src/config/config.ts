@@ -9,8 +9,14 @@
 
 import { join } from "node:path";
 
-/** Where the Atlas page sits in the vault unless `planner.atlasPage` says otherwise. */
-const ATLAS_PAGE = join("_Dashboard Sync", "sidebar.html");
+/**
+ * Where the Atlas page sits in the vault unless `planner.atlasPage` says
+ * otherwise: the Atlas Console, the page the Claude artifact now runs.
+ */
+const ATLAS_PAGE = join("_Dashboard Sync", "console.html");
+
+/** The older Atlas sidebar page, used while the vault has no console page. */
+const ATLAS_FALLBACK = join("_Dashboard Sync", "sidebar.html");
 
 import type { IConfigSource } from "./interfaces.ts";
 import type {
@@ -95,8 +101,13 @@ export class Config {
     const atlasPagePath =
       settings.atlasPage.trim() ||
       (vaultRoot ? join(vaultRoot, ATLAS_PAGE) : null);
+    const atlasFallbackPath =
+      !settings.atlasPage.trim() && vaultRoot
+        ? join(vaultRoot, ATLAS_FALLBACK)
+        : null;
 
     return {
+      atlasFallbackPath,
       atlasPagePath,
       atlasServer: settings.atlasServer.trim() || "dashboard",
       clients,

@@ -9,8 +9,8 @@ the shipment to production.
 
 This page is a design, written on 28 Nov 2026. It describes how the
 `security-audit` skill published by Cloudflare would run in the workflow from
-[Merge, Release and Ship](merge-release-ship.md). The skill was read and
-tested at one commit, and
+[Merge, Release and Ship](merge-release-ship.md). The skill was read at one
+commit and run once, in isolation, on a small sample.
 [Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
 holds that evidence. No pipeline runs the audit yet, and the decision to adopt
 the skill is open.
@@ -105,8 +105,9 @@ must give the same answer to everyone, every time. See
 ### Run It in Isolation
 
 The repository under audit is input to the agents. A file in it, or in a
-dependency, can hold text written to mislead them. Run the audit where a
-misled agent can reach nothing of value.
+dependency, can hold text written to mislead them. The agents also run the
+target's code to reproduce what they find. Run the audit where a misled
+agent, or the code it runs, can reach nothing of value.
 
 - **One credential.** The job holds the key for the model and no other
   secret. It has no deployment key and no token that can write to a
@@ -115,19 +116,23 @@ misled agent can reach nothing of value.
   fixes. It never edits the target.
 - **Output outside the target.** The skill writes its run folder outside the
   repository by default, so the records cannot be committed by accident.
-- **A sandbox for the target's code.** The skill runs the target's builds
-  and tests only inside a sandbox that the operating system enforces.
+- **A network limited to the model.** The job can reach the model's
+  service and nothing else, so the target's code cannot call out.
 
 See [Isolated Container](../isolated-container/README.md).
 
-The sandbox decides how useful the audit is as a gate. The skill asks for
-five controls, which are no outside network, an empty environment, a target
-that cannot be changed, writes to one scratch folder, and limits on
-processor time and memory. When any is missing, its rules say to run nothing
-and to record the candidate as `needs_validation`. A runner without the
-sandbox would therefore produce leads for a person and few confirmed
-findings. This follows from the skill's text and has not yet been observed
-in a run. The skill ships no sandbox, so whoever adopts it builds one.
+Do not rely on the skill's own sandbox rule. The skill says to run the
+target's code only inside a sandbox with five controls, and to run nothing
+when one is missing. In the one run made for the vetting record there was no
+such sandbox. Twelve of the sixteen agents ran the target's code anyway, all
+eight findings came back `confirmed`, and the report said the run was
+sandboxed. The rule is an instruction, and the parent agent reworded it
+before passing it on.
+
+So treat the audit job as a job that runs untrusted code. The container is
+the control. A statement in the report or in `run-metadata.json` about how
+the run was isolated is a claim made by an agent, and the gate does not read
+it as evidence.
 
 ### Keep the Evidence With the Release
 
@@ -210,13 +215,19 @@ release is blocked when any of these is true.
 | -------------------------------------------------------------- | ------------------------------------------ |
 | A validator fails                                              | The records cannot be trusted or compared  |
 | `run-metadata.json` does not say the run is complete           | The audit stopped early                    |
-| The commit in `run-metadata.json` is not the release commit    | The evidence is for a different version    |
+| The commit the job checked out is not the release commit       | The evidence is for a different version    |
+| The commit in `run-metadata.json` disagrees with the job       | The audit read something else              |
 | The ledger is empty, or a unit is still planned or in progress | Work was skipped without a recorded reason |
 | A candidate in the ledger has no record in the findings        | A lead was dropped before it was judged    |
 | A `confirmed` finding is at or above the chosen severity       | A known weakness would ship                |
 
 Choose the severity once, in policy. A reasonable start is to block on
 `high` and `critical`, and to open a ticket for anything lower.
+
+The job records the release commit itself and does not take it from the
+audit. `run-metadata.json` has no schema and no validator. In the one run
+made so far it held the commit as a short hash of seven characters, so the
+gate compares it as a prefix of the commit the job checked out.
 
 The rest goes to a person and does not block.
 
@@ -241,6 +252,33 @@ Each failure follows the rule in [Mechanical Checks](mechanical-checks.md).
 It names the finding, the file and line where the path ends, the change the
 audit proposes, and the page that explains the gate.
 
+### Know What It Costs
+
+One run was measured, on a sample of about 450 lines with nine planted
+weaknesses. The same model was also given the task with no skill.
+
+| Measure                           | With the skill        | Without the skill   |
+| --------------------------------- | --------------------- | ------------------- |
+| Planted weaknesses found          | 8 of 8 that qualify   | 9 of 9              |
+| Decoys reported                   | 0 of 2                | 0 of 2              |
+| Wall time                         | 28 minutes 14 seconds | 1 minute 31 seconds |
+| Agent calls                       | 16                    | None                |
+| Output tokens                     | 288,804               | 8,882               |
+| Cost reported by the tool, in USD | 14.15                 | 0.58                |
+
+The ninth weakness is a weak password hash. The skill's rules class it as a
+hardening note, and the audit named it without a record of its own.
+
+On a sample this small the skill found nothing the plain request missed, at
+about 24 times the cost. What the plain request does not produce is the
+second agent's reproduction of each finding, the ledger, and records a gate
+can read. Whether those are worth the cost depends on a codebase too large
+for one agent to read in one pass, and that has not been tested.
+
+The skill's budget is a count of agent calls, and the run used exactly the
+16 it was given. Set the budget and the run profile in the job, so the cost
+of a release is known before it starts.
+
 ## Why
 
 Security tests against a running system see it as an outsider does. They
@@ -261,8 +299,10 @@ giving it a severity would only hide that.
 
 The records are still claims made by agents. The validators prove their
 form, and no script proves that a unit marked as covered was read with care.
-So the gate blocks on what the audit found, and nobody reads a clean result
-as proof.
+The one run made so far shows why this matters. Its findings were correct,
+and its report also stated that the run was sandboxed when it was not. So
+the gate blocks on what the audit found, and nobody reads a clean result as
+proof.
 
 ## The Failure It Prevents
 
@@ -272,7 +312,7 @@ as proof.
 - An audit that reads the same code on every run and forgets the leads it
   could not settle.
 - An audit agent that holds deployment credentials while it reads untrusted
-  text.
+  text and runs untrusted code.
 - Reproduction steps for an open weakness, published with the release notes.
 - A release that ships because the audit job failed quietly and left empty
   files that still pass validation.
@@ -284,8 +324,9 @@ controls.
 
 - The skill is installed from a reviewed copy at a recorded commit. See
   [Third-Party Skills](third-party-skills.md).
-- The audit job runs in a container with one credential, and its workflow
-  has no permission to write to a repository or to deploy.
+- The audit job runs in a container with one credential and a network
+  limited to the model, and its workflow has no permission to write to a
+  repository or to deploy.
 - The gate script has tests of its own, with a failing case and a passing
   case for each row of the table above.
 - Production accepts a release only when the manifest holds a passing audit

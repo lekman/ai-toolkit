@@ -76,7 +76,8 @@ A release is a fixed thing that can be shipped at any time.
   qualified, they go to a registry that users cannot install from.
 - **A manifest lists every part.** It names each package, image and
   infrastructure component at its exact version. It is the bill of
-  materials for the whole release, and the record of what ran where.
+  materials for the whole release. It says what a version holds, and the
+  record of each deployment says where and when that version ran.
 
 Publishing where users can install is shipping. A package on a public
 registry reaches its users at once, before any test in staging has run. A

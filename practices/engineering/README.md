@@ -71,11 +71,16 @@ reviews its own work.
 - [Merge, Release and Ship](merge-release-ship.md) keeps the three events
   apart, so a merge can be automatic and the heavy testing happens where
   the software runs.
+- [Source Security Audit](source-security-audit.md) has agents audit the
+  source of each release commit, keeps the records with the release, and
+  blocks production on a confirmed finding.
 - [Skill Feedback](skill-feedback.md) corrects a skill when it fails, logs
   outcomes over time, and uses a failure analysis to decide what to change.
 - [Third-Party Skills](third-party-skills.md) queues a skill someone else
   wrote, reads it, runs it in isolation and evaluates the result before it is
   installed.
+- [Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
+  is one skill taken through those steps, as a worked example.
 
 ## Four Rules Behind Every Page
 

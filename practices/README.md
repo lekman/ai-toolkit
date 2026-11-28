@@ -146,11 +146,16 @@ machine runs.
 - [Merge, Release and Ship](engineering/merge-release-ship.md): continuous
   integration, delivery and deployment as three separate events, with
   qualification and security tests on every release.
+- [Source Security Audit](engineering/source-security-audit.md): agents
+  audit the source of each release commit, the records stay with the
+  release, and a confirmed finding blocks production.
 - [Skill Feedback](engineering/skill-feedback.md): correct a skill when it
   fails, log every outcome, and rank the failures before deciding what to
   change.
 - [Third-Party Skills](engineering/third-party-skills.md): queue, read,
   isolate and evaluate a skill someone else wrote before installing it.
+- [Vetting Record for the Security Audit Skill](engineering/security-audit-skill-vetting.md):
+  one skill taken through those steps, as a worked example.
 
 ## An Agent-Operated Notes Vault
 

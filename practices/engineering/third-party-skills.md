@@ -88,6 +88,10 @@ Give the skill a task whose correct answer you already know.
 Review again before taking an update. The version you approved is the only
 one you have evidence for.
 
+[Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
+is one skill taken through these steps, with what was verified and what was
+not.
+
 ## Why
 
 A skill reaches further than a library. A library runs when your code calls

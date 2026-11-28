@@ -46,6 +46,19 @@ same repository. Give each subagent its own.
 Split the work so that no two subagents edit the same files. Work that cannot
 be split that way is one task and belongs to one agent.
 
+### Follow Up What You Start
+
+The session that starts another session or a subagent owns it until its work
+has landed. Most tools wake the starting session when a piece of work
+reports back. None wakes it while that work sits idle, so a finished change
+can wait for hours with no commit and no pull request.
+
+Give the starting session a check-in on a clock, such as every 20 minutes.
+At each one it lists what it started and sorts each piece as working, done,
+waiting on a person or idle. It nudges an idle piece that still has work to
+do, and it tells a person after three nudges with no progress. The check-in
+ends when nothing is left open.
+
 ### Deliver Reviewable Pieces
 
 Ten subagents must not produce ten unrelated pull requests for one feature.
@@ -139,6 +152,8 @@ review time per pull request in your own work before and after.
   changes they describe.
 - A pull request too large to read, approved unread.
 - Two agents editing the same file and one silently losing its work.
+- A finished piece of work that sits uncommitted for hours, because the
+  session that asked for it never looked again.
 
 ## How It Is Enforced
 
@@ -155,3 +170,7 @@ review time per pull request in your own work before and after.
   worktree is a sandbox or the file permissions.
 - [Orchestrator and Subagents](../orchestrator-subagent.md) adds separate
   credentials for planning and for code.
+- The [Sessions](../../standards/SESSIONS.md) standard tells a session to
+  schedule the check-in when it starts another one. The schedule fires by
+  itself. Acting on it is an instruction the agent follows, and no check
+  enforces it.

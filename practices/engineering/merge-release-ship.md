@@ -31,7 +31,8 @@ puts nothing in front of a user.
 4. **Qualify.** Automated tests show that the release is installed as
    specified, works as specified, and is fit for the use it is intended for.
 5. **Security tests.** Scans and penetration tests run against the deployed
-   system, on every release.
+   system, on every release. A source audit of the release commit runs
+   beside them.
 6. **Ship to production.** The same release, with its evidence attached, is
    applied to production. A policy decides this, or a person where the risk
    calls for one.
@@ -118,6 +119,7 @@ what the version holds.
 | Performance qualification  | The system does its job under real conditions          | End to end runs with realistic data and load |
 | Intended use               | A user can reach the outcome the system exists for     | Journeys recorded step by step, with results |
 | Security scan              | No known weakness in dependencies, images or config    | Scan reports for this exact version          |
+| Source security audit      | No confirmed weakness is open in the code              | Findings and a ledger for this exact commit  |
 | Penetration test           | An attacker cannot get in by the paths that were tried | Each attempt, its result and what was fixed  |
 
 The scenarios written for the specification are the source of the
@@ -136,6 +138,13 @@ Automation and agents change the cost. A penetration test that an agent runs
 against staging can run on every release, or every night. A weakness can then
 be found in the version that introduced it, while the change is small and its
 author remembers it.
+
+A penetration test sees the system as an outsider does. A source audit
+reads the code of the release commit, so it finds the missing check on a
+path nobody thought to try. It needs no running system, so it starts as soon
+as the release names a commit, and its verdict joins the other security
+results at the production gate. See
+[Source Security Audit](source-security-audit.md).
 
 Keep the independent specialist test where a standard or a customer asks for
 one. It no longer carries the whole load. It starts from a system that was

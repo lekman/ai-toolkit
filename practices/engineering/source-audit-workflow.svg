@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 426" role="img" aria-labelledby="sa-title sa-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="sa-title">The workflow of a source security audit on a release</title>
+  <desc id="sa-desc">Six steps. 1, release commit: one repository at the commit the release was cut from. 2, restore earlier runs: the ledger and findings from a private evidence store. 3, audit in isolation: hunter and verifier agents, with no credential worth taking. 4, validate and gate: scripts check the records and block on a confirmed finding. 5, store the evidence: the records are kept privately, with a digest in the manifest. 6, triage the leads: a person resolves each lead that needs validation. A dashed arrow from step 5 back to step 2 shows that the next run reads the stored records.</desc>
+  <style>
+    .box { stroke-width: 2; }
+    .ttl { font-size: 20px; font-weight: 700; fill: #1f2328; }
+    .dsc { font-size: 15px; fill: #32383f; }
+    .tag { font-size: 12.5px; font-weight: 700; letter-spacing: 1.2px; }
+    .num { font-size: 14px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+    .lbl { font-size: 14px; font-weight: 600; fill: #6f7780; }
+    .arw { stroke: #6f7780; stroke-width: 2.5; fill: none; }
+    .opt { stroke-dasharray: 7 5; }
+    .head { fill: #6f7780; }
+
+    .person .box { fill: #ddf4ff; stroke: #0969da; }
+    .person .tag { fill: #0550ae; }
+    .person .dot { fill: #0969da; }
+    .agent .box { fill: #fff8c5; stroke: #9a6700; }
+    .agent .tag { fill: #7d4e00; }
+    .agent .dot { fill: #9a6700; }
+    .machine .box { fill: #dafbe1; stroke: #1a7f37; }
+    .machine .tag { fill: #116329; }
+    .machine .dot { fill: #1a7f37; }
+
+    @media (prefers-color-scheme: dark) {
+      .ttl { fill: #f0f6fc; }
+      .dsc { fill: #d1d9e0; }
+      .num { fill: #0d1117; }
+      .lbl { fill: #9198a1; }
+      .arw { stroke: #9198a1; }
+      .head { fill: #9198a1; }
+      .person .box { fill: #121d2f; stroke: #4493f8; }
+      .person .tag { fill: #79c0ff; }
+      .person .dot { fill: #4493f8; }
+      .agent .box { fill: #2a2111; stroke: #d29922; }
+      .agent .tag { fill: #e3b341; }
+      .agent .dot { fill: #d29922; }
+      .machine .box { fill: #12261e; stroke: #3fb950; }
+      .machine .tag { fill: #56d364; }
+      .machine .dot { fill: #3fb950; }
+    }
+  </style>
+  <defs>
+    <marker id="sa-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="head" d="M0 0 10 5 0 10z"/>
+    </marker>
+  </defs>
+
+  <!-- Row one, left to right -->
+  <g class="machine" transform="translate(30 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">1</text>
+    <text class="tag" x="54" y="32">MACHINE</text>
+    <text class="ttl" x="18" y="68">Release commit</text>
+    <text class="dsc" x="18" y="91">One repository at the commit</text>
+    <text class="dsc" x="18" y="110">the release was cut from</text>
+  </g>
+  <path class="arw" d="M284 86H319" marker-end="url(#sa-head)"/>
+
+  <g class="machine" transform="translate(325 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">2</text>
+    <text class="tag" x="54" y="32">MACHINE</text>
+    <text class="ttl" x="18" y="68">Restore earlier runs</text>
+    <text class="dsc" x="18" y="91">The ledger and findings from</text>
+    <text class="dsc" x="18" y="110">a private evidence store</text>
+  </g>
+  <path class="arw" d="M579 86H614" marker-end="url(#sa-head)"/>
+
+  <g class="agent" transform="translate(620 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">3</text>
+    <text class="tag" x="54" y="32">AGENT</text>
+    <text class="ttl" x="18" y="68">Audit in isolation</text>
+    <text class="dsc" x="18" y="91">Hunters and verifiers, with</text>
+    <text class="dsc" x="18" y="110">no credential worth taking</text>
+  </g>
+  <path class="arw" d="M745 152V230" marker-end="url(#sa-head)"/>
+
+  <!-- Row two, right to left -->
+  <g class="machine" transform="translate(620 236)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">4</text>
+    <text class="tag" x="54" y="32">MACHINE</text>
+    <text class="ttl" x="18" y="68">Validate and gate</text>
+    <text class="dsc" x="18" y="91">Scripts check the records</text>
+    <text class="dsc" x="18" y="110">and block on a confirmed one</text>
+  </g>
+  <path class="arw" d="M616 298H581" marker-end="url(#sa-head)"/>
+
+  <g class="machine" transform="translate(325 236)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">5</text>
+    <text class="tag" x="54" y="32">MACHINE</text>
+    <text class="ttl" x="18" y="68">Store the evidence</text>
+    <text class="dsc" x="18" y="91">Records kept privately, and</text>
+    <text class="dsc" x="18" y="110">a digest in the manifest</text>
+  </g>
+  <path class="arw" d="M321 298H286" marker-end="url(#sa-head)"/>
+
+  <g class="person" transform="translate(30 236)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">6</text>
+    <text class="tag" x="54" y="32">PERSON</text>
+    <text class="ttl" x="18" y="68">Triage the leads</text>
+    <text class="dsc" x="18" y="91">A person resolves each lead</text>
+    <text class="dsc" x="18" y="110">that needs validation</text>
+  </g>
+
+  <!-- Feedback: the stored records are input to the next run -->
+  <path class="arw opt" d="M450 232V154" marker-end="url(#sa-head)"/>
+  <text class="lbl" x="462" y="198">read by the next run</text>
+
+  <!-- Legend -->
+  <g class="person" transform="translate(30 392)">
+    <rect class="box" width="18" height="18" rx="4"/>
+    <text class="lbl" x="28" y="14">Person sets goals and rules</text>
+  </g>
+  <g class="agent" transform="translate(325 392)">
+    <rect class="box" width="18" height="18" rx="4"/>
+    <text class="lbl" x="28" y="14">Agent builds and reviews</text>
+  </g>
+  <g class="machine" transform="translate(620 392)">
+    <rect class="box" width="18" height="18" rx="4"/>
+    <text class="lbl" x="28" y="14">Machine proves the result</text>
+  </g>
+</svg>

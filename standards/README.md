@@ -23,6 +23,9 @@ tune in isolation.
 - **[PULL_REQUESTS.md](PULL_REQUESTS.md)**: turn on Auto-fix for every pull
   request it opens, so CI failures and review comments come back to the session,
   and stop after two review rounds.
+- **[SESSIONS.md](SESSIONS.md)**: follow up every session or subagent it
+  starts, with a scheduled check-in that nudges one that has gone idle with
+  its work unfinished.
 
 [CLAUDE.md](CLAUDE.md) is the entry point: it does nothing but `@`-import the
 files above, and the [sharing rule](../rules/sharing.md) (share documents, sites

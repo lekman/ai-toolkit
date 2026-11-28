@@ -118,6 +118,13 @@
       "description": "Check whether the services you depend on are in an outage, from official status feeds (Atlassian Statuspage sites, Microsoft 365 and Azure, Google Workspace, AWS) and HTTP probes of your own endpoints, before retrying or debugging a failing call",
       "category": "productivity",
       "tags": ["status", "outage", "incident", "monitoring", "statuspage"]
+    },
+    {
+      "name": "skill-feedback",
+      "source": "./plugins/skill-feedback",
+      "description": "Skill outcome logging: one entry per skill run in a local log with a private artifact database as the shared copy, and a failure mode review that scores severity, occurrence and detection, ranks by risk priority number and proposes changes without applying them",
+      "category": "workflow",
+      "tags": ["skills", "feedback", "fmea", "logging", "quality"]
     }
   ]
 }

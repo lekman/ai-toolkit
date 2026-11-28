@@ -18,6 +18,31 @@ and say once that CI is not being watched.
 This covers pull requests you open, not ones you find. Turn Auto-fix on for
 someone else's pull request only when I ask.
 
+## Turn On Auto-merge in My Private Repositories
+
+**AFTER** you open a pull request in a private repository that my own account
+owns, turn on auto-merge with squash in the same turn. Do not ask first, and do
+not leave a pull request open for me once it is ready.
+
+These repositories need no approving review. Their rulesets require the checks
+to pass and every review thread to be resolved, and GitHub merges the pull
+request when both are true. Where a review bot reports a check, that check is
+required too, so the merge waits until the review finishes or is skipped.
+
+In the Claude desktop app, call `set_auto_merge` from the `ccd_pr` tools with
+the pull request's URL. Elsewhere, run `gh pr merge <number> --auto --squash`.
+GitHub refuses auto-merge on a pull request that already meets every rule.
+Merge that one directly with `gh pr merge <number> --squash`.
+
+Check the repository before you rely on this rule.
+`gh repo view --json isPrivate,owner` shows whether it is private and who owns
+it. The rule applies when the owner is my personal account. A public
+repository, an organisation's repository and a client's repository keep their
+own merge rules.
+
+This covers pull requests you open. Merge someone else's pull request only when
+I ask.
+
 ## Stop After Two Review Rounds
 
 **NEVER** let a reviewer and Auto-fix answer each other without a limit. A

@@ -194,13 +194,13 @@ terms of [Always-On Agents](../../practices/always-on/README.md), `deliver.ts`
 is the reader of the event inbox, and `no-ask.ts` is the part of permissions
 that sends a question to a person.
 
-| Hook               | Script                             | Does                                                                                  |
-| ------------------ | ---------------------------------- | ------------------------------------------------------------------------------------- |
-| `PreToolUse`       | [no-ask.ts](scripts/no-ask.ts)     | Turns `AskUserQuestion` into an Atlas question, then refuses the call and says why    |
-| `SessionStart`     | [deliver.ts](scripts/deliver.ts)   | Adds new messages for this session as context                                         |
-| `UserPromptSubmit` | [deliver.ts](scripts/deliver.ts)   | The same, beside the prompt                                                           |
-| `Stop`             | [deliver.ts](scripts/deliver.ts)   | Blocks the stop with new messages as its reason, so the agent reads them and goes on  |
-| `Stop`, background | `deliver.ts watch` (`asyncRewake`) | Waits up to 55 minutes while the session is idle, and wakes it when a message arrives |
+| Hook               | Script                             | Does                                                                                        |
+| ------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| `PreToolUse`       | [no-ask.ts](scripts/no-ask.ts)     | Turns `AskUserQuestion` into an Atlas question, then refuses the call and says why          |
+| `SessionStart`     | [deliver.ts](scripts/deliver.ts)   | Adds new messages for this session as context                                               |
+| `UserPromptSubmit` | [deliver.ts](scripts/deliver.ts)   | The same, beside the prompt                                                                 |
+| `Stop`             | [deliver.ts](scripts/deliver.ts)   | Blocks the stop with new messages as its reason, so the agent reads them and goes on        |
+| `Stop`, background | `deliver.ts watch` (`asyncRewake`) | Waits while the session is idle, 55 minutes by default, and wakes it when a message arrives |
 
 The refusal says the call was automated, names the Atlas question and the
 [ask](skills/ask/SKILL.md) skill, and tells the agent to keep working. The

@@ -178,6 +178,13 @@ folders itself.
 3. After the gate, copy the new folder to the store.
 4. Never change a stored folder. Each run is a record of its own commit.
 
+Run one audit at a time for each repository. A nightly run and a release
+run that overlap would both copy the same earlier folders, and the skill
+would give both the same next number. Put the audit jobs for one repository
+in a queue, so the second starts after the first has stored its folder. The
+store also refuses a folder whose number it already holds, and the job
+fails when that happens. It never overwrites or merges.
+
 The ledger from an older commit is still valid input. The skill compares
 each earlier unit with the current source and does not trust the earlier
 commit to tell it what changed.
@@ -276,8 +283,11 @@ can read. Whether those are worth the cost depends on a codebase too large
 for one agent to read in one pass, and that has not been tested.
 
 The skill's budget is a count of agent calls, and the run used exactly the
-16 it was given. Set the budget and the run profile in the job, so the cost
-of a release is known before it starts.
+16 it was given. The budget limits the calls and does not limit the tokens
+each call uses, so two runs with the same budget can cost different amounts.
+Set the budget and the run profile in the job, and give the job a time limit
+and a spending limit of its own. Record what each run used, so the expected
+cost of a release comes from measured runs.
 
 ## Why
 

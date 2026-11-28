@@ -19,7 +19,7 @@ would run.
 | ---------------- | ------------------------------------------------------------------- |
 | Queue it         | Done. One commit is recorded below                                  |
 | Read it          | Done. All 22 files in the repository were read                      |
-| Run in isolation | Done. The validator tests ran, and one audit ran                    |
+| Run in isolation | Done, with one exception. The container held a model sign-in        |
 | Evaluate         | Done, on one small sample                                           |
 | Decide           | Decided for now. A second pilot on a real codebase, and no gate yet |
 
@@ -187,6 +187,14 @@ One audit ran, and the same task ran once without the skill.
 The container was not given a nested sandbox, and its network was open, as
 the model needs it. The five controls the skill asks for were therefore not
 available inside it.
+
+The practice asks for a container with no real credentials. This run had
+one, because an agent cannot run without a way to reach a model. The
+sign-in was made for the container and is kept apart from the one on the
+host, so it was the only thing a misled agent could have taken. Two ways
+remove even that. One is a model on the same machine, as in
+[Local Models](../local-models/README.md). The other is a key made for one
+run and revoked when the run ends.
 
 <details>
 <summary>The planted weaknesses and decoys</summary>

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 368" role="img" aria-labelledby="nt-title nt-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="nt-title">What reads the vault and the task database</title>
+  <desc id="nt-desc">Two sources and two readers. The Obsidian vault holds plans, Details pages and meeting notes. Its notes go into the RAG index as they change, where any agent session searches them by meaning. The task database holds tasks, claims, logs and history. Atlas reads the tasks through the tasks server, and reads each task's Details page from the vault by the task's detailsId. Atlas shows your day, your agents and what waits for you.</desc>
+  <style>
+    .box { stroke-width: 2; }
+    .ttl { font-size: 20px; font-weight: 700; fill: #1f2328; }
+    .dsc { font-size: 15px; fill: #32383f; }
+    .tag { font-size: 12.5px; font-weight: 700; letter-spacing: 1.2px; }
+    .lbl { font-size: 14px; font-weight: 600; fill: #6f7780; }
+    .mid { text-anchor: middle; }
+    .arw { stroke: #6f7780; stroke-width: 2.5; fill: none; }
+    .head { fill: #6f7780; }
+
+    .g1 .box { fill: #ddf4ff; stroke: #0969da; }
+    .g1 .tag { fill: #0550ae; }
+    .g2 .box { fill: #fff8c5; stroke: #9a6700; }
+    .g2 .tag { fill: #7d4e00; }
+    .g3 .box { fill: #dafbe1; stroke: #1a7f37; }
+    .g3 .tag { fill: #116329; }
+
+    @media (prefers-color-scheme: dark) {
+      .ttl { fill: #f0f6fc; }
+      .dsc { fill: #d1d9e0; }
+      .lbl { fill: #9198a1; }
+      .arw { stroke: #9198a1; }
+      .head { fill: #9198a1; }
+      .g1 .box { fill: #121d2f; stroke: #4493f8; }
+      .g1 .tag { fill: #79c0ff; }
+      .g2 .box { fill: #2a2111; stroke: #d29922; }
+      .g2 .tag { fill: #e3b341; }
+      .g3 .box { fill: #12261e; stroke: #3fb950; }
+      .g3 .tag { fill: #56d364; }
+    }
+  </style>
+  <defs>
+    <marker id="nt-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="head" d="M0 0 10 5 0 10z"/>
+    </marker>
+  </defs>
+  <g class="g1" transform="translate(30 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">NOTES</text>
+    <text class="ttl" x="18" y="68">Obsidian vault</text>
+    <text class="dsc" x="18" y="91">Plans, Details pages</text>
+    <text class="dsc" x="18" y="110">and meeting notes</text>
+  </g>
+  <text class="lbl mid" x="450" y="50">Notes, as they change</text>
+  <path class="arw" d="M284 62H614" marker-end="url(#nt-head)"/>
+  <g class="g1" transform="translate(620 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">INDEXED</text>
+    <text class="ttl" x="18" y="68">RAG index</text>
+    <text class="dsc" x="18" y="91">Searched by meaning</text>
+    <text class="dsc" x="18" y="110">by any agent session</text>
+  </g>
+  <text class="lbl" x="476" y="178">Details page, by detailsId</text>
+  <path class="arw" d="M284 116H460V190H745V214" marker-end="url(#nt-head)"/>
+  <g class="g2" transform="translate(30 220)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">WORK ITEMS</text>
+    <text class="ttl" x="18" y="68">Task database</text>
+    <text class="dsc" x="18" y="91">Tasks, claims, logs</text>
+    <text class="dsc" x="18" y="110">and history</text>
+  </g>
+  <text class="lbl mid" x="450" y="270">Through the tasks server</text>
+  <path class="arw" d="M284 282H614" marker-end="url(#nt-head)"/>
+  <g class="g3" transform="translate(620 220)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">VIEW</text>
+    <text class="ttl" x="18" y="68">Atlas</text>
+    <text class="dsc" x="18" y="91">Your day, your agents</text>
+    <text class="dsc" x="18" y="110">and what waits for you</text>
+  </g>
+</svg>

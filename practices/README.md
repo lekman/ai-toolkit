@@ -160,16 +160,18 @@ machine runs.
 ## An Agent-Operated Notes Vault
 
 Where the working notes live and how an agent maintains them. Obsidian holds
-the markdown; Claude Code runs inside the vault (via the ObsidiBot plugin)
-and does the filing, the daily plan and the recurring documents. The value is
-written conventions, not plugins: a frontmatter schema, one folder and one
-dashboard group per client, and skills for anything written the same way
-three times.
+the markdown, and Claude Code does the filing and the recurring documents.
+The vault is the detail source for the planning documents and for the
+retrieval index. The work items live in a task database, and
+[lekman/atlas](https://github.com/lekman/atlas) shows them beside the notes
+they link to. The vault's value comes from written conventions, which are a
+frontmatter schema, one folder per client, a Details page for each piece of
+work, and skills for anything written the same way three times.
 
 - [Obsidian as an Agent-Operated Workspace](obsidian/README.md): the full
-  practice, from vault settings to conventions, the dashboard method, the
-  agent layer underneath, and the cautions (iCloud races, secrets, client
-  separation as a contractual matter).
+  practice, from vault settings and conventions to retrieval, tasks and
+  Atlas, the agent layer underneath, and the cautions (shared state in files,
+  secrets, client separation as a contractual matter).
 
 ## A Live Work Dashboard
 

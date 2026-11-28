@@ -100,8 +100,33 @@ should have caught, propose one-line additions to the rules file and append
 them **only on approval**. The rules file is the operator's document in
 their own storage; the skill never rewrites existing lines.
 
+## Step 7 — Log the Outcome
+
+End every run with one entry in the skill outcome log, including a run that
+stopped on a failure. Invoke the `skill-feedback:log` skill with
+`--skill-dir` set to this skill's directory. If that skill is not installed,
+skip this step and report `log: skipped`.
+
+| What happened in the run                                  | `outcome`   | `mode`                   | `detected` |
+| --------------------------------------------------------- | ----------- | ------------------------ | ---------- |
+| The operator approved the table as shown, counts matched  | `ok`        |                          |            |
+| The operator moved a row from delete to rescue            | `corrected` | `deletes-wanted-message` | `review`   |
+| The operator moved a row from rescue to delete            | `corrected` | `rescues-junk`           | `review`   |
+| A rescue or delete count disagreed with the approved rows | `failed`    | `count-mismatch`         | `check`    |
+| No cached token, or a Graph call failed                   | `failed`    | `mailbox-unreachable`    | `check`    |
+
+- Log one entry per run. When rows moved both ways, log
+  `deletes-wanted-message`, because it is the more harmful of the two.
+- `what` gives counts and never a sender, an address or a subject:
+  "Proposed deleting 2 of 14 messages that the operator moved to rescue".
+- `fix` is `config` when Step 6 added a rule for it, and `none` otherwise.
+- When the operator finds a wrongly deleted message days later, log it by
+  hand with `--detected later-use`, the date of that run, and `--run` set to
+  the id of that run's entry. The log skill says how to find the id. The
+  review then counts the run once, as a failure.
+
 Report one line: `junk: <n> rescued, <m> deleted (read, recoverable),
-sweep: <a>+<d> marked read, rules: <k> added`.
+sweep: <a>+<d> marked read, rules: <k> added, log: <outcome>`.
 
 ## Unattended Runs
 
@@ -129,6 +154,10 @@ the schedule up, and every run then follows these rules instead of Steps 2,
   the classification stops the job, as in Failure Modes, and is reported.
 - **No login.** Without a cached token, report it and stop; device-code
   login needs a person.
+- **The run is still logged.** Step 7 applies. With no gate there is no
+  operator correction to record, so the outcome is `ok` unless a count or
+  the mailbox stopped the run. The entry stays in the local log, and the log
+  skill leaves the shared copy to a later attended run.
 
 Report the usual one line, plus `suggestions: <k> logged`. The caller decides
 whether to notify; a rescued message or any failure is worth a notification,

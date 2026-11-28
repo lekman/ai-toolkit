@@ -87,29 +87,34 @@ that part as a design to test.
 Record one entry each time a skill runs. The entry takes seconds, and nothing
 else on this page works without it.
 
-| Field      | Holds                                                         |
-| ---------- | ------------------------------------------------------------- |
-| `date`     | When the run finished                                         |
-| `skill`    | The skill's name and version                                  |
-| `outcome`  | `ok`, `corrected` (you fixed the output) or `failed`          |
-| `what`     | One sentence on what went wrong, empty when `ok`              |
-| `cause`    | Your best guess at why, and whether it is confirmed           |
-| `detected` | How the problem was found: a check, your review, or later use |
-| `fix`      | Where the correction went, using the table above              |
-| `cost`     | Time or tokens, when you have the number                      |
+| Field      | Holds                                                       |
+| ---------- | ----------------------------------------------------------- |
+| `date`     | When the run finished                                       |
+| `skill`    | The skill's name and version                                |
+| `outcome`  | `ok`, `corrected` (you fixed the output) or `failed`        |
+| `mode`     | A short name for the way it went wrong, empty when `ok`     |
+| `what`     | One sentence on what went wrong, empty when `ok`            |
+| `cause`    | Your best guess at why, and whether it is confirmed         |
+| `detected` | How the problem was found: `check`, `review` or `later-use` |
+| `fix`      | Where the correction went, using the table above            |
+| `cost`     | Time or tokens, when you have the number                    |
 
 ```json
 {
   "date": "2026-11-28",
   "skill": "expenses@1.4.0",
   "outcome": "corrected",
+  "mode": "creates-duplicate",
   "what": "Created a second expense for a receipt already imported",
   "cause": "Duplicate check compares amount only (confirmed)",
-  "detected": "my review",
-  "fix": "skill script",
+  "detected": "review",
+  "fix": "skill-script",
   "cost": "6 min"
 }
 ```
+
+Entries that share a `mode` are one failure mode, so the analysis can count
+them. Reuse a name the skill already has before making a new one.
 
 Log the runs that went well too. Without them you cannot tell a skill that
 fails one run in fifty from one that fails every second run.
@@ -165,17 +170,28 @@ problem as an instruction file that only grows.
 
 ## How It Is Enforced
 
-Two parts exist in this toolkit today.
+Four parts exist in this toolkit today.
 
 - The junk mail skill keeps its method and its personal rules apart, and
   proposes rule additions for approval.
 - The [Wrap](../../plugins/wrap/README.md) plugin reviews a session for
   corrections and recommends where each belongs.
+- The [Skill Feedback](../../plugins/skill-feedback/README.md) plugin writes
+  the outcome log. Its `log` skill validates one entry and appends it to a
+  local file, then pushes it to a private artifact database from sessions
+  that can reach it. The junk mail skill calls it as its last step.
+- The same plugin's `review` skill runs the analysis. A script groups the
+  entries by skill and mode, takes occurrence and detection from the log,
+  multiplies them with the severity you set for each mode, and ranks the
+  result. The skill proposes one change per mode and applies none.
 
-Two parts do not exist yet.
+Three limits remain.
 
-- Nothing writes the outcome log automatically. The format above is for
-  entries made by hand or by the skill's last step.
-- Nothing runs the analysis. It is a review you do with the log open.
-
-Both are candidates for tooling once the format has been used for a while.
+- Only the junk mail skill logs its runs so far. Every other skill needs the
+  closing step added.
+- A skill logs because its instructions say so. No hook checks that a run
+  ended with an entry, so an interrupted run logs nothing.
+- The shared copy belongs to one account. It worked from a desktop session
+  signed in as the owner. A command-line session signed in to another account
+  on the same machine was refused, and a cloud session has not been tested.
+  Those runs log to the local file only.

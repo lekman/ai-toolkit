@@ -1,0 +1,462 @@
+<title>Skill Outcome Log</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap"
+/>
+<style>
+  /* Layout: one column of worksheet tables, widest first, each scrolling inside its own frame. */
+  :root {
+    --bg: #f3f5f7;
+    --surface: #ffffff;
+    --fg: #17212b;
+    --muted: #5a6875;
+    --rule: #d3dae1;
+    --accent: #0b5cad;
+    --ok: #1d6f42;
+    --ok-bg: #dff1e6;
+    --warn: #8a5300;
+    --warn-bg: #fbecd0;
+    --bad: #a3231c;
+    --bad-bg: #f9dfdc;
+    --font-display:
+      "IBM Plex Sans Condensed", "Arial Narrow", Arial, sans-serif;
+    --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161c;
+      --surface: #18212a;
+      --fg: #e4eaf0;
+      --muted: #97a5b3;
+      --rule: #2c3945;
+      --accent: #6fb1f2;
+      --ok: #7fd3a2;
+      --ok-bg: #173526;
+      --warn: #f0c070;
+      --warn-bg: #3d2e10;
+      --bad: #f39a92;
+      --bad-bg: #421c19;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161c;
+    --surface: #18212a;
+    --fg: #e4eaf0;
+    --muted: #97a5b3;
+    --rule: #2c3945;
+    --accent: #6fb1f2;
+    --ok: #7fd3a2;
+    --ok-bg: #173526;
+    --warn: #f0c070;
+    --warn-bg: #3d2e10;
+    --bad: #f39a92;
+    --bad-bg: #421c19;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-block: 2rem 3rem;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main {
+    max-width: 72rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: 2rem;
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  p {
+    margin: 0;
+    max-width: 65ch;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+  .frame {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.87rem;
+  }
+  th,
+  td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  th {
+    font-family: var(--font-data);
+    font-weight: 500;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  td.num,
+  th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  td.data {
+    font-family: var(--font-data);
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  td.text {
+    min-width: 14rem;
+  }
+  .pill {
+    display: inline-block;
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.ok {
+    color: var(--ok);
+    background: var(--ok-bg);
+  }
+  .pill.corrected {
+    color: var(--warn);
+    background: var(--warn-bg);
+  }
+  .pill.failed {
+    color: var(--bad);
+    background: var(--bad-bg);
+  }
+  .rpn {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .sev-high {
+    color: var(--bad);
+    font-weight: 600;
+  }
+  .empty {
+    padding: 1.25rem 0.75rem;
+    color: var(--muted);
+  }
+  #status {
+    font-family: var(--font-data);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+</style>
+
+<main>
+  <header>
+    <h1>Skill Outcome Log</h1>
+    <p class="muted">
+      One entry per skill run, written by the skill's last step. The monthly
+      review groups the failures by mode and ranks them by risk priority number.
+    </p>
+    <p id="status">Connecting to the log…</p>
+  </header>
+
+  <section aria-labelledby="h-skills">
+    <h2 id="h-skills">Runs per skill</h2>
+    <div class="frame">
+      <table>
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th class="num">Runs</th>
+            <th class="num">Ok</th>
+            <th class="num">Corrected</th>
+            <th class="num">Failed</th>
+            <th>Last run</th>
+          </tr>
+        </thead>
+        <tbody id="skills-body">
+          <tr>
+            <td class="empty" colspan="6">
+              Counts appear here after the first logged run.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-review">
+    <h2 id="h-review">Latest review</h2>
+    <p class="muted" id="review-note">
+      The failure mode worksheet from the most recent review appears here. S is
+      severity, O is occurrence, D is detection, and RPN is their product.
+    </p>
+    <div class="frame">
+      <table>
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>Failure mode</th>
+            <th class="num">Count</th>
+            <th class="num">S</th>
+            <th class="num">O</th>
+            <th class="num">D</th>
+            <th class="num">RPN</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody id="review-body">
+          <tr>
+            <td class="empty" colspan="8">No review has been recorded yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-runs">
+    <h2 id="h-runs">Recent runs</h2>
+    <div class="frame">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Skill</th>
+            <th>Outcome</th>
+            <th>Mode</th>
+            <th>What</th>
+            <th>Cause</th>
+            <th>Detected</th>
+            <th>Fix</th>
+            <th>Cost</th>
+          </tr>
+        </thead>
+        <tbody id="runs-body">
+          <tr>
+            <td class="empty" colspan="9">
+              No runs logged yet. A skill adds its first entry when it finishes
+              a run.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  const WINDOW = 500;
+  const statusEl = document.getElementById("status");
+
+  function cell(text, cls) {
+    const td = document.createElement("td");
+    if (cls) td.className = cls;
+    td.textContent = text == null ? "" : String(text);
+    return td;
+  }
+
+  function emptyRow(body, cols, text) {
+    const tr = document.createElement("tr");
+    const td = cell(text, "empty");
+    td.colSpan = cols;
+    tr.appendChild(td);
+    body.replaceChildren(tr);
+  }
+
+  function skillName(skill) {
+    return String(skill || "unknown").split("@")[0];
+  }
+
+  function renderRuns(runs) {
+    const body = document.getElementById("runs-body");
+    if (!runs.length) {
+      emptyRow(
+        body,
+        9,
+        "No runs logged yet. A skill adds its first entry when it finishes a run.",
+      );
+      return;
+    }
+    const rows = runs.slice(0, 100).map((r) => {
+      const tr = document.createElement("tr");
+      tr.appendChild(cell(r.date, "data"));
+      tr.appendChild(cell(r.skill, "data"));
+      const outcome = ["ok", "corrected", "failed"].includes(r.outcome)
+        ? r.outcome
+        : "";
+      const td = document.createElement("td");
+      const pill = document.createElement("span");
+      pill.className = "pill " + outcome;
+      pill.textContent = r.outcome == null ? "" : String(r.outcome);
+      td.appendChild(pill);
+      tr.appendChild(td);
+      tr.appendChild(cell(r.mode, "data"));
+      tr.appendChild(cell(r.what, "text"));
+      tr.appendChild(cell(r.cause, "text"));
+      tr.appendChild(cell(r.detected, "data"));
+      tr.appendChild(cell(r.fix, "data"));
+      tr.appendChild(cell(r.cost, "data"));
+      return tr;
+    });
+    body.replaceChildren(...rows);
+  }
+
+  function renderSkills(runs) {
+    const body = document.getElementById("skills-body");
+    if (!runs.length) {
+      emptyRow(body, 6, "Counts appear here after the first logged run.");
+      return;
+    }
+    const bySkill = new Map();
+    for (const r of runs) {
+      const name = skillName(r.skill);
+      const s = bySkill.get(name) || {
+        runs: 0,
+        ok: 0,
+        corrected: 0,
+        failed: 0,
+        last: "",
+      };
+      s.runs += 1;
+      if (
+        r.outcome === "ok" ||
+        r.outcome === "corrected" ||
+        r.outcome === "failed"
+      )
+        s[r.outcome] += 1;
+      if (String(r.date || "") > s.last) s.last = String(r.date || "");
+      bySkill.set(name, s);
+    }
+    const rows = [...bySkill.entries()]
+      .sort((a, b) => b[1].runs - a[1].runs)
+      .map(([name, s]) => {
+        const tr = document.createElement("tr");
+        tr.appendChild(cell(name, "data"));
+        tr.appendChild(cell(s.runs, "num"));
+        tr.appendChild(cell(s.ok, "num"));
+        tr.appendChild(cell(s.corrected, "num"));
+        tr.appendChild(cell(s.failed, "num"));
+        tr.appendChild(cell(s.last, "data"));
+        return tr;
+      });
+    body.replaceChildren(...rows);
+  }
+
+  function renderReview(review) {
+    const body = document.getElementById("review-body");
+    const note = document.getElementById("review-note");
+    const modes = review && Array.isArray(review.modes) ? review.modes : [];
+    if (!review || !modes.length) {
+      emptyRow(body, 8, "No review has been recorded yet.");
+      return;
+    }
+    note.textContent =
+      "Review of " +
+      String(review.date || "") +
+      ", covering " +
+      String(review.from || "") +
+      " to " +
+      String(review.to || "") +
+      ". S is severity, O is occurrence, D is detection, and RPN is their product.";
+    const rows = modes.map((m) => {
+      const tr = document.createElement("tr");
+      tr.appendChild(cell(m.skill, "data"));
+      tr.appendChild(cell(m.mode, "data"));
+      tr.appendChild(cell(m.count, "num"));
+      tr.appendChild(
+        cell(m.severity, "num" + (Number(m.severity) >= 9 ? " sev-high" : "")),
+      );
+      tr.appendChild(cell(m.occurrence, "num"));
+      tr.appendChild(cell(m.detection, "num"));
+      tr.appendChild(cell(m.rpn, "num rpn"));
+      tr.appendChild(cell(m.decision, "text"));
+      return tr;
+    });
+    body.replaceChildren(...rows);
+  }
+
+  async function start() {
+    const db =
+      window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) {
+      statusEl.textContent =
+        "The log cannot be read in this view. Open the page signed in to the account that owns it.";
+      return;
+    }
+    const slow = setTimeout(() => {
+      statusEl.textContent =
+        "The log has not answered yet. Anything shown may be out of date.";
+    }, 10000);
+
+    db.collection("runs")
+      .orderBy("loggedAt", "desc")
+      .limit(WINDOW)
+      .onSnapshot(
+        (snap) => {
+          const runs = snap.docs.map((d) => d.data() || {});
+          renderSkills(runs);
+          renderRuns(runs);
+          if (!snap.metadata.fromCache) {
+            clearTimeout(slow);
+            statusEl.textContent =
+              runs.length +
+              (runs.length === 1 ? " run" : " runs") +
+              " loaded" +
+              (runs.length === WINDOW ? " (the latest " + WINDOW + ")" : "") +
+              ".";
+          }
+        },
+        () => {
+          clearTimeout(slow);
+          statusEl.textContent = "The log could not be read.";
+        },
+      );
+
+    db.collection("reviews")
+      .orderBy("date", "desc")
+      .limit(1)
+      .onSnapshot(
+        (snap) => renderReview(snap.docs.length ? snap.docs[0].data() : null),
+        () => {},
+      );
+  }
+
+  start();
+</script>

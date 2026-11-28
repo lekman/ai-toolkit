@@ -21,6 +21,7 @@ path, or a spec.
 /plugin install tasks@ai-toolkit
 /plugin install meeting@ai-toolkit
 /plugin install status@ai-toolkit
+/plugin install skill-feedback@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -125,6 +126,15 @@ Then invoke a skill, for example `/git:commit`.
   more), Microsoft 365 and Azure, Google Workspace and AWS, and probes your
   own endpoints, from one services file in `~/.config/status`. See
   [status/README.md](status/README.md).
+- **skill-feedback**, [log](skill-feedback/skills/log/SKILL.md) /
+  [review](skill-feedback/skills/review/SKILL.md): log how each skill run
+  went, then rank what to fix. A skill's last step appends one entry to a
+  local log, and a private artifact database holds the shared copy for
+  sessions that can reach it. The review groups failures by mode, scores
+  severity, occurrence and detection, ranks by risk priority number and
+  proposes changes without applying them. A Bun script does the validation,
+  the grouping and the arithmetic. See
+  [skill-feedback/README.md](skill-feedback/README.md).
 - **tone**, [write](tone/skills/write/SKILL.md): the house documentation
   tone for markdown, Word, PDF, and HTML deliverables: plain language, banned
   filler and empty modifiers, UK English, title case headings, and export-safe

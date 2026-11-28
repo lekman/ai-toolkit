@@ -47,11 +47,12 @@ repository.
   Leave the setting as it is. Wait for the checks, merge directly once they
   pass and every thread is resolved, and tell me the setting is off.
 
-Check the repository before you rely on this rule. Take the owner and the name
+Check the repository before you rely on this rule. Take the repository's URL
 from the pull request's URL and run
-`gh repo view <owner>/<name> --json isPrivate,owner`, which shows whether the
-repository is private and who owns it. The rule applies when the owner is my
-personal account. A public repository, an organisation's repository and a
+`gh repo view <repository-url> --json isPrivate,owner`, which shows whether the
+repository is private and who owns it. The full URL keeps the host, so the
+check reads the same repository that the merge command targets. The rule
+applies when the owner is my personal account. A public repository, an organisation's repository and a
 client's repository keep their own merge rules.
 
 Auto-merge does not wait for a second review round. The section below allows

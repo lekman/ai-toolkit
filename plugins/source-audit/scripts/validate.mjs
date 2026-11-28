@@ -48,6 +48,7 @@ export const SEVERITIES = [
   "critical",
 ];
 export const VERDICTS = ["confirmed", "needs_validation", "rejected"];
+export const PASSES = ["first-pass", "second-pass", "both"];
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_RECORDS = 1000;
@@ -112,6 +113,12 @@ export function isRepoPath(value) {
 }
 
 const isText = (value) => typeof value === "string" && value.trim() !== "";
+// A pattern test turns its argument into text first, so a list holding one
+// commit would pass. These check the type before the pattern.
+const isCommit = (value) =>
+  typeof value === "string" && FULL_COMMIT.test(value);
+const isFingerprint = (value) =>
+  typeof value === "string" && FINGERPRINT.test(value);
 const isObject = (value) =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 
@@ -144,7 +151,7 @@ export function checkRun(run) {
     bad("$", "make it one JSON object");
     return out;
   }
-  if (!FULL_COMMIT.test(run.commit ?? "")) {
+  if (!isCommit(run.commit)) {
     bad(
       "commit",
       "write the full commit, 40 lower case hex characters, from `git rev-parse HEAD`",
@@ -163,10 +170,7 @@ export function checkRun(run) {
       "scope.paths",
       "list the paths that were in scope, relative to the repository",
     );
-  } else if (
-    run.scope.kind === "diff" &&
-    !FULL_COMMIT.test(run.scope.base ?? "")
-  ) {
+  } else if (run.scope.kind === "diff" && !isCommit(run.scope.base)) {
     bad("scope.base", "write the full commit the diff starts from");
   }
   if (!["complete", "incomplete"].includes(run.status)) {
@@ -205,10 +209,7 @@ export function checkRun(run) {
   if (!Array.isArray(run.hardening) || !run.hardening.every(isText)) {
     bad("hardening", "make it a list of notes, empty when there are none");
   }
-  if (
-    !Array.isArray(run.candidates) ||
-    !run.candidates.every((c) => FINGERPRINT.test(c ?? ""))
-  ) {
+  if (!Array.isArray(run.candidates) || !run.candidates.every(isFingerprint)) {
     bad(
       "candidates",
       "list the fingerprint of every candidate the hunt produced",
@@ -283,10 +284,17 @@ export function checkFindings(findings) {
     if (typeof record.fingerprint === "string") previous = record.fingerprint;
     checkVerdictFields(record, bad);
     checkTrace(record.trace, bad);
-    if (isText(record.found_by) && record.found_by === record.verified_by) {
+    if (isText(record.found_by) && !PASSES.includes(record.found_by)) {
+      bad(
+        ".found_by",
+        `set it to the pass that found it, one of ${PASSES.join(", ")}`,
+        "record-fields",
+      );
+    }
+    if (PASSES.includes(record.verified_by)) {
       bad(
         ".verified_by",
-        "have an agent that did not find the candidate check it, and name that agent",
+        "have an agent that did not hunt check it, and name that agent",
         "independent-check",
       );
     }
@@ -599,7 +607,7 @@ export function main(argv) {
   const folder = args.find(
     (a, i) => !a.startsWith("--") && (at < 0 || i !== at + 1),
   );
-  if (!folder || (at >= 0 && !FULL_COMMIT.test(commit ?? ""))) {
+  if (!folder || (at >= 0 && !isCommit(commit))) {
     console.error(
       "Usage: node validate.mjs <run-folder> [--commit <full sha>] [--json]",
     );

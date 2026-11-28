@@ -120,8 +120,8 @@ cannot pass as a clean result.
 ### Every Record Has the Common Fields
 
 Give each record a verdict, a fingerprint, a title, a description, a root
-cause, a trace, and the names of the agent that found it and the agent that
-checked it.
+cause, a trace, the pass that found it and the name of the agent that checked
+it. `found_by` is `first-pass`, `second-pass` or `both`.
 
 The fingerprint names the root cause in the code, so the same weakness keeps
 its name from one run to the next.
@@ -146,8 +146,8 @@ files, so it cannot tell that a line holds what the note says.
 
 ### A Second Agent Checks Every Record
 
-Have an agent that did not find the candidate check it, and put that agent's
-name in `verified_by`.
+Have an agent that did not hunt check the candidate, and put that agent's
+name in `verified_by`. The name of a hunting pass is refused there.
 
 The second agent is what the vetting run showed to be worth its cost. Its
 task is to disprove the candidate, and a finding that survives is one a gate

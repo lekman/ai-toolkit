@@ -29,9 +29,9 @@ pipeline runs it yet.
 3. **Audit in isolation.** Two agents hunt for failures in different ways,
    and fresh agents try to disprove each candidate. They run in a container that holds no
    credential worth taking.
-4. **Validate and gate.** A script checks that the records are complete and
-   agree with each other, and that the run read the release commit. The gate
-   then blocks on a confirmed finding at the chosen severity.
+4. **Validate and gate.** A script checks that the records are complete,
+   agree with each other and name the release commit. The gate then blocks
+   on a confirmed finding at the chosen severity.
 5. **Store the evidence.** The whole run folder goes to the private store.
    The release manifest records the run, the verdict and a digest.
 6. **Triage the leads.** A person takes each lead the audit could not settle
@@ -186,17 +186,19 @@ is the release policy.
 
 The validator fails when the records cannot be relied on.
 
-| Check                                                   | Why it fails                              |
-| ------------------------------------------------------- | ----------------------------------------- |
-| A file is missing, is a link or is not valid JSON       | There is nothing to judge                 |
-| The run names no files that were read                   | An empty run would pass as a clean result |
-| The commit is not the one the job checked out           | The evidence is for a different version   |
-| A candidate has no record, and the run says it finished | A lead was dropped before it was judged   |
-| A record was checked by the agent that found it         | Nobody tried to disprove it               |
-| A lead carries a severity, or a finding lacks one       | The verdicts would be mixed up            |
+| Check                                                                    | Why it fails                              |
+| ------------------------------------------------------------------------ | ----------------------------------------- |
+| `run.json` or `findings.json` is missing, is a link or is not valid JSON | There is nothing to judge                 |
+| The run names no files that were read                                    | An empty run would pass as a clean result |
+| The commit in the record is not the one the job names                    | The evidence is for a different version   |
+| A candidate has no record, and the run says it finished                  | A lead was dropped before it was judged   |
+| A record was checked by the agent that found it                          | Nobody tried to disprove it               |
+| A lead carries a severity, or a finding lacks one                        | The verdicts would be mixed up            |
 
-The job passes the release commit to the validator. It does not take the
-commit from the audit.
+The job checks out the release commit itself, gives the audit that checkout
+and passes the same commit to the validator. The validator compares it with
+the commit in the record. It cannot show which files an agent read, so the
+checkout the job supplies is what ties the audit to the release.
 
 The policy then blocks a release when either of these is true.
 
@@ -204,9 +206,13 @@ The policy then blocks a release when either of these is true.
 - A `confirmed` finding is at or above the chosen severity.
 
 Choose the severity once, in policy. A reasonable start is to block on
-`high` and `critical`, and to open a ticket for anything lower. The validator
-prints a summary with the count under each verdict and the highest confirmed
-severity, so the policy needs no parsing of its own.
+`high` and `critical`, and to open a ticket for anything lower.
+
+The policy reads `findings.json` itself. It takes each confirmed finding at
+or above the chosen severity and looks for its fingerprint among the
+exemptions. The validator's summary line, with the count under each verdict
+and the highest confirmed severity, is for the report and the manifest. Two
+runs can share those numbers and differ in which findings they hold.
 
 The rest goes to a person and does not block.
 

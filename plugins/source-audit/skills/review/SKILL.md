@@ -30,6 +30,18 @@ Never change the target. The review describes fixes and applies none.
 Run `git rev-parse HEAD` and `git status --porcelain` in the target. Keep the
 full commit. A review is of that commit and of nothing else.
 
+If the status prints anything, the working tree differs from the commit. Do
+not read it. Export the commit to a new folder beside the run folder and read
+that copy in every later step.
+
+```bash
+mkdir "<run folder>/../source-<short commit>" && git -C "<target>" archive HEAD | tar -x -C "<run folder>/../source-<short commit>"
+```
+
+File paths in the records stay relative to the repository. For a diff scope,
+take the changed files from `git diff --name-only <base> HEAD`, which compares
+the two commits and ignores the working tree.
+
 ## Step 2: Hunt Twice
 
 Two readings of the same code find different things, so the hunt has two

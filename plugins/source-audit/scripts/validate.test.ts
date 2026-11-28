@@ -49,7 +49,7 @@ const confirmed = (extra: Json = {}): Json => ({
     "The read handler queries by id alone, and the owner helper is not called.",
   fingerprint: "notes-read-no-owner-check",
   fix: "Use the owner helper in the read handler.",
-  found_by: "hunter",
+  found_by: "first-pass",
   method: "source",
   result: "Another user's note is returned.",
   root_cause: "The read handler omits the owner check.",
@@ -67,7 +67,7 @@ const lead = (extra: Json = {}): Json => ({
     "Whether a proxy in front of the service strips the header is not in the repository.",
   description: "The service trusts a forwarded header for the client address.",
   fingerprint: "proxy-header-trust",
-  found_by: "hunter",
+  found_by: "first-pass",
   plan: "Ask the owner of the proxy whether it removes the header from outside requests.",
   root_cause: "The address used for rate limits may come from the client.",
   title: "Forwarded header may be trusted",
@@ -80,7 +80,7 @@ const lead = (extra: Json = {}): Json => ({
 const rejected = (extra: Json = {}): Json => ({
   description: "The sort parameter was thought to reach the query as text.",
   fingerprint: "sort-injection",
-  found_by: "hunter",
+  found_by: "first-pass",
   reason: "The value is looked up in a fixed list before it reaches the query.",
   root_cause: "The sort order was thought to be taken from the request.",
   title: "Sort parameter injection",
@@ -153,6 +153,18 @@ describe("the run record", () => {
     expect(failures[0]?.change).toContain("40 lower case hex characters");
   });
 
+  test("a commit, a base and a candidate must be text, not a list holding text", () => {
+    expect(checkRun(run({ commit: [COMMIT] }))[0]?.where).toBe(
+      "run.json commit",
+    );
+    expect(
+      checkRun(run({ scope: { base: [COMMIT], kind: "diff" } }))[0]?.where,
+    ).toBe("run.json scope.base");
+    expect(
+      checkRun(run({ candidates: [["notes-read-no-owner-check"]] }))[0]?.where,
+    ).toBe("run.json candidates");
+  });
+
   test("an incomplete run says why", () => {
     expect(rules(checkRun(run({ status: "incomplete" })))).toEqual([
       "source-audit/run-record",
@@ -211,9 +223,18 @@ describe("the records", () => {
   });
 
   test("the agent that checks a record is not the one that found it", () => {
-    const failures = checkFindings([confirmed({ verified_by: "hunter" })]);
+    const failures = checkFindings([confirmed({ verified_by: "first-pass" })]);
     expect(rules(failures)).toEqual(["source-audit/independent-check"]);
     expect(failures[0]?.where).toBe("findings.json $[0].verified_by");
+  });
+
+  test("found_by names a hunting pass", () => {
+    const failures = checkFindings([confirmed({ found_by: "hunter" })]);
+    expect(rules(failures)).toEqual(["source-audit/record-fields"]);
+    expect(failures[0]?.where).toBe("findings.json $[0].found_by");
+    for (const pass of ["first-pass", "second-pass", "both"]) {
+      expect(checkFindings([confirmed({ found_by: pass })])).toEqual([]);
+    }
   });
 
   test("records are sorted by fingerprint and each appears once", () => {

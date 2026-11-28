@@ -60,8 +60,11 @@ any of the above further than it goes.
 
 ![Install routes](docs/install-routes.svg)
 
-- **Standards and rules** are instruction files that Claude reads at the
-  start. Copy them into `~/.claude`, or into a repository's `.claude` folder.
+- **Standards** are instruction files that Claude reads at the start of
+  every session. Copy them into `~/.claude`.
+- **Rules** are instruction files with a path pattern. Copy them into
+  `~/.claude/rules/`, or into a repository's `.claude/rules/` folder. Claude
+  loads a rule when it works on a file that matches the pattern.
 - **Plugins** hold skills, hooks and agents. Add the marketplace, then run
   `/plugin install name@ai-toolkit`.
 - **Packages** are command line tools and MCP servers. A published package

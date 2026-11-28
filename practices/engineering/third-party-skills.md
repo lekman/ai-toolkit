@@ -88,9 +88,11 @@ Give the skill a task whose correct answer you already know.
 Review again before taking an update. The version you approved is the only
 one you have evidence for.
 
-[Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
-is one skill taken through these steps, with what was verified and what was
-not.
+The [Source Audit](../../plugins/source-audit/README.md) plugin is one result
+of these steps. A security audit skill by another publisher was read in full
+and run in isolation, and the decision was to take the idea. The plugin's
+page records the commit that was read, what the run measured, what was taken
+and what was left out.
 
 ## Why
 

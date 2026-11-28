@@ -22,6 +22,7 @@ path, or a spec.
 /plugin install meeting@ai-toolkit
 /plugin install status@ai-toolkit
 /plugin install skill-feedback@ai-toolkit
+/plugin install source-audit@ai-toolkit
 ```
 
 Then invoke a skill, for example `/git:commit`.
@@ -149,3 +150,9 @@ Then invoke a skill, for example `/git:commit`.
   markdown transcript from one recorded timeline. Script text goes to
   ElevenLabs, so scripts never hold patient data or secrets. See
   [video/README.md](video/README.md).
+- **source-audit**, [review](source-audit/skills/review/SKILL.md): review a
+  repository's source for security weaknesses at one commit. One agent hunts
+  for places where a trust boundary fails, and a fresh agent tries to
+  disprove each candidate. The run leaves records under three verdicts,
+  checked by a validator with no dependencies, for a release gate to read.
+  See [source-audit/README.md](source-audit/README.md).

@@ -7,13 +7,12 @@ report where a trust boundary fails. Run it on the commit a release was cut
 from, keep its records with the release, and let a confirmed finding block
 the shipment to production.
 
-This page is a design, written on 28 Nov 2026. It describes how the
-`security-audit` skill published by Cloudflare would run in the workflow from
-[Merge, Release and Ship](merge-release-ship.md). The skill was read at one
-commit and run once, in isolation, on a small sample.
-[Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
-holds that evidence. No pipeline runs the audit yet. The owner's decision is
-a second pilot on a real codebase before any gate is built.
+The audit is the `review` skill in
+[Source Audit](../../plugins/source-audit/README.md). This page says where
+that skill runs in the workflow from
+[Merge, Release and Ship](merge-release-ship.md) and what a gate does with
+its records. The skill exists and has been run in isolation on a sample. No
+pipeline runs it yet.
 
 ## Workflow
 
@@ -24,15 +23,15 @@ a second pilot on a real codebase before any gate is built.
 
 1. **Release commit.** The release names one commit. The audit reads the
    repository at that commit and nothing else.
-2. **Restore earlier runs.** The job copies the records of every earlier run
-   for this repository from a private store. The audit reads them to find
-   what is still uncovered.
-3. **Audit in isolation.** Agents map the code, hunt for failures and try to
-   disprove each candidate. They run in a container that holds no credential
-   worth taking.
-4. **Validate and gate.** Scripts check the form of the records, then check
-   that the run finished, that it read the release commit, and that no
-   confirmed finding at the chosen severity is open.
+2. **Restore earlier runs.** The job copies the records of earlier runs for
+   this repository from a private store. The audit reads their findings, so
+   a weakness keeps its name and an open lead is not forgotten.
+3. **Audit in isolation.** Two agents hunt for failures in different ways,
+   and fresh agents try to disprove each candidate. They run in a container that holds no
+   credential worth taking.
+4. **Validate and gate.** A script checks that the records are complete,
+   agree with each other and name the release commit. The gate then blocks
+   on a confirmed finding at the chosen severity.
 5. **Store the evidence.** The whole run folder goes to the private store.
    The release manifest records the run, the verdict and a digest.
 6. **Triage the leads.** A person takes each lead the audit could not settle
@@ -47,34 +46,33 @@ of the next run.
 
 ### Know What the Audit Covers
 
-The skill reads source. It maps who can call what, follows untrusted input
-to the place where it does harm, and reports each path as a record with a
-file and a line.
+The skill reads source. It lists who can call what, follows what they send
+to the place where it has an effect, and reports each path as a record with
+a file and a line.
 
-| It covers                                                               | It does not cover                                          |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------- |
-| One repository at one commit                                            | A deployed system, in any environment                      |
-| Injection, access control, file handling, cryptography, business logic  | Settings that live outside the repository, such as a proxy |
-| Ten further areas, such as cloud configuration, chosen by what it finds | A lookup of known weaknesses in dependencies               |
-| Running the target's own tests, only inside a sandbox with no network   | Any request to a live service, account or endpoint         |
-| Coverage that grows when it is run again                                | Proof that nothing is wrong                                |
+| It covers                                                                     | It does not cover                                          |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| One repository at one commit, or named paths, or a diff                       | A deployed system, in any environment                      |
+| Injection, access control, files and requests, secrets, logic, feature misuse | Settings that live outside the repository, such as a proxy |
+| A second agent's attempt to disprove each finding                             | A lookup of known weaknesses in dependencies               |
+| Findings that keep their name from one run to the next                        | Proof that nothing is wrong                                |
 
-The skill's own rules forbid probing a deployed endpoint, so it cannot be
-the penetration test in step 5 of the delivery workflow. Its description
-lists "pen tests" among the requests that start it. What then runs is a
-source audit.
+It is not the penetration test in step 5 of the delivery workflow. It never
+contacts a deployed system.
 
 Every record has one of three verdicts.
 
-| Verdict            | Meaning                                                          | Severity | Who acts                |
-| ------------------ | ---------------------------------------------------------------- | -------- | ----------------------- |
-| `confirmed`        | The path is traced in source and its result was observed locally | Yes      | The gate, then the team |
-| `needs_validation` | The path is real, and one fact outside the source decides it     | No       | A named person          |
-| `rejected`         | A second agent disproved the candidate                           | No       | Nobody                  |
+| Verdict            | Meaning                                                      | Severity | Who acts                |
+| ------------------ | ------------------------------------------------------------ | -------- | ----------------------- |
+| `confirmed`        | The path is complete in the source and a second agent agreed | Yes      | The gate, then the team |
+| `needs_validation` | The path is real, and one fact outside the source decides it | No       | A named person          |
+| `rejected`         | The second agent disproved the candidate                     | No       | Nobody                  |
 
-A clean result is weak evidence. The skill's authors report that one run
-found about half of what repeated runs found in total, and the skill tells
-its agents never to claim that one run exhausts the target.
+A clean result is weak evidence. One pass over a codebase does not find
+everything, and the report says so. In one comparison on a codebase of about
+20,000 lines, two different audits of the same code reported seven findings and
+leads between them, and almost none in common. The skill therefore hunts twice, in
+two different ways, and a run between releases adds a third reading.
 
 ### Run It on the Release Commit
 
@@ -94,20 +92,19 @@ running environment, so it can start as soon as the release names a commit.
   deployed system. The source audit reads the inside of the code, and the
   penetration test tries the outside of the running system. Each finds what
   the other cannot reach.
-- **Run it between releases as well.** A nightly run on the main branch adds
-  coverage. The run at release then starts from that coverage.
+- **Run it between releases as well.** A nightly run on the main branch
+  finds a weakness sooner, and the run at release then starts from its
+  records.
 
-The audit does not belong in the merge gate. One run makes many agent calls,
-and two runs on the same commit can report different things. A merge check
-must give the same answer to everyone, every time. See
-[Mechanical Checks](mechanical-checks.md).
+The audit does not belong in the merge gate. Two runs on the same commit can
+report different things, and a merge check must give the same answer to
+everyone, every time. See [Mechanical Checks](mechanical-checks.md).
 
 ### Run It in Isolation
 
 The repository under audit is input to the agents. A file in it, or in a
-dependency, can hold text written to mislead them. The agents also run the
-target's code to reproduce what they find. Run the audit where a misled
-agent, or the code it runs, can reach nothing of value.
+dependency, can hold text written to mislead them. Run the audit where a
+misled agent can reach nothing of value.
 
 - **One credential.** The job holds the key for the model and no other
   secret. It has no deployment key and no token that can write to a
@@ -115,39 +112,32 @@ agent, or the code it runs, can reach nothing of value.
 - **A copy of the source that cannot be changed.** The audit describes
   fixes. It never edits the target.
 - **Output outside the target.** The skill writes its run folder outside the
-  repository by default, so the records cannot be committed by accident.
+  repository, so the records cannot be committed by accident.
 - **A network limited to the model.** The job can reach the model's
-  service and nothing else, so the target's code cannot call out.
+  service and nothing else.
 
 See [Isolated Container](../isolated-container/README.md).
 
-Do not rely on the skill's own sandbox rule. The skill says to run the
-target's code only inside a sandbox with five controls, and to run nothing
-when one is missing. In the one run made for the vetting record there was no
-such sandbox. Twelve of the sixteen agents ran the target's code anyway, all
-eight findings came back `confirmed`, and the report said the run was
-sandboxed. The rule is an instruction, and the parent agent reworded it
-before passing it on.
+The skill's default is to read and not to run the target's code. Do not rely
+on that default. It is an instruction, and an agent can fail to follow one.
+The skill this one draws on had a stricter rule, and in its one measured run
+twelve of sixteen agents ran the target's code with no sandbox while the
+report said the run was sandboxed. So treat the audit job as a job that may
+run untrusted code. The container is the control.
 
-So treat the audit job as a job that runs untrusted code. The container is
-the control. A statement in the report or in `run-metadata.json` about how
-the run was isolated is a claim made by an agent, and the gate does not read
-it as evidence.
+A run that does run the target must say so in its records. That statement is
+a claim made by an agent, and the gate does not read it as evidence of
+isolation.
 
 ### Keep the Evidence With the Release
 
 A run writes one folder.
 
-| File                    | What it holds                                                       |
-| ----------------------- | ------------------------------------------------------------------- |
-| `run-metadata.json`     | The commit, the scope, the run profile and whether the run finished |
-| `architecture.md`       | A summary of the system and its trust boundaries                    |
-| `coverage-ledger.json`  | Every unit of work, and whether it was covered, blocked or deferred |
-| `findings.json`         | Every record, under one of the three verdicts                       |
-| `REPORT.md`             | The findings and the coverage, for a reader                         |
-| `FINDINGS-DETAIL.md`    | Each confirmed finding of medium severity or above, with its steps  |
-| `NEEDS-VALIDATION.md`   | Each open lead, with the fact that would settle it                  |
-| `agents/<id>/artifacts` | Output kept from a local check                                      |
+| File            | What it holds                                                          |
+| --------------- | ---------------------------------------------------------------------- |
+| `run.json`      | The commit, the scope, what was read, what was left out, and the state |
+| `findings.json` | Every record, under one of the three verdicts                          |
+| `REPORT.md`     | The same content for a reader                                          |
 
 Store the whole folder in a private place, under the repository's name and
 the run's number. The release manifest then records four things.
@@ -160,88 +150,76 @@ the run's number. The release manifest then records four things.
 Do not attach the folder to a public release. A confirmed finding holds the
 steps to reproduce a weakness that may not be fixed yet.
 
-### Keep the Ledger Between Runs
+### Carry the Findings Between Runs
 
-The coverage ledger is a list of units. Each unit is one entry point, one
-trust boundary, one part of the system and one kind of attack. The skill
-reads the ledgers and findings of earlier runs before it plans a new one, so
-a later run spends its effort on what is still open.
+The skill reads the findings of earlier runs before it hunts. A runner in
+continuous integration (CI) starts empty, so the job moves the folders
+itself.
 
-The skill writes each run to a numbered folder, under one folder for the
-repository, and records in the new run which earlier folders it read. A
-runner in continuous integration (CI) starts empty, so the job moves the
-folders itself.
-
-1. Before the run, copy every earlier run folder for this repository from
-   the store.
+1. Before the run, copy the earlier run folders for this repository from the
+   store.
 2. Let the skill write the next numbered folder.
 3. After the gate, copy the new folder to the store.
 4. Never change a stored folder. Each run is a record of its own commit.
 
 Run one audit at a time for each repository. A nightly run and a release
-run that overlap would both copy the same earlier folders, and the skill
-would give both the same next number. Put the audit jobs for one repository
-in a queue, so the second starts after the first has stored its folder. The
-store also refuses a folder whose number it already holds, and the job
-fails when that happens. It never overwrites or merges.
+run that overlap would both copy the same earlier folders and take the same
+next number. Put the audit jobs for one repository in a queue, so the second
+starts after the first has stored its folder. The store also refuses a
+folder whose number it already holds, and the job fails when that happens.
+It never overwrites or merges.
 
-The ledger from an older commit is still valid input. The skill compares
-each earlier unit with the current source and does not trust the earlier
-commit to tell it what changed.
+| Earlier record                         | In the new run                               |
+| -------------------------------------- | -------------------------------------------- |
+| `confirmed`, and the code is unchanged | Checked again, under the same fingerprint    |
+| `needs_validation`                     | A candidate again, and it keeps its question |
+| `rejected`, and the code is unchanged  | Not raised again                             |
+| Any record whose code changed          | The code is read as new                      |
 
-<details>
-<summary>What the skill does with an earlier record</summary>
-
-| Earlier state                            | In the new run                                             |
-| ---------------------------------------- | ---------------------------------------------------------- |
-| `confirmed`, and the source is unchanged | Carried forward, checked again, and kept out of the hunt   |
-| `confirmed`, and the source changed      | Planned again as new work                                  |
-| `needs_validation`                       | Planned again, and it keeps its open question              |
-| Deferred, blocked or out of scope        | Planned again as new work                                  |
-| Covered, and the source is unchanged     | Kept visible, with lower priority                          |
-| `rejected`                               | Only the same claim is skipped, and the unit is still read |
-| A short or partial run                   | Counts for what it recorded, and for nothing beyond that   |
-
-These are the skill's written rules at the vetted commit. They have not been
-observed over two runs.
-
-</details>
+These are the skill's written rules. They have not been observed over two
+runs.
 
 ### Gate on the Records
 
-The skill has two validator scripts, one for the ledger and one for the
-findings. They check form. Both accept an empty file, a ledger where no
-unit was ever worked on, and a ledger that names a candidate the findings
-file does not hold. A critical finding also passes, because the validators
-do not judge content. The vetting record shows each of these.
+The gate has two parts. The first is the skill's validator, and the second
+is the release policy.
 
-The gate is therefore a script of its own that runs after the validators. A
-release is blocked when any of these is true.
+The validator fails when the records cannot be relied on.
 
-| Check                                                          | Why it blocks                              |
-| -------------------------------------------------------------- | ------------------------------------------ |
-| A validator fails                                              | The records cannot be trusted or compared  |
-| `run-metadata.json` does not say the run is complete           | The audit stopped early                    |
-| The commit the job checked out is not the release commit       | The evidence is for a different version    |
-| The commit in `run-metadata.json` disagrees with the job       | The audit read something else              |
-| The ledger is empty, or a unit is still planned or in progress | Work was skipped without a recorded reason |
-| A candidate in the ledger has no record in the findings        | A lead was dropped before it was judged    |
-| A `confirmed` finding is at or above the chosen severity       | A known weakness would ship                |
+| Check                                                                    | Why it fails                              |
+| ------------------------------------------------------------------------ | ----------------------------------------- |
+| `run.json` or `findings.json` is missing, is a link or is not valid JSON | There is nothing to judge                 |
+| The run names no files that were read                                    | An empty run would pass as a clean result |
+| The commit in the record is not the one the job names                    | The evidence is for a different version   |
+| A candidate has no record, and the run says it finished                  | A lead was dropped before it was judged   |
+| A record was checked by the agent that found it                          | Nobody tried to disprove it               |
+| A lead carries a severity, or a finding lacks one                        | The verdicts would be mixed up            |
+
+The job checks out the release commit itself, gives the audit that checkout
+and passes the same commit to the validator. The validator compares it with
+the commit in the record. It cannot show which files an agent read, so the
+checkout the job supplies is what ties the audit to the release.
+
+The policy then blocks a release when either of these is true.
+
+- The run's state is not `complete`.
+- A `confirmed` finding is at or above the chosen severity.
 
 Choose the severity once, in policy. A reasonable start is to block on
 `high` and `critical`, and to open a ticket for anything lower.
 
-The job records the release commit itself and does not take it from the
-audit. `run-metadata.json` has no schema and no validator. In the one run
-made so far it held the commit as a short hash of seven characters, so the
-gate compares it as a prefix of the commit the job checked out.
+The policy reads `findings.json` itself. It takes each confirmed finding at
+or above the chosen severity and looks for its fingerprint among the
+exemptions. The validator's summary line, with the count under each verdict
+and the highest confirmed severity, is for the report and the manifest. Two
+runs can share those numbers and differ in which findings they hold.
 
 The rest goes to a person and does not block.
 
 - **Every `needs_validation` record.** It has no severity by design. It
-  names the fact that would settle it, such as a proxy rule, and a safe way
-  to observe that fact. A named person observes it and records the answer.
-- **Units that were deferred, blocked or out of scope.** The manifest
+  names the fact that would settle it, such as a proxy rule, and who can
+  observe that fact. A named person observes it and records the answer.
+- **Gaps.** The run lists what was in scope and not read. The manifest
   states how many, so a partial audit is visible as partial.
 - **Confirmed findings below the chosen severity.** These become ordinary
   work with a due date.
@@ -249,45 +227,36 @@ The rest goes to a person and does not block.
 An exemption is the only way past a blocking finding. It is a named entry in
 one file, with the finding's fingerprint, a reason, a person and an end
 date, and it is reviewed like code. The same file holds the answers to
-leads, because the skill has no field for a person's answer and a lead
-returns on every run until the source changes.
+leads, because a lead returns on every run until someone answers it.
 
 A pass means that no known blocker is open. It does not mean the release is
 secure.
 
 Each failure follows the rule in [Mechanical Checks](mechanical-checks.md).
-It names the finding, the file and line where the path ends, the change the
-audit proposes, and the page that explains the gate.
+The validator's failures name the place, the change, the rule and its page.
+A failure of the policy names the finding, the file and line where its path
+ends, and the fix the audit proposes.
 
 ### Know What It Costs
 
-One run was measured, on a sample of about 450 lines with nine planted
-weaknesses. The same model was also given the task with no skill.
+The skill was measured once, on a sample of about 450 lines with nine
+planted weaknesses, against a plain request to the same model.
 
-| Measure                           | With the skill        | Without the skill   |
-| --------------------------------- | --------------------- | ------------------- |
-| Planted weaknesses found          | 8 of 8 that qualify   | 9 of 9              |
-| Decoys reported                   | 0 of 2                | 0 of 2              |
-| Wall time                         | 28 minutes 14 seconds | 1 minute 31 seconds |
-| Agent calls                       | 16                    | None                |
-| Output tokens                     | 288,804               | 8,882               |
-| Cost reported by the tool, in USD | 14.15                 | 0.58                |
+| Measure                           | The skill            | A plain request     |
+| --------------------------------- | -------------------- | ------------------- |
+| Planted weaknesses                | 9 of 9 confirmed     | 9 of 9 reported     |
+| Checked by a second agent         | Every record         | None                |
+| Wall time                         | 7 minutes 32 seconds | 1 minute 31 seconds |
+| Cost reported by the tool, in USD | 2.67                 | 0.58                |
 
-The ninth weakness is a weak password hash. The skill's rules class it as a
-hardening note, and the audit named it without a record of its own.
+On a sample this small the skill found what the plain request found, at
+about five times the cost. What it adds is the second agent's check, the
+lead it left for a person, and records a gate can read. It has not been run
+on a large codebase.
 
-On a sample this small the skill found nothing the plain request missed, at
-about 24 times the cost. What the plain request does not produce is the
-second agent's reproduction of each finding, the ledger, and records a gate
-can read. Whether those are worth the cost depends on a codebase too large
-for one agent to read in one pass, and that has not been tested.
-
-The skill's budget is a count of agent calls, and the run used exactly the
-16 it was given. The budget limits the calls and does not limit the tokens
-each call uses, so two runs with the same budget can cost different amounts.
-Set the budget and the run profile in the job, and give the job a time limit
-and a spending limit of its own. Record what each run used, so the expected
-cost of a release comes from measured runs.
+Give the audit job a time limit and a spending limit of its own, and record
+what each run used. The expected cost of a release then comes from measured
+runs.
 
 ## Why
 
@@ -302,43 +271,46 @@ times. An audit on the release commit finds a weakness in the version that
 introduced it.
 
 The verdicts suit a gate because they separate what is known from what is
-suspected. A confirmed finding was traced by one agent, checked by a second
-that tried to disprove it, and observed in a local run. That is strong
-enough to block on. A lead with an open question is a job for a person, and
-giving it a severity would only hide that.
+suspected. A confirmed finding was traced by one agent and checked by a
+second whose task was to disprove it. That is strong enough to block on. A
+lead with an open question is a job for a person, and giving it a severity
+would only hide that.
 
-The records are still claims made by agents. The validators prove their
-form, and no script proves that a unit marked as covered was read with care.
-The one run made so far shows why this matters. Its findings were correct,
-and its report also stated that the run was sandboxed when it was not. So
-the gate blocks on what the audit found, and nobody reads a clean result as
-proof.
+The records are still claims made by agents. The validator proves that they
+are complete and consistent, and no script proves that a file listed as read
+was read with care. So the gate blocks on what the audit found, and nobody
+reads a clean result as proof.
+
+The skill is small on purpose. A larger skill by another publisher was read
+and run first, with reconnaissance agents, a coverage ledger and critics. On
+a sample it found what a plain request to the same model found, at about 24
+times the cost. What it added was the second agent and the fixed records, so
+those are what this skill keeps. The plugin's page has the numbers.
 
 ## The Failure It Prevents
 
 - A security review once a year, whose report describes an old version.
 - Findings that live in a chat or a document, where they cannot be tracked
   from one release to the next.
-- An audit that reads the same code on every run and forgets the leads it
-  could not settle.
+- A finding that one agent reported and nobody tried to disprove.
 - An audit agent that holds deployment credentials while it reads untrusted
-  text and runs untrusted code.
+  text.
 - Reproduction steps for an open weakness, published with the release notes.
 - A release that ships because the audit job failed quietly and left empty
-  files that still pass validation.
+  files.
 
 ## How It Is Enforced
 
-Nothing on this page is enforced yet. When it is built, these are the
-controls.
+The skill and its validator exist. The pipeline around them does not, so
+these are the controls when it is built.
 
-- The skill is installed from a reviewed copy at a recorded commit. See
-  [Third-Party Skills](third-party-skills.md).
+- The validator has tests of its own, with a failing case and a passing case
+  for each rule, and a test that every failure links to a section that
+  exists.
 - The audit job runs in a container with one credential and a network
   limited to the model, and its workflow has no permission to write to a
   repository or to deploy.
-- The gate script has tests of its own, with a failing case and a passing
-  case for each row of the table above.
+- The policy that blocks on severity is tested like the validator.
 - Production accepts a release only when the manifest holds a passing audit
   verdict for that exact commit.
 - The evidence store is private, and stored runs are never changed.

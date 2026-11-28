@@ -125,6 +125,13 @@
       "description": "Skill outcome logging: one entry per skill run in a local log with a private artifact database as the shared copy, and a failure mode review that scores severity, occurrence and detection, ranks by risk priority number and proposes changes without applying them",
       "category": "workflow",
       "tags": ["skills", "feedback", "fmea", "logging", "quality"]
+    },
+    {
+      "name": "source-audit",
+      "source": "./plugins/source-audit",
+      "description": "Source security review with a second opinion: one agent hunts for places where a trust boundary fails, a fresh agent tries to disprove each candidate, and the run leaves records under three verdicts that a script validates and a release gate can read",
+      "category": "development",
+      "tags": ["security", "audit", "code-review", "release", "verification"]
     }
   ]
 }

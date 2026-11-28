@@ -121,7 +121,7 @@ what the version holds.
 | Performance qualification  | The system does its job under real conditions                         | End to end runs with realistic data and load |
 | Intended use               | A user can reach the outcome the system exists for                    | Journeys recorded step by step, with results |
 | Security scan              | The known weaknesses the scan found in dependencies, images or config | Scan reports for this exact version          |
-| Source security audit      | The confirmed weaknesses the audit found in the code of this commit   | Findings and a ledger for this exact commit  |
+| Source security audit      | The confirmed weaknesses the audit found in the code of this commit   | Findings for this exact commit               |
 | Penetration test           | Whether each attack that was tried got in                             | Each attempt, its result and what was fixed  |
 
 The scenarios written for the specification are the source of the

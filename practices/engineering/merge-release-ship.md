@@ -165,9 +165,11 @@ fast because it is safe to be wrong. The release is boring because it only
 packages. The shipment is where the proof is made, against the thing users
 will run.
 
-The record is also better. A manifest and its test results answer what was
-running on a given day and how it was shown to work. An approval on a pull
-request answers neither.
+The record is also better. A manifest and its test results answer what a
+version holds and how it was shown to work. A record of each deployment and
+each rollback, with the environment, the version and the time, answers what
+was running on a given day. An approval on a pull request answers none of
+these.
 
 ## The Failure It Prevents
 
@@ -184,7 +186,10 @@ request answers neither.
 - The merge workflow publishes nothing, and the release workflow deploys
   nothing. Each has only the permissions its own step needs.
 - Production accepts a release only when its manifest has qualification and
-  security results attached, and the results are for that exact version.
+  security results attached, the results are for that exact version, and
+  they passed.
+- Each deployment and each rollback is recorded with its environment, its
+  version and its time.
 - The tests run in an environment the author of the change cannot edit.
 
 This repository uses the first part of this. Changes merge through required

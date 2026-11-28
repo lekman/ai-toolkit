@@ -150,7 +150,8 @@ review time per pull request in your own work before and after.
 - Continuous integration can fail a pull request above a set size, or one
   that adds files under a handover or briefs folder.
 - The write guard in [Isolated Agent](../../security/isolated/README.md)
-  steers edits into a worktree. It is a hook that can fail open, so the
-  worktree is the containment and the hook is the reminder.
+  steers edits into a worktree. It is a hook that can fail open, and a
+  worktree only keeps pieces of work apart. What stops a write outside the
+  worktree is a sandbox or the file permissions.
 - [Orchestrator and Subagents](../orchestrator-subagent.md) adds separate
   credentials for planning and for code.

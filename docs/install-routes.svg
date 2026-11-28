@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 452" role="img" aria-labelledby="ir-title ir-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="ir-title">How each part of ai-toolkit reaches Claude Code</title>
+  <desc id="ir-desc">Three routes to one result. Standards and rules are instruction files that you copy into your home .claude folder or into a repository. Plugins hold skills, hooks and agents, and you add the marketplace and then install each plugin by name. Packages are command line tools and MCP servers, and a published package runs with npx with no install first. All three end in Claude Code, which loads the files, the plugins and the tools.</desc>
+  <style>
+    .box { stroke-width: 2; }
+    .band { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; }
+    .hd { font-size: 18px; font-weight: 700; fill: #1f2328; }
+    .sub { font-size: 14px; fill: #59636e; }
+    .ttl { font-size: 20px; font-weight: 700; fill: #1f2328; }
+    .dsc { font-size: 15px; fill: #32383f; }
+    .tag { font-size: 12.5px; font-weight: 700; letter-spacing: 1.2px; }
+    .num { font-size: 14px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+    .lbl { font-size: 14px; font-weight: 600; fill: #6f7780; }
+    .mid { text-anchor: middle; }
+    .arw { stroke: #6f7780; stroke-width: 2.5; fill: none; }
+    .opt { stroke-dasharray: 7 5; }
+    .head { fill: #6f7780; }
+
+    .g0 .box { fill: #f6f8fa; stroke: #8c959f; }
+    .g0 .tag { fill: #59636e; }
+    .g1 .box { fill: #ddf4ff; stroke: #0969da; }
+    .g1 .tag { fill: #0550ae; }
+    .g1 .dot { fill: #0969da; }
+    .g2 .box { fill: #fff8c5; stroke: #9a6700; }
+    .g2 .tag { fill: #7d4e00; }
+    .g2 .dot { fill: #9a6700; }
+    .g3 .box { fill: #dafbe1; stroke: #1a7f37; }
+    .g3 .tag { fill: #116329; }
+    .g3 .dot { fill: #1a7f37; }
+
+    @media (prefers-color-scheme: dark) {
+      .band { fill: #151b23; stroke: #3d444d; }
+      .hd { fill: #f0f6fc; }
+      .sub { fill: #9198a1; }
+      .ttl { fill: #f0f6fc; }
+      .dsc { fill: #d1d9e0; }
+      .num { fill: #0d1117; }
+      .lbl { fill: #9198a1; }
+      .arw { stroke: #9198a1; }
+      .head { fill: #9198a1; }
+      .g0 .box { fill: #151b23; stroke: #656d76; }
+      .g0 .tag { fill: #9198a1; }
+      .g1 .box { fill: #121d2f; stroke: #4493f8; }
+      .g1 .tag { fill: #79c0ff; }
+      .g1 .dot { fill: #4493f8; }
+      .g2 .box { fill: #2a2111; stroke: #d29922; }
+      .g2 .tag { fill: #e3b341; }
+      .g2 .dot { fill: #d29922; }
+      .g3 .box { fill: #12261e; stroke: #3fb950; }
+      .g3 .tag { fill: #56d364; }
+      .g3 .dot { fill: #3fb950; }
+    }
+  </style>
+  <defs>
+    <marker id="ir-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="head" d="M0 0 10 5 0 10z"/>
+    </marker>
+  </defs>
+  <g class="g1" transform="translate(30 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">FILES</text>
+    <text class="ttl" x="18" y="68">Standards and rules</text>
+    <text class="dsc" x="18" y="91">Instruction files Claude</text>
+    <text class="dsc" x="18" y="110">reads at the start</text>
+  </g>
+  <path class="arw" d="M284 86H319" marker-end="url(#ir-head)"/>
+  <g class="g1" transform="translate(325 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">COPY</text>
+    <text class="ttl" x="18" y="68">Copy the files</text>
+    <text class="dsc" x="18" y="91">Into ~/.claude, or into</text>
+    <text class="dsc" x="18" y="110">a repository's .claude</text>
+  </g>
+  <g class="g2" transform="translate(30 164)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">PLUGINS</text>
+    <text class="ttl" x="18" y="68">Plugins</text>
+    <text class="dsc" x="18" y="91">Skills, hooks and agents</text>
+    <text class="dsc" x="18" y="110">in the plugins folder</text>
+  </g>
+  <path class="arw" d="M284 226H319" marker-end="url(#ir-head)"/>
+  <g class="g2" transform="translate(325 164)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">INSTALL</text>
+    <text class="ttl" x="18" y="68">Add the marketplace</text>
+    <text class="dsc" x="18" y="91">Then /plugin install</text>
+    <text class="dsc" x="18" y="110">name@ai-toolkit</text>
+  </g>
+  <g class="g3" transform="translate(30 304)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">PACKAGES</text>
+    <text class="ttl" x="18" y="68">Packages</text>
+    <text class="dsc" x="18" y="91">Command line tools and</text>
+    <text class="dsc" x="18" y="110">MCP servers</text>
+  </g>
+  <path class="arw" d="M284 366H319" marker-end="url(#ir-head)"/>
+  <g class="g3" transform="translate(325 304)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">RUN</text>
+    <text class="ttl" x="18" y="68">Run with npx</text>
+    <text class="dsc" x="18" y="91">Published packages need</text>
+    <text class="dsc" x="18" y="110">no install first</text>
+  </g>
+  <path class="arw" d="M579 86H596V196H614" marker-end="url(#ir-head)"/>
+  <path class="arw" d="M579 226H614" marker-end="url(#ir-head)"/>
+  <path class="arw" d="M579 366H596V256H614" marker-end="url(#ir-head)"/>
+  <g class="g0" transform="translate(620 164)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <text class="tag" x="18" y="32">RESULT</text>
+    <text class="ttl" x="18" y="68">Claude Code</text>
+    <text class="dsc" x="18" y="91">Loads the files, the</text>
+    <text class="dsc" x="18" y="110">plugins and the tools</text>
+  </g>
+</svg>

@@ -11,6 +11,8 @@ That post is the argument. This repo is the working configuration behind it.
 
 Two questions decide the blast radius, and they are independent.
 
+![Two questions](practices/isolation-questions.svg)
+
 **What can the agent reach?** This decides what a mistake, or an injected
 prompt, can actually do. It is the question the post covers.
 
@@ -37,6 +39,33 @@ second. Most setups need both.
 How strong each control actually is, and what has to fail for it to fail, is
 [controls: soft, hard, boundary](docs/controls.md). Read that before trusting
 any of the above further than it goes.
+
+## What It Contains
+
+![Repository contents](docs/repo-contents.svg)
+
+| Part                                         | What it holds                                          | How you use it               |
+| -------------------------------------------- | ------------------------------------------------------ | ---------------------------- |
+| [Standards](standards/README.md)             | Base instruction files for every project               | Copy into your configuration |
+| [Rules](rules/README.md)                     | Rule files that load for matching file paths           | Copy into your configuration |
+| [Security](security/README.md)               | Settings that keep secrets away from the agent         | Copy into your configuration |
+| [Practices](practices/README.md)             | Operating models and patterns for agent work           | Read and apply               |
+| [Privacy](privacy/README.md)                 | How to keep personal and financial data from the model | Read and apply               |
+| [Docs](docs/README.md)                       | Concepts that span the practices, such as controls     | Read and apply               |
+| [Plugins](plugins/README.md)                 | Skills, hooks and agents for Claude Code               | Install or run               |
+| [Packages](packages/README.md)               | Command line tools and MCP servers in TypeScript       | Install or run               |
+| Repo guards, in [scripts](scripts/README.md) | Hooks and checks that keep client names out of a repo  | Install or run               |
+
+## How It Reaches Claude Code
+
+![Install routes](docs/install-routes.svg)
+
+- **Standards and rules** are instruction files that Claude reads at the
+  start. Copy them into `~/.claude`, or into a repository's `.claude` folder.
+- **Plugins** hold skills, hooks and agents. Add the marketplace, then run
+  `/plugin install name@ai-toolkit`.
+- **Packages** are command line tools and MCP servers. A published package
+  runs with `npx` and needs no install first.
 
 ## Start Here
 

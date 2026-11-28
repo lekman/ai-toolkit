@@ -29,16 +29,32 @@ to pass and every review thread to be resolved, and GitHub merges the pull
 request when both are true. Where a review bot reports a check, that check is
 required too, so the merge waits until the review finishes or is skipped.
 
-In the Claude desktop app, call `set_auto_merge` from the `ccd_pr` tools with
-the pull request's URL. Elsewhere, run `gh pr merge <number> --auto --squash`.
-GitHub refuses auto-merge on a pull request that already meets every rule.
-Merge that one directly with `gh pr merge <number> --squash`.
+Use the pull request's URL in every command. Given only a number, `gh` reads
+the repository from the current folder, and the session may sit in another
+repository.
 
-Check the repository before you rely on this rule.
-`gh repo view --json isPrivate,owner` shows whether it is private and who owns
-it. The rule applies when the owner is my personal account. A public
-repository, an organisation's repository and a client's repository keep their
-own merge rules.
+- In the Claude desktop app, call `set_auto_merge` from the `ccd_pr` tools with
+  the URL.
+- Elsewhere, run `gh pr merge <url> --auto --squash`.
+- GitHub refuses auto-merge on a pull request that already meets every rule.
+  Merge that one directly with `gh pr merge <url> --squash`.
+- GitHub also refuses when the repository setting does not allow auto-merge.
+  Leave the setting as it is. Wait for the checks, merge directly once they
+  pass and every thread is resolved, and tell me the setting is off.
+
+Check the repository before you rely on this rule. Take the owner and the name
+from the pull request's URL and run
+`gh repo view <owner>/<name> --json isPrivate,owner`, which shows whether the
+repository is private and who owns it. The rule applies when the owner is my
+personal account. A public repository, an organisation's repository and a
+client's repository keep their own merge rules.
+
+Auto-merge does not wait for a second review round. The section below allows
+at most two rounds, and it does not require the second one here. A pull request
+in these repositories merges after round one, once its comments are fixed and
+their threads are resolved. When the fixes need another review, turn auto-merge
+off before you push them, ask for round two, and turn it on again when that
+round is done.
 
 This covers pull requests you open. Merge someone else's pull request only when
 I ask.

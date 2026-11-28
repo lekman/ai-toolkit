@@ -34,9 +34,10 @@ Read the [standards](standards) folder.
 
 ## Use Relative Paths
 
-Link to a file in this repository with a repo-relative path
-(`standards/SOUL.md`), not an absolute path or a full URL, so the link keeps
-working in clones, forks, and offline checkouts.
+Link to a file in this repository with a path relative to the file that holds
+the link, such as `../README.md` from `docs/README.md`. Do not use an absolute
+path or a full URL, so the link keeps working in clones, forks, and offline
+checkouts.
 
 This applies to files in this repository only. A link to another site, such
 as a vendor's documentation or a blog post, uses its full URL.

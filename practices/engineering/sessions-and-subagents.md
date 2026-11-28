@@ -79,7 +79,11 @@ with chained branches. Five commands cover the work.
    processes it, so do not count on all or nothing there. Merge requirements
    cannot be bypassed for a stack.
 
-This describes version 0.1.0 of the extension, from its own help text.
+The commands are from the help text of version 0.1.0 of the extension. Use
+version 0.2.0 or later when subagents work in worktrees. Its release notes
+say that from 0.2.0 the extension can adopt and rebase a branch that is
+checked out in another worktree. Before that, gather the branches into one
+checkout first.
 
 Stacked pull requests were in private preview at that version. The
 extension's README says it does not work unless the feature has been enabled

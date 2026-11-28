@@ -92,6 +92,21 @@ test("a line of links that does not start at the front page is left alone", () =
   );
 });
 
+test("an earlier breadcrumb is found after the page moves a folder deeper", () => {
+  const old = "# Page\n\n[ai-toolkit](../README.md)\n\nText.\n";
+  expect(apply(old, "[ai-toolkit](../../README.md) / [Up](../README.md)")).toBe(
+    "# Page\n\n[ai-toolkit](../../README.md) / [Up](../README.md)\n\nText.\n",
+  );
+});
+
+test("a line of links that starts at a README beside the page is left alone", () => {
+  const text = "# Guide\n\n[Documentation](README.md) / [API](api.md)\n";
+  const crumb = "[ai-toolkit](../README.md) / [Docs](README.md)";
+  expect(apply(text, crumb)).toBe(
+    `# Guide\n\n${crumb}\n\n[Documentation](README.md) / [API](api.md)\n`,
+  );
+});
+
 test("scope covers reading pages and leaves out agent and published files", () => {
   expect(inScope("practices/engineering/code-review.md")).toBe(true);
   expect(inScope("docs/controls.md")).toBe(true);

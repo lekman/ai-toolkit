@@ -73,15 +73,16 @@ A release is a fixed thing that can be shipped at any time.
   change is a fix, a feature or a breaking change, and a tool turns that
   into the next version number.
 - **Each part is built once.** Packages and container images are published
-  with that version and never changed afterwards. They go to a registry that
-  users cannot install from, or under a tag that marks them as not yet
-  released.
+  with that version and never changed afterwards. Until the release is
+  qualified, they go to a registry that users cannot install from.
 - **A manifest lists every part.** It names each package, image and
   infrastructure component at its exact version. It is the bill of
   materials for the whole release, and the record of what ran where.
 
 Publishing where users can install is shipping. A package on a public
-registry reaches its users at once, before any test in staging has run. For
+registry reaches its users at once, before any test in staging has run. A
+tag that marks it as a pre-release does not change that, because anyone can
+still install it. For
 a library that has no environment of its own, the publish is the shipment,
 so its qualification and security tests run before the publish.
 
@@ -112,15 +113,15 @@ what the version holds.
 <details>
 <summary>What each kind of test shows</summary>
 
-| Test                       | Shows                                                  | Typical evidence                             |
-| -------------------------- | ------------------------------------------------------ | -------------------------------------------- |
-| Installation qualification | The right versions are deployed and configured         | The manifest compared with what is running   |
-| Operational qualification  | Each function works as its specification says          | Scenario results against the deployed system |
-| Performance qualification  | The system does its job under real conditions          | End to end runs with realistic data and load |
-| Intended use               | A user can reach the outcome the system exists for     | Journeys recorded step by step, with results |
-| Security scan              | No known weakness in dependencies, images or config    | Scan reports for this exact version          |
-| Source security audit      | No confirmed weakness is open in the code              | Findings and a ledger for this exact commit  |
-| Penetration test           | An attacker cannot get in by the paths that were tried | Each attempt, its result and what was fixed  |
+| Test                       | Shows                                                                 | Typical evidence                             |
+| -------------------------- | --------------------------------------------------------------------- | -------------------------------------------- |
+| Installation qualification | The right versions are deployed and configured                        | The manifest compared with what is running   |
+| Operational qualification  | Each function works as its specification says                         | Scenario results against the deployed system |
+| Performance qualification  | The system does its job under real conditions                         | End to end runs with realistic data and load |
+| Intended use               | A user can reach the outcome the system exists for                    | Journeys recorded step by step, with results |
+| Security scan              | The known weaknesses the scan found in dependencies, images or config | Scan reports for this exact version          |
+| Source security audit      | The confirmed weaknesses the audit found in the code of this commit   | Findings and a ledger for this exact commit  |
+| Penetration test           | Whether each attack that was tried got in                             | Each attempt, its result and what was fixed  |
 
 The scenarios written for the specification are the source of the
 operational tests. See [Goals and Specifications](goals-and-specs.md).
@@ -196,10 +197,11 @@ request answers neither.
 - The tests run in an environment the author of the change cannot edit.
 
 This repository uses the first part of this. Changes merge through required
-checks, and a release tool assigns versions from the commit messages. It has
-no environment to ship to, so the staging steps do not apply here. It
-publishes packages to a public registry, and for those the publish is the
-shipment.
+checks. A release tool opens a pull request that proposes each next version
+from the commit messages, some version numbers are still bumped by hand, and
+a maintainer publishes the packages with a script. It has no environment to
+ship to, so the staging steps do not apply here. The packages go to a public
+registry, and for those the publish is the shipment.
 
 [Software Delivery for a Changing System](https://www.lekman.com/blog/what-cicd-should-actually-do)
 sets out the three practices in more depth, with the release manifest and

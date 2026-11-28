@@ -15,7 +15,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, posix } from "node:path";
 
 /** Folders whose pages people read on GitHub, so a way back up is useful. */
@@ -125,15 +125,23 @@ export function apply(text: string, crumb: string): string {
   const heading = lines.findIndex((line) => line.startsWith("# "));
   if (heading === -1) return text;
   // An earlier breadcrumb is the first line of text under the title, when it
-  // holds nothing but links and the first one points at the front page.
+  // has the shape of one: nothing but links, every link pointing at a README,
+  // and the first one climbing at least one folder. The shape, and not the
+  // words or the exact path, is what is compared, so the old line is still
+  // found after a page is renamed or moved. A line of links to other pages
+  // is left alone.
   let next = heading + 1;
   while (next < lines.length && lines[next]?.trim() === "") next += 1;
   const line = lines[next] ?? "";
   const onlyLinks = /^\[[^\]]+\]\([^)]+\)( \/ \[[^\]]+\]\([^)]+\))*$/.test(
     line,
   );
-  const startsAtFront = /^\[[^\]]+\]\((?:\.\.\/)*README\.md\)/.test(line);
-  if (onlyLinks && startsAtFront) {
+  const targets = [...line.matchAll(/\]\(([^)]+)\)/g)].map((m) => m[1] ?? "");
+  const isBreadcrumb =
+    onlyLinks &&
+    /^(\.\.\/)+README\.md$/.test(targets[0] ?? "") &&
+    targets.every((target) => /(^|\/)README\.md$/.test(target));
+  if (isBreadcrumb) {
     lines[next] = crumb;
     return lines.join("\n");
   }
@@ -154,7 +162,9 @@ if (import.meta.main) {
       { cwd: root, encoding: "utf8" },
     )
       .split("\0")
-      .filter(Boolean),
+      // The index still lists a page that was deleted and not yet staged.
+      // Reading it would throw, so keep only pages that are on disk.
+      .filter((path) => path !== "" && existsSync(join(root, path))),
   );
   const read = (path: string): string => readFileSync(join(root, path), "utf8");
   const exists = (path: string): boolean => pages.has(path);

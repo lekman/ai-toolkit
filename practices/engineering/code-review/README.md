@@ -174,10 +174,12 @@ above applies to automation as much as to people.
    approves, a person owns it, and each approval leaves a record.
 
 Approving a merge is also not approving a shipment, provided the two are
-separate steps. Where a merge changes the main branch and nothing deploys
-from it, a merge puts nothing in front of a user, and the heavy tests run
-later against the deployed release. In a repository that deploys on merge,
-approving the merge is approving the shipment. See
+separate steps. Where a merge changes the main branch, nothing deploys from
+it and nobody uses the branch directly, a merge puts nothing in front of a
+user, and the heavy tests run later against the deployed release. In a
+repository that deploys on merge, approving the merge is approving the
+shipment. The same holds where others run the main branch as it is, such as
+a shared workflow or action that callers pin to the branch name. See
 [Merge, Release and Ship](../merge-release-ship.md).
 
 The person does not leave. They stop approving each change and own the

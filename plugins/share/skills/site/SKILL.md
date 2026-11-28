@@ -1,6 +1,6 @@
 ---
 name: site
-description: Put a site running on this machine, such as Storybook or a dev server, on the tailnet and give its address, so the operator can open it from a phone or another computer. Uses `tailscale serve`, so the site stays off the LAN and the internet. Use when the user says "/share:site 6006", "load this over tailscale", "make Storybook reachable on the tailnet", or "take port 6006 off tailscale".
+description: Put a site running on this machine, such as Storybook or a dev server, on the tailnet and give its address, so the operator can open it from a phone or another computer, and list it as a named card on the share home page. Uses `tailscale serve`, so the site stays off the LAN and the internet. Use when the user says "/share:site 6006", "load this over tailscale", "make Storybook reachable on the tailnet", or "take port 6006 off tailscale".
 user-invocable: true
 ---
 
@@ -34,12 +34,15 @@ Run it with `run_in_background`, then wait until `curl -s http://127.0.0.1:<port
 ## Step 2: Put It on the Tailnet
 
 ```bash
-bun "${CLAUDE_PLUGIN_ROOT}/scripts/share.ts" expose <port>
+bun "${CLAUDE_PLUGIN_ROOT}/scripts/share.ts" expose <port> --name "<what it is>" [--description "<one line>"]
 ```
 
 It checks that something answers on `127.0.0.1:<port>`, runs `tailscale serve --bg`,
 then fetches the tailnet address from this machine and prints it. It warns when the site
-also listens on a wider address, and says how to fix that.
+also listens on a wider address, and says how to fix that. `--name` and `--description` label
+the site's card on the home page; without them the card is named from the page title or the
+folder the server runs in. Rename a card later with `name <port> "<name>"`, or hide one with
+`name <port> --hide`.
 
 ### When It Fails
 
@@ -66,7 +69,9 @@ Give the address in a fenced block on its own, so it can be copied:
 http://server.tailnet.ts.net:6006/
 ```
 
-Say what the site is, which port, and that it is reachable from the tailnet only.
+Say what the site is, which port, and that it is reachable from the tailnet only. Also give
+the home page's link (printed by `expose`), where every shared site, page and file set is
+listed as a card that shows whether it answers.
 
 ## Taking It Down
 
@@ -82,5 +87,5 @@ bun "${CLAUDE_PLUGIN_ROOT}/scripts/share.ts" unexpose <port>  # take one port of
 - **Tailnet only.** Never use `tailscale funnel`, which publishes to the internet.
 - **No patient or customer data.** A site that shows real records stays local.
 - **`tailscale serve` settings outlive the session.** They are kept by the Tailscale daemon,
-  so a port stays on the tailnet after the site stops (it then returns an error). Take ports
-  off when the work is done.
+  so a port stays on the tailnet after the site stops (it then returns an error, and the home
+  page lists it under "not answering"). Take ports off when the work is done.

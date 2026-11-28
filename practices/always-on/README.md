@@ -105,12 +105,16 @@ parts are estimates at four characters for each token.
 
 | Source                                                  | Tokens | Share | Decision                                                 |
 | ------------------------------------------------------- | ------ | ----- | -------------------------------------------------------- |
-| The app's system prompt and the tools it loads in full  | 61,000 | 49%   | Keep. It is not the operator's to change.                |
-| The list of tool names that load on demand              | 31,000 | 25%   | Cut. Turn off connectors that coding sessions never use. |
+| The app's system prompt and the tools it loads in full  | 78,000 | 63%   | Keep. It is not the operator's to change.                |
+| The list of tool names that load on demand              | 14,500 | 12%   | Cut. Turn off connectors that coding sessions never use. |
 | The prompt snapshot                                     | 11,000 | 9%    | Keep. Its content was not examined.                      |
 | The list of skills                                      | 9,600  | 8%    | Cut. Turn off plugins that this repository does not use. |
 | Instruction files: standards, `CLAUDE.md`, memory index | 5,900  | 5%    | Keep, and remove memory entries that repeat a standard.  |
 | Server instructions and the list of agents              | 4,800  | 4%    | Keep.                                                    |
+
+The first row is what is left after the others are counted. The list of tool
+names held 1,066 names, and three connectors that no coding session used
+held 586 of them.
 
 The headless session reported its own split: 12,300 tokens of system tools,
 10,700 of memory files, 10,000 of skills, 2,900 of system prompt and 2,600

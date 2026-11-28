@@ -15,13 +15,13 @@ would run.
 
 ## Status
 
-| Step             | State on 28 Nov 2026                                           |
-| ---------------- | -------------------------------------------------------------- |
-| Queue it         | Done. One commit is recorded below                             |
-| Read it          | Done. All 22 files in the repository were read                 |
-| Run in isolation | Done. The validator tests ran, and one audit ran               |
-| Evaluate         | Done, on one small sample                                      |
-| Decide           | Open. The owner decides, and the options are listed at the end |
+| Step             | State on 28 Nov 2026                                                |
+| ---------------- | ------------------------------------------------------------------- |
+| Queue it         | Done. One commit is recorded below                                  |
+| Read it          | Done. All 22 files in the repository were read                      |
+| Run in isolation | Done. The validator tests ran, and one audit ran                    |
+| Evaluate         | Done, on one small sample                                           |
+| Decide           | Decided for now. A second pilot on a real codebase, and no gate yet |
 
 ## The Result in Short
 
@@ -325,9 +325,13 @@ would have run untrusted code beside it.
 
 ## Decide
 
-The decision is open and belongs to the repository's owner. The table in
-[Third-Party Skills](third-party-skills.md) gives four choices. This is what
-the evidence says about each.
+The repository's owner decided on 28 Nov 2026, with the evidence above. The
+skill gets a second pilot, on a real codebase, at the recorded commit and
+inside a container. No gate is built on it until that pilot is in. This is
+the first row of the table below, limited to a pilot.
+
+The table in [Third-Party Skills](third-party-skills.md) gives four choices.
+This is what the evidence says about each.
 
 | Choice        | What it would mean here                                                    | Evidence for                                                   | Evidence against                                                        |
 | ------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -336,7 +340,13 @@ the evidence says about each.
 | Take the idea | Write a smaller skill around the ledger, the verdicts and the second agent | The method is clear, and the parent drifted from the long text | The validators and their 65 tests would have to be rebuilt              |
 | Reject        | Remove it from the list                                                    | A plain agent found the same weaknesses on the sample          | It asks for no more access than it needs, and it leaves a usable record |
 
-Whichever is chosen, four things are needed that the skill does not bring.
+The second pilot should answer what the sample could not. It should record
+the size of the codebase, the profile and budget, the tokens and time, the
+count of records under each verdict, and whether the findings went beyond
+what a plain request reports.
+
+Four things are needed that the skill does not bring, whatever the second
+pilot shows.
 
 1. A gate script on top of the validators.
 2. A private store for the run folders.

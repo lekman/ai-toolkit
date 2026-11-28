@@ -12,8 +12,8 @@ This page is a design, written on 28 Nov 2026. It describes how the
 [Merge, Release and Ship](merge-release-ship.md). The skill was read at one
 commit and run once, in isolation, on a small sample.
 [Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
-holds that evidence. No pipeline runs the audit yet, and the decision to adopt
-the skill is open.
+holds that evidence. No pipeline runs the audit yet. The owner's decision is
+a second pilot on a real codebase before any gate is built.
 
 ## Workflow
 

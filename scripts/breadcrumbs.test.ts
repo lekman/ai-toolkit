@@ -107,6 +107,25 @@ test("a line of links that starts at a README beside the page is left alone", ()
   );
 });
 
+test("a title with square brackets still gives one breadcrumb", () => {
+  const path = "practices/engineering/code-review.md";
+  const bracketed = (page: string): string =>
+    page === "README.md" ? "Toolkit [preview]" : title(page);
+  const crumb = render(path, ancestors(path, exists), bracketed);
+  expect(crumb).toStartWith(String.raw`[Toolkit \[preview\]](../../README.md)`);
+  const once = apply("# Page\n\nText.\n", crumb);
+  expect(apply(once, crumb)).toBe(once);
+});
+
+test("a backslash in a title is escaped as well as a bracket", () => {
+  const path = "practices/README.md";
+  const odd = (): string => String.raw`C:\tools [x\]`;
+  const crumb = render(path, ancestors(path, exists), odd);
+  expect(crumb).toBe(String.raw`[C:\\tools \[x\\\]](../README.md)`);
+  const once = apply("# Page\n\nText.\n", crumb);
+  expect(apply(once, crumb)).toBe(once);
+});
+
 test("scope covers reading pages and leaves out agent and published files", () => {
   expect(inScope("practices/engineering/code-review.md")).toBe(true);
   expect(inScope("docs/controls.md")).toBe(true);

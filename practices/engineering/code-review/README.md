@@ -190,13 +190,17 @@ count rises.
 <details>
 <summary>Approving without a person on GitHub</summary>
 
-- **A ruleset** requires passing checks, resolved threads and one approving
-  review.
+- **A ruleset** requires passing checks, resolved threads, one approving
+  review, and review from code owners. It also dismisses an approval when
+  new commits are pushed. Without that, an approval given before a later
+  push still counts for the commits that came after it.
 - **A second GitHub App** gives that review when the policy's conditions
   hold. GitHub refuses a review from a pull request's own author, so the
   approver must be a different identity from the one that opened it.
 - **Code owners** decide which paths the app may approve alone. A path owned
-  by a person still waits for that person.
+  by a person still waits for that person, but only while the ruleset
+  requires review from code owners. Without that setting the app's approval
+  is enough for every path.
 - **Claude Approvals**, in public beta for Team and Enterprise plans, is a
   pull request check driven by a policy file at `.claude/approvals.yml`.
   Each rule names paths and says whether Claude or a person must approve.
@@ -257,9 +261,13 @@ thread is resolved.
 
 - A branch ruleset requires every review thread to be resolved before a
   merge. An unanswered comment then blocks the pull request.
-- The same ruleset requests the Copilot review, so no pull request skips it.
-- Instruction files are covered by code owners, so a change to them needs
-  approval from a person.
+- The same ruleset requests a Copilot review of each pull request whose
+  author has access to Copilot. It does not hold the merge until that review
+  has posted.
+- Instruction files are covered by code owners, and the ruleset requires
+  review from code owners, so a change to them needs approval from a person.
+  That holds for a change pushed after the approval only where the ruleset
+  dismisses stale approvals.
 - A second app approves the kinds of change the policy names, and the
   approving job fails when the approver and the author are the same.
 
@@ -268,6 +276,7 @@ This repository uses all four. Its ruleset sets
 and its `.github/copilot-instructions.md` tells Copilot to skip release and
 dependency pull requests. Its release pull requests are approved by a
 second app when the author, the label and every changed path match, and no
-person reads them. It has no `REVIEW.md` or `.coderabbit.yaml`. Claude
-Code Review is not installed here, and CodeRabbit has so far been run on it
-from the command line only.
+person reads them. Its ruleset does not dismiss stale approvals, so here an
+approval given before a later push still counts. It has no `REVIEW.md` or
+`.coderabbit.yaml`. Claude Code Review is not installed here, and CodeRabbit
+reviews its pull requests with its default settings.

@@ -106,9 +106,17 @@ export function render(
   title: (ancestor: string) => string,
 ): string {
   const from = posix.dirname(path);
-  return chain
-    .map((up) => `[${title(up)}](${posix.relative(from, up)})`)
-    .join(" / ");
+  return (
+    chain
+      // A square bracket in a title would end the link text early, so it is
+      // written with a backslash in front. A backslash is escaped too, or one
+      // that stood before a bracket would cancel that bracket's escape.
+      .map(
+        (up) =>
+          `[${title(up).replace(/[\\[\]]/g, "\\$&")}](${posix.relative(from, up)})`,
+      )
+      .join(" / ")
+  );
 }
 
 /**
@@ -133,9 +141,10 @@ export function apply(text: string, crumb: string): string {
   let next = heading + 1;
   while (next < lines.length && lines[next]?.trim() === "") next += 1;
   const line = lines[next] ?? "";
-  const onlyLinks = /^\[[^\]]+\]\([^)]+\)( \/ \[[^\]]+\]\([^)]+\))*$/.test(
-    line,
-  );
+  // Link text is any run of characters where a square bracket only appears
+  // with a backslash in front, as render writes it.
+  const link = String.raw`\[(?:\\.|[^\\\]])+\]\([^)]+\)`;
+  const onlyLinks = new RegExp(`^${link}( \\/ ${link})*$`).test(line);
   const targets = [...line.matchAll(/\]\(([^)]+)\)/g)].map((m) => m[1] ?? "");
   const isBreadcrumb =
     onlyLinks &&

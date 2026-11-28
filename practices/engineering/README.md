@@ -79,8 +79,6 @@ reviews its own work.
 - [Third-Party Skills](third-party-skills.md) queues a skill someone else
   wrote, reads it, runs it in isolation and evaluates the result before it is
   installed.
-- [Vetting Record for the Security Audit Skill](security-audit-skill-vetting.md)
-  is one skill taken through those steps, as a worked example.
 
 ## Four Rules Behind Every Page
 

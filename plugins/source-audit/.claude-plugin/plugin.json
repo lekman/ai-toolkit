@@ -1,0 +1,5 @@
+{
+  "name": "source-audit",
+  "description": "Source security review with a second opinion: one agent reads the code for places where a trust boundary fails, a fresh agent tries to disprove each candidate, and the result is a set of records under three verdicts that a script validates and a release gate can read (/source-audit:review)",
+  "version": "0.1.0"
+}

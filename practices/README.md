@@ -154,8 +154,6 @@ machine runs.
   change.
 - [Third-Party Skills](engineering/third-party-skills.md): queue, read,
   isolate and evaluate a skill someone else wrote before installing it.
-- [Vetting Record for the Security Audit Skill](engineering/security-audit-skill-vetting.md):
-  one skill taken through those steps, as a worked example.
 
 ## An Agent-Operated Notes Vault
 

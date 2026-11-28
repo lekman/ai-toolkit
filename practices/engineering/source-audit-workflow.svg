@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 426" role="img" aria-labelledby="sa-title sa-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
   <title id="sa-title">The workflow of a source security audit on a release</title>
-  <desc id="sa-desc">Six steps. 1, release commit: one repository at the commit the release was cut from. 2, restore earlier runs: the ledger and findings from a private evidence store. 3, audit in isolation: hunter and verifier agents, with no credential worth taking. 4, validate and gate: scripts check the records and block on a confirmed finding. 5, store the evidence: the records are kept privately, with a digest in the manifest. 6, triage the leads: a person resolves each lead that needs validation. A dashed arrow from step 5 back to step 2 shows that the next run reads the stored records.</desc>
+  <desc id="sa-desc">Six steps. 1, release commit: one repository at the commit the release was cut from. 2, restore earlier runs: the findings of earlier runs, from a private evidence store. 3, audit in isolation: hunter and verifier agents, with no credential worth taking. 4, validate and gate: scripts check the records and block on a confirmed finding. 5, store the evidence: the records are kept privately, with a digest in the manifest. 6, triage the leads: a person resolves each lead that needs validation. A dashed arrow from step 5 back to step 2 shows that the next run reads the stored records.</desc>
   <style>
     .box { stroke-width: 2; }
     .ttl { font-size: 20px; font-weight: 700; fill: #1f2328; }
@@ -64,8 +64,8 @@
     <text class="num" x="31" y="32">2</text>
     <text class="tag" x="54" y="32">MACHINE</text>
     <text class="ttl" x="18" y="68">Restore earlier runs</text>
-    <text class="dsc" x="18" y="91">The ledger and findings from</text>
-    <text class="dsc" x="18" y="110">a private evidence store</text>
+    <text class="dsc" x="18" y="91">Earlier findings, from a</text>
+    <text class="dsc" x="18" y="110">private evidence store</text>
   </g>
   <path class="arw" d="M579 86H614" marker-end="url(#sa-head)"/>
 

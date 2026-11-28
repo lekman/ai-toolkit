@@ -118,6 +118,13 @@
       "description": "Check whether the services you depend on are in an outage, from official status feeds (Atlassian Statuspage sites, Microsoft 365 and Azure, Google Workspace, AWS) and HTTP probes of your own endpoints, before retrying or debugging a failing call",
       "category": "productivity",
       "tags": ["status", "outage", "incident", "monitoring", "statuspage"]
+    },
+    {
+      "name": "source-audit",
+      "source": "./plugins/source-audit",
+      "description": "Source security review with a second opinion: one agent hunts for places where a trust boundary fails, a fresh agent tries to disprove each candidate, and the run leaves records under three verdicts that a script validates and a release gate can read",
+      "category": "development",
+      "tags": ["security", "audit", "code-review", "release", "verification"]
     }
   ]
 }

@@ -59,6 +59,10 @@ waiting on a person or idle. It nudges an idle piece that still has work to
 do, and it tells a person after three nudges with no progress. The check-in
 ends when nothing is left open.
 
+In the terms of [Always-On Agents](../always-on/README.md), the check-in is
+the timers part. Today it lives in the session that set it, so it is lost
+when that session ends and is not resumed.
+
 ### Deliver Reviewable Pieces
 
 Ten subagents must not produce ten unrelated pull requests for one feature.

@@ -8,7 +8,10 @@ the rest optional. Progress and access visibility follow as content lands.
 
 ## Notifications
 
-Three techniques, chosen by how far you are from the keyboard.
+Three techniques, chosen by how far you are from the keyboard. A notification
+is the outbox part of an always-on agent, and
+[Always-On Agents](../always-on/README.md) measures how many of them were
+needed.
 
 ### At the Keyboard: Remote Control
 

@@ -194,3 +194,13 @@ end up watching instead of working alongside.
   distance from the keyboard: built-in remote control, Pushover for long runs,
   and a local sound cue tuned so it means _look now_. Progress and access
   visibility are named but not yet built.
+
+## Always-On
+
+A session that wakes on an event, works and sleeps again needs five parts
+around it. They are an event inbox, timers, memory, permissions and an outbox.
+
+- [Always-On Agents](always-on/README.md): the toolkit checked against
+  Anthropic's article part by part, with twenty properties rated by test, a
+  measured baseline for context, messages and lost follow-ups, and a score
+  for what to build first.

@@ -84,6 +84,9 @@ The commander session runs these, in this order:
 
 ### Reaching the Operator Away From the Terminal
 
+In the terms of [Always-On Agents](../../practices/always-on/README.md), this
+is the outbox.
+
 The commander pushes to the operator's phone through
 [`/commander:notify`](skills/notify/SKILL.md) when something waits on them for
 the roster's `notify.threshold_minutes` (default 30):
@@ -186,15 +189,18 @@ links. No transcripts, because every reply lands in the commander's context.
 ## Questions and Messages Across Accounts
 
 These hooks run in every session where the plugin is enabled, on every
-Claude account and machine, not only in the commander and its roster.
+Claude account and machine, not only in the commander and its roster. In the
+terms of [Always-On Agents](../../practices/always-on/README.md), `deliver.ts`
+is the reader of the event inbox, and `no-ask.ts` is the part of permissions
+that sends a question to a person.
 
-| Hook               | Script                             | Does                                                                                 |
-| ------------------ | ---------------------------------- | ------------------------------------------------------------------------------------ |
-| `PreToolUse`       | [no-ask.ts](scripts/no-ask.ts)     | Turns `AskUserQuestion` into an Atlas question, then refuses the call and says why   |
-| `SessionStart`     | [deliver.ts](scripts/deliver.ts)   | Adds new messages for this session as context                                        |
-| `UserPromptSubmit` | [deliver.ts](scripts/deliver.ts)   | The same, beside the prompt                                                          |
-| `Stop`             | [deliver.ts](scripts/deliver.ts)   | Blocks the stop with new messages as its reason, so the agent reads them and goes on |
-| `Stop`, background | `deliver.ts watch` (`asyncRewake`) | Waits up to an hour while the session is idle, and wakes it when a message arrives   |
+| Hook               | Script                             | Does                                                                                  |
+| ------------------ | ---------------------------------- | ------------------------------------------------------------------------------------- |
+| `PreToolUse`       | [no-ask.ts](scripts/no-ask.ts)     | Turns `AskUserQuestion` into an Atlas question, then refuses the call and says why    |
+| `SessionStart`     | [deliver.ts](scripts/deliver.ts)   | Adds new messages for this session as context                                         |
+| `UserPromptSubmit` | [deliver.ts](scripts/deliver.ts)   | The same, beside the prompt                                                           |
+| `Stop`             | [deliver.ts](scripts/deliver.ts)   | Blocks the stop with new messages as its reason, so the agent reads them and goes on  |
+| `Stop`, background | `deliver.ts watch` (`asyncRewake`) | Waits up to 55 minutes while the session is idle, and wakes it when a message arrives |
 
 The refusal says the call was automated, names the Atlas question and the
 [ask](skills/ask/SKILL.md) skill, and tells the agent to keep working. The

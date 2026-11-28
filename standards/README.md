@@ -21,7 +21,8 @@ tune in isolation.
 - **[PROPORTION.md](PROPORTION.md)**: match effort to what the work is worth;
   perfection is the enemy of good.
 - **[PULL_REQUESTS.md](PULL_REQUESTS.md)**: turn on Auto-fix for every pull
-  request it opens, so CI failures and review comments come back to the session.
+  request it opens, so CI failures and review comments come back to the session,
+  and stop after two review rounds.
 
 [CLAUDE.md](CLAUDE.md) is the entry point: it does nothing but `@`-import the
 files above.

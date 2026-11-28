@@ -31,11 +31,27 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    auto_incremental_review: false
     ignore_title_keywords:
       - "chore: release"
 ```
 
-The last key skips pull requests by title. Use a phrase that only your
+`auto_incremental_review` is on by default, and CodeRabbit then reviews
+every push to a pull request it has reviewed. With a coding agent that fixes
+every comment, each review causes a push and each push causes a review. Set
+it to `false`. CodeRabbit then reviews once when the pull request opens, and
+a comment that holds only `@coderabbitai review` asks for one review of the
+commits pushed since. With the setting off it may still compare a push with
+its earlier findings and resolve the threads that the push fixed. On a pull
+request that is already open, the comment `@coderabbitai pause` stops its
+automatic reviews until someone comments `@coderabbitai resume`. See
+[Control when reviews run](https://docs.coderabbit.ai/pr-reviews/when-reviews-run).
+
+Where review of each push stays on, `auto_pause_after_reviewed_commits` is
+the limit. CodeRabbit pauses after that many reviewed commits, and the
+default is 5.
+
+The last key in the sample skips pull requests by title. Use a phrase that only your
 release pull requests carry. A common word such as "release" would also skip
 a product change titled "Fix release authorisation", and it would do so
 without a message.

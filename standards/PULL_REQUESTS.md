@@ -18,6 +18,25 @@ and say once that CI is not being watched.
 This covers pull requests you open, not ones you find. Turn Auto-fix on for
 someone else's pull request only when I ask.
 
+## Stop After Two Review Rounds
+
+**NEVER** let a reviewer and Auto-fix answer each other without a limit. A
+reviewer that reviews each push comments on every fix, and Auto-fix pushes a
+fix for every comment, so each one wakes the other.
+
+A round is one review and the fixes for it. Round one is the review that runs
+when the pull request opens. Ask for round two once, after those fixes are
+pushed. After round two:
+
+- Reply to each new review comment in its thread, and do not push a fix for
+  it.
+- List the comments that are still open for me, and stop.
+- Keep fixing CI failures and merge conflicts. They do not count as rounds.
+
+If a reviewer reviews each push by itself, pause it on that pull request
+where it has a command for that, such as `@coderabbitai pause`. Then tell me
+which setting turns it off for the repository.
+
 ## Link Every Pull Request to Its Task
 
 **AFTER** you open a pull request for work that has a task in the task

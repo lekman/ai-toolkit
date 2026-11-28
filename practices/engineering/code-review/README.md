@@ -30,9 +30,9 @@ pages before you rely on one.
    its own instructions. See
    [Sessions and Subagents](../sessions-and-subagents.md) for stacks.
 4. **Answer comments.** Each comment gets one reply in its own thread, as
-   fixed, declined or deferred. A reviewer reads the pushed fixes again
-   only when it is set to. Copilot needs "Review new pushes" turned on in
-   the ruleset, and otherwise the author asks it for a new review.
+   fixed, declined or deferred. No reviewer reviews a new push by itself.
+   The author asks for one more review after the fixes, and the pull
+   request stops at two rounds.
 5. **Threads resolved.** A branch ruleset blocks the merge while any thread
    is open, so no comment can be passed over.
 6. **Approve and merge.** A written policy approves once the gates pass and
@@ -210,20 +210,42 @@ count rises.
 
 ### Limit the Rounds
 
-A coding agent can run a reviewer on its own work before the pull request
-opens, fix what it finds, and run it again. Stop after two rounds.
+A round is one review and the fixes for it. Stop after two rounds. The
+limit applies to a local review before the pull request opens, and again to
+the reviewers on the pull request.
 
 1. **Round one** reviews the work. The agent checks each finding against the
    code and fixes the real ones.
 2. **Round two** confirms the fixes and catches what they broke.
 
-Anything still open after round two goes into the pull request with a reply,
-or to a person. Do not loop until the reviewer returns nothing. A reviewer
-does not give the same answer twice, so each run can raise a new minor
-remark and the loop may never end. Each run also spends from an hourly
-limit.
+Anything still open after round two gets a reply and goes to a person. Do
+not loop until the reviewer returns nothing. A reviewer does not give the
+same answer twice, so each run can raise a new minor remark and the loop may
+never end. Each run also spends from a rate limit or a budget.
 
 One round is enough for a small change whose fixes are mechanical.
+
+On a pull request the loop can run with nobody in it. A reviewer set to
+review each push comments on every fix. A coding agent set to fix every
+comment pushes after every review. Each one then starts the other, and the
+rounds continue until a rate limit or a budget stops them. Turn off review
+of each new push for every reviewer, so that a reviewer reviews once when
+the pull request opens and the author asks for round two once, after the
+fixes.
+
+| Reviewer           | Review once                                   | Ask for round two              |
+| ------------------ | --------------------------------------------- | ------------------------------ |
+| Claude Code Review | Set "Review runs" to "Once after PR creation" | Comment `@claude review`       |
+| GitHub Copilot     | Leave "Review new pushes" off in the ruleset  | Request Copilot as a reviewer  |
+| CodeRabbit         | Set `auto_incremental_review: false`          | Comment `@coderabbitai review` |
+
+Give the coding agent the same limit. After round two it replies to a new
+comment and does not push a fix for it. A reviewer's reply that only
+confirms a fix needs no answer.
+
+These settings stop a reviewer from starting a round by itself. Nothing
+counts the rounds that someone asks for, so the limit of two is a rule the
+author and the coding agent keep.
 
 Check every finding before acting on it. A reviewer's finding is a claim,
 the same as an agent's report of success.
@@ -277,6 +299,7 @@ and its `.github/copilot-instructions.md` tells Copilot to skip release and
 dependency pull requests. Its release pull requests are approved by a
 second app when the author, the label and every changed path match, and no
 person reads them. Its ruleset does not dismiss stale approvals, so here an
-approval given before a later push still counts. It has no `REVIEW.md` or
-`.coderabbit.yaml`. Claude Code Review is not installed here, and CodeRabbit
-reviews its pull requests with its default settings.
+approval given before a later push still counts. It has no `REVIEW.md`, and
+Claude Code Review is not installed here. Neither reviewer reviews a new
+push by itself. The Copilot rule in the ruleset sets `review_on_push` to
+false, and `.coderabbit.yaml` sets `auto_incremental_review` to false.

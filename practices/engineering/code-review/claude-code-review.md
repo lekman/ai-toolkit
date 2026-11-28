@@ -20,7 +20,12 @@ The service is for Team and Enterprise plans, and it needs no workflow file.
 2. Add `REVIEW.md` at the repository root. It is plain Markdown with no
    schema, so the five answers are written as instructions. The root is the
    only place it is read from as the file for the whole repository.
-3. Open a test pull request that is not a draft. A check named Claude Code
+3. Set "Review runs" for each repository to "Once after PR creation". A
+   repository starts at "After every push", which reviews every fix an agent
+   pushes. A comment that starts with `@claude review` asks for one more
+   review. See
+   [Set up Code Review](https://code.claude.com/docs/en/code-review-setup.md).
+4. Open a test pull request that is not a draft. A check named Claude Code
    Review appears.
 
 ```markdown

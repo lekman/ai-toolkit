@@ -16,9 +16,10 @@ pages before you rely on one.
    request is then reviewed without anyone asking, when its author has
    access to Copilot code review and the budget that pays for it is not
    used up. A pull request from any other author is not reviewed, and
-   reviews stop when the budget runs out. Turn on
-   "Review new pushes" in the same ruleset. Without it Copilot does not
-   review a new push by itself, and someone has to ask it for a new review.
+   reviews stop when the budget runs out. Leave "Review new pushes" off in
+   the same ruleset. Copilot then reviews once when the pull request opens,
+   and the author requests it again for a second round after the fixes. See
+   [Agent Code Review](README.md) for why review of each push is off.
 2. Add `.github/copilot-instructions.md` for rules that apply to the whole
    repository.
 3. Add files under `.github/instructions/` for rules that apply to some

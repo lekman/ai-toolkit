@@ -863,7 +863,9 @@ test("the command line logs a later failure against the run it belongs to", () =
   expect(later.code).toBe(0);
   expect(JSON.parse(later.out).entry.run).toBe(found.id);
 
-  expect(JSON.parse(cli("recent").out)[0].run).toBe(found.id);
+  // Both entries can carry the same second, so do not rely on their order.
+  const listed: { run?: string }[] = JSON.parse(cli("recent").out);
+  expect(listed.map((e) => e.run).filter(Boolean)).toEqual([found.id]);
   const saved = join(root, "reviews");
   const reviewed = cli("review", "--out-dir", saved);
   const [file] = readdirSync(saved);
@@ -877,7 +879,16 @@ test("the command line logs a later failure against the run it belongs to", () =
   const exported = join(root, "export");
   mkdirSync(join(exported, "runs"), { recursive: true });
   writeFileSync(join(exported, "runs", "partial.json"), JSON.stringify(ok));
-  expect(cli("review", "--export", exported).out).toContain(
-    "Left out of the export, because they are not valid entries: partial.",
-  );
+  const note =
+    "Left out of the export, because they are not valid entries: partial.";
+  expect(cli("review", "--export", exported).out).toContain(note);
+
+  // Commands that print JSON keep stdout as JSON and warn on stderr.
+  writeFileSync(join(root, "log.jsonl"), "not an entry\n", { flag: "a" });
+  for (const command of [["review", "--json"], ["modes"], ["recent"]]) {
+    const run = cli(...command, "--export", exported);
+    expect(() => JSON.parse(run.out)).not.toThrow();
+    expect(run.err).toContain(note);
+    expect(run.err).toContain("because they are not valid entries: 1 line.");
+  }
 });

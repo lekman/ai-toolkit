@@ -795,6 +795,25 @@ export function renderReview(r: Review): string {
   return lines.join("\n");
 }
 
+/**
+ * One sentence per source that holds records which are not valid entries.
+ * Those records are in no count, so every command that reads the log says so.
+ */
+export function leftOut(root = home(), exportDir?: string): string[] {
+  const lines: string[] = [];
+  const { skipped } = readLog(root);
+  if (skipped)
+    lines.push(
+      `Left out of ${logFile(root)}, because they are not valid entries: ${skipped} ${skipped === 1 ? "line" : "lines"}.`,
+    );
+  const invalid = exportDir ? readExport(exportDir).invalid : [];
+  if (invalid.length)
+    lines.push(
+      `Left out of the export, because they are not valid entries: ${invalid.join(", ")}.`,
+    );
+  return lines;
+}
+
 // --------------------------------------------------------------------- cli
 
 const fail = (message: string): never => {
@@ -823,6 +842,10 @@ function main(argv: string[]): void {
   const { flags, rest } = parseFlags(args);
   const root = home();
   const print = (value: unknown) => console.log(JSON.stringify(value, null, 2));
+  // Commands that print JSON keep it clean and send these lines to stderr.
+  const warnLeftOut = () => {
+    for (const line of leftOut(root, flags.export)) console.error(line);
+  };
   const all = () =>
     merge(
       flags.export ? readExport(flags.export).entries : [],
@@ -872,9 +895,11 @@ function main(argv: string[]): void {
       break;
     case "modes":
       print(knownModes(all(), flags.skill));
+      warnLeftOut();
       break;
     case "recent":
       print(recentEntries(all(), { date: flags.date, skill: flags.skill }));
+      warnLeftOut();
       break;
     case "review": {
       const severities = {
@@ -894,20 +919,13 @@ function main(argv: string[]): void {
         mkdirSync(dirname(resolve(out)), { recursive: true });
         writeFileSync(out, JSON.stringify(result, null, 2) + "\n");
       }
-      if (flags.json) print(result);
-      else {
+      if (flags.json) {
+        print(result);
+        warnLeftOut();
+      } else {
         console.log(renderReview(result));
+        for (const line of leftOut(root, flags.export)) console.log(line);
         if (flags["out-dir"]) console.log(`Saved as ${out}`);
-        const { skipped } = readLog(root);
-        if (skipped)
-          console.log(
-            `Left out of ${logFile(root)}, because they are not valid entries: ${skipped} ${skipped === 1 ? "line" : "lines"}.`,
-          );
-        const invalid = flags.export ? readExport(flags.export).invalid : [];
-        if (invalid.length)
-          console.log(
-            `Left out of the export, because they are not valid entries: ${invalid.join(", ")}.`,
-          );
       }
       break;
     }

@@ -8,7 +8,11 @@ the rest optional. Progress and access visibility follow as content lands.
 
 ## Notifications
 
-Three techniques, chosen by how far you are from the keyboard.
+Three techniques, chosen by how far you are from the keyboard. A notification
+is the outbox part of an always-on agent.
+[Always-On Agents](../always-on/README.md) counts the messages that sessions
+wrote at the end of turns the operator did not start, and how many of those
+were needed. It does not count pushes.
 
 ### At the Keyboard: Remote Control
 

@@ -13,6 +13,9 @@ there only. The `paths` front matter controls when each rule loads.
 - **[Diagrams](diagrams.md)** (`**/*.md`, `**/*.svg`): when a diagram is an
   SVG laid out by hand and when it stays in Mermaid, the six diagram types
   and the values to draw each one, and how to place it on the page.
+- **[Sharing work](sharing.md)** (always loaded): share documents, sites and files with the
+  `share` plugin and give the links it prints, never a local path alone. Copy it into
+  `~/.claude/rules/` and import it from the global CLAUDE.md.
 - **React layers** (`**/*.ts`, `**/*.tsx`): six rules for a React app split
   into a design system, an app layer, zod contracts and business logic.
   Start with [react-layers.md](react-layers.md), which links the others:

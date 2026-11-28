@@ -12,6 +12,11 @@
  *   bun share.ts expose <port>     put a site listening on 127.0.0.1:<port> on the tailnet
  *   bun share.ts unexpose <port>   take it off again
  *   bun share.ts exposed           list what this machine serves on the tailnet
+ *   bun share.ts page <file.md>... [--slug S] [--name N]   share a Markdown page
+ *   bun share.ts unpage <slug>...  stop sharing pages
+ *   bun share.ts name <port[/path]> <name> [--description D] [--hide]   name a service's card
+ *   bun share.ts refresh           check every service now, for the home page
+ *   bun share.ts home              print the home page's address
  *
  * add      Copies the paths into a new share, so the share keeps what was shared even when
  *          the originals change or a temp directory is cleaned. Records the session that
@@ -20,7 +25,11 @@
  * remove   Deletes shares by id, every share of one session (this one when no id is given),
  *          or every expired share.
  * expose   Runs `tailscale serve`, which proxies the tailnet name to 127.0.0.1. Nothing is
- *          opened on the LAN or the internet.
+ *          opened on the LAN or the internet. --name and --description label its card.
+ * page     Renders Markdown to a page on the site. Pages stay until `unpage`.
+ * home     The site's home page lists every service the machine serves on the tailnet
+ *          (checked every two minutes), every shared page and every file share, as cards.
+ *          See home.ts for the files it keeps.
  *
  * The files site listens on 127.0.0.1 only, so the tailnet is the one way in.
  *
@@ -46,6 +55,19 @@ import {
 } from "node:fs";
 import { homedir, hostname } from "node:os";
 import { basename, join, resolve, sep } from "node:path";
+
+import {
+  addPage,
+  discover,
+  HOME_PATH,
+  homePage,
+  PAGES_PATH,
+  readConfig,
+  readPages,
+  readStatus,
+  slugOf,
+  writeName,
+} from "./home.ts";
 
 /** One set of shared files, as `share.json` in its own directory. */
 export interface Share {
@@ -275,7 +297,7 @@ const sessionLine = (s: Share["session"]) =>
 const shareCard = (s: Share, linkTitle: boolean) => {
   const files = s.files
     .map((f) => {
-      const href = `/s/${encodeURIComponent(s.id)}/${encodeURIComponent(f.name)}${f.dir ? "/" : ""}`;
+      const href = `${HOME_PATH}/s/${encodeURIComponent(s.id)}/${encodeURIComponent(f.name)}${f.dir ? "/" : ""}`;
       const thumb = IMAGE.test(f.name)
         ? `<a href="${href}"><img src="${href}" alt="${esc(f.name)}" loading="lazy"></a>`
         : "";
@@ -283,7 +305,7 @@ const shareCard = (s: Share, linkTitle: boolean) => {
     })
     .join("");
   const title = linkTitle
-    ? `<a href="/s/${encodeURIComponent(s.id)}/">${esc(s.title)}</a>`
+    ? `<a href="${HOME_PATH}/s/${encodeURIComponent(s.id)}/">${esc(s.title)}</a>`
     : esc(s.title);
   return `<section class="share"><h3>${title}</h3>
 <div class="muted">Shared ${when(s.sharedAt)} · removed ${when(s.expiresAt)} · <code>${esc(s.id)}</code></div><ul>${files}</ul></section>`;
@@ -301,7 +323,7 @@ const indexPage = (shares: Share[], session: null | string) => {
   const body = [...groups.values()]
     .map((g) => {
       const filter = g[0]!.session.id
-        ? ` · <a href="/?session=${encodeURIComponent(g[0]!.session.id)}">only this session</a>`
+        ? ` · <a href="${HOME_PATH}/files?session=${encodeURIComponent(g[0]!.session.id)}">only this session</a>`
         : "";
       return `<h2>${sessionLine(g[0]!.session)}${filter}</h2>${g.map((s) => shareCard(s, true)).join("")}`;
     })
@@ -309,7 +331,7 @@ const indexPage = (shares: Share[], session: null | string) => {
   return page(
     "Shared files",
     `<h1>Shared files</h1>
-<p class="muted">Temporary files that Claude Code sessions on <strong>${esc(hostname())}</strong> shared, grouped by the session that shared them, newest first. Each share is removed at the time shown.${session ? ` Showing one session; <a href="/">show all</a>.` : ""}</p>
+<p class="muted">Temporary files that Claude Code sessions on <strong>${esc(hostname())}</strong> shared, grouped by the session that shared them, newest first. Each share is removed at the time shown.${session ? ` Showing one session; <a href="${HOME_PATH}/files">show all</a>.` : ""}</p>
 ${body || `<p>Nothing is shared right now.</p>`}`,
   );
 };
@@ -324,7 +346,7 @@ const dirPage = (s: Share, rel: string, abs: string) => {
     .join("");
   return page(
     rel,
-    `<p><a href="/s/${encodeURIComponent(s.id)}/">${esc(s.title)}</a></p><h1>${esc(rel)}</h1><p class="muted">${sessionLine(s.session)}</p><ul>${items}</ul>`,
+    `<p><a href="${HOME_PATH}/s/${encodeURIComponent(s.id)}/">${esc(s.title)}</a></p><h1>${esc(rel)}</h1><p class="muted">${sessionLine(s.session)}</p><ul>${items}</ul>`,
   );
 };
 
@@ -343,18 +365,42 @@ export function handle(
   const url = new URL(req.url);
   if (req.method !== "GET" && req.method !== "HEAD")
     return new Response("Method not allowed", { status: 405 });
-  if (url.pathname === "/healthz") return new Response(MARKER);
+  // Links carry the tailnet mounts (/home, /plans); Tailscale strips them, a
+  // direct request to the site's port does not, so both forms are accepted.
+  if (url.pathname === HOME_PATH)
+    return Response.redirect(`${HOME_PATH}/`, 301);
+  const path = url.pathname.startsWith(`${HOME_PATH}/`)
+    ? url.pathname.slice(HOME_PATH.length)
+    : url.pathname;
+  if (path === "/healthz") return new Response(MARKER);
+  const pageMatch = new RegExp(`^(?:${PAGES_PATH})?/([a-z0-9-]+)\\.html$`).exec(
+    path,
+  );
+  if (pageMatch) {
+    const file = join(root, "pages", `${pageMatch[1]}.html`);
+    if (existsSync(file)) return new Response(Bun.file(file));
+  }
   const live = readShares(root).filter((s) => !expired(s, now));
-  if (url.pathname === "/")
+  if (path === "/")
+    return html(
+      homePage(
+        readStatus(root),
+        readPages(root),
+        live,
+        readConfig(root).publicBase?.replace(/^https?:\/\//, "") ?? hostname(),
+        now,
+      ),
+    );
+  if (path === "/files")
     return html(indexPage(live, url.searchParams.get("session")));
-  const m = /^\/s\/([^/]+)\/(.*)$/.exec(url.pathname);
+  const m = /^\/s\/([^/]+)\/(.*)$/.exec(path);
   if (!m) return html(page("Not found", "<h1>Not found</h1>"), 404);
   const share = live.find((s) => s.id === decodeURIComponent(m[1]!));
   if (!share)
     return html(
       page(
         "Gone",
-        `<h1>Not shared</h1><p>This share was removed or has expired. <a href="/">All shares</a></p>`,
+        `<h1>Not shared</h1><p>This share was removed or has expired. <a href="${HOME_PATH}/">Everything shared</a></p>`,
       ),
       404,
     );
@@ -362,7 +408,7 @@ export function handle(
     return html(
       page(
         share.title,
-        `<p><a href="/">All shares</a></p><p class="muted">${sessionLine(share.session)}</p>${shareCard(share, false)}`,
+        `<p><a href="${HOME_PATH}/">Everything shared</a></p><p class="muted">${sessionLine(share.session)}</p>${shareCard(share, false)}`,
       ),
     );
   const filesDir = join(root, share.id, "files");
@@ -372,7 +418,7 @@ export function handle(
     return html(page("Not found", "<h1>Not found</h1>"), 404);
   if (statSync(abs).isDirectory()) {
     if (!url.pathname.endsWith("/"))
-      return Response.redirect(`${url.pathname}/`, 301);
+      return Response.redirect(`${HOME_PATH}${path}/`, 301);
     if (existsSync(join(abs, "index.html")))
       return new Response(Bun.file(join(abs, "index.html")));
     return html(dirPage(share, rel, abs));
@@ -437,7 +483,7 @@ async function probe(
       redirect: "manual",
       signal: AbortSignal.timeout(5000),
     });
-    return { status: res.status, text: (await res.text()).slice(0, 200) };
+    return { status: res.status, text: (await res.text()).slice(0, 20000) };
   } catch {
     return null;
   }
@@ -470,7 +516,10 @@ function wideListeners(p: number): string[] {
 }
 
 /** Puts 127.0.0.1:<port> on the tailnet and returns the tailnet address, after checking it answers there. */
-export async function expose(p: number): Promise<string> {
+export async function expose(
+  p: number,
+  label: { description?: string; name?: string } = {},
+): Promise<string> {
   if (!(await answers(`http://127.0.0.1:${p}/`)))
     fail(
       1,
@@ -496,7 +545,61 @@ export async function expose(p: number): Promise<string> {
     console.error(
       `Warning: port ${p} also listens on ${wide.join(", ")}, so the local network can reach it too. Restart the site bound to 127.0.0.1 to keep it tailnet only.`,
     );
+  if (label.name || label.description)
+    writeName(home(), String(p), {
+      ...(label.name ? { name: label.name } : {}),
+      ...(label.description ? { description: label.description } : {}),
+    });
+  await refresh().catch(() => undefined);
   return url;
+}
+
+/** The address a person opens for a path on the site: the public address when set, else the tailnet's. */
+export function linkFor(
+  path: string,
+  base = readConfig(home()).publicBase,
+): string {
+  return `${base ?? `https://${noTailnet() ? "tailnet.invalid" : dnsName()}`}${path}`;
+}
+
+/** Checks every route `tailscale serve` has, for the home page. */
+async function refresh() {
+  if (noTailnet()) return [];
+  const status = JSON.parse(tailscale(["serve", "status", "--json"]) || "{}");
+  return discover(
+    home(),
+    status,
+    async (p) => {
+      const r = await probe(`http://127.0.0.1:${p}/`);
+      return {
+        code: r?.status ?? null,
+        title: r
+          ? (/<title>([^<]{1,120})<\/title>/i.exec(r.text)?.[1]?.trim() ?? null)
+          : null,
+      };
+    },
+    (p) => {
+      try {
+        const pid = execFileSync("lsof", ["-tiTCP:" + p, "-sTCP:LISTEN"], {
+          encoding: "utf8",
+        })
+          .trim()
+          .split("\n")[0];
+        if (!pid) return null;
+        const cwd = execFileSync(
+          "lsof",
+          ["-a", "-p", pid, "-d", "cwd", "-Fn"],
+          { encoding: "utf8" },
+        )
+          .split("\n")
+          .find((l) => l.startsWith("n"));
+        return cwd ? cwd.slice(1).replace(/^\/Users\/[^/]+\//, "~/") : null;
+      } catch {
+        return null;
+      }
+    },
+    port(),
+  );
 }
 
 async function up(): Promise<string> {
@@ -526,7 +629,25 @@ async function up(): Promise<string> {
         `Port ${p} is taken by something else. Set SHARE_PORT to another port.`,
       );
   }
-  return expose(p);
+  const url = await expose(p);
+  // The home page and pages also sit on the tailnet's HTTPS address, where an
+  // easy public name (config.json publicBase) can redirect to them.
+  for (const mount of [HOME_PATH, PAGES_PATH]) {
+    try {
+      tailscale([
+        "serve",
+        "--bg",
+        "--https=443",
+        `--set-path=${mount}`,
+        `http://127.0.0.1:${p}`,
+      ]);
+    } catch (e) {
+      console.error(
+        `Could not mount ${mount} on the tailnet's HTTPS address: ${(e as Error).message}`,
+      );
+    }
+  }
+  return url;
 }
 
 // ----------------------------------------------------------------------- CLI
@@ -544,7 +665,9 @@ function flags(argv: string[]) {
     if (
       next !== undefined &&
       !next.startsWith("--") &&
-      ["name", "session", "title", "ttl"].includes(a.slice(2))
+      ["description", "name", "session", "slug", "title", "ttl"].includes(
+        a.slice(2),
+      )
     ) {
       opts[a.slice(2)] = next;
       i++;
@@ -581,9 +704,9 @@ async function main(argv: string[]) {
         `Shared at ${share.sharedAt}; removed after ${share.expiresAt}`,
       );
       if (noTailnet()) return;
-      const base = await up();
-      console.log(`Open: ${base}s/${share.id}/`);
-      console.log(`All shares: ${base}`);
+      await up();
+      console.log(`Open: ${linkFor(`${HOME_PATH}/s/${share.id}/`)}`);
+      console.log(`Everything shared: ${linkFor(`${HOME_PATH}/`)}`);
       return;
     }
     case "remove": {
@@ -627,6 +750,9 @@ async function main(argv: string[]) {
       mkdirSync(home(), { recursive: true });
       sweep();
       setInterval(() => sweep(), 3_600_000);
+      // The home page shows what answered at the last check, at most two minutes old.
+      refresh().catch(() => undefined);
+      setInterval(() => refresh().catch(() => undefined), 120_000);
       Bun.serve({
         fetch: (req) => handle(req),
         hostname: "127.0.0.1",
@@ -659,8 +785,80 @@ async function main(argv: string[]) {
       const p = Number(rest[0]);
       if (!Number.isInteger(p) || p <= 0)
         return fail(2, "expose needs a port, such as 6006");
-      return console.log(await expose(p));
+      const url = await expose(p, {
+        ...(str(opts.name) ? { name: str(opts.name) } : {}),
+        ...(str(opts.description)
+          ? { description: str(opts.description) }
+          : {}),
+      });
+      console.log(url);
+      return console.log(`Listed on ${linkFor(`${HOME_PATH}/`)}`);
     }
+    case "page": {
+      if (!rest.length) return fail(2, "page needs a Markdown file");
+      const missing = rest.filter((f) => !existsSync(f));
+      if (missing.length) return fail(2, `not found: ${missing.join(", ")}`);
+      if (rest.length > 1 && opts.slug)
+        return fail(2, "--slug names one page; give one file with it");
+      const id =
+        str(opts.session) ?? process.env.CLAUDE_CODE_SESSION_ID ?? null;
+      const session = {
+        cwd: process.cwd(),
+        id,
+        name: str(opts.name) ?? sessionName(id),
+      };
+      const pages = rest.map((f) =>
+        addPage(
+          resolve(f),
+          home(),
+          session,
+          new Date(),
+          str(opts.slug) ? slugOf(str(opts.slug)!) : undefined,
+        ),
+      );
+      if (!noTailnet()) await up();
+      for (const pg of pages)
+        console.log(`${pg.title}: ${linkFor(`${PAGES_PATH}/${pg.slug}.html`)}`);
+      return console.log(`Everything shared: ${linkFor(`${HOME_PATH}/`)}`);
+    }
+    case "unpage": {
+      if (!rest.length) return fail(2, "unpage needs page slugs");
+      for (const slug of rest)
+        for (const ext of ["html", "json"])
+          rmSync(join(home(), "pages", `${slugOf(slug)}.${ext}`), {
+            force: true,
+          });
+      return console.log(`Removed ${rest.map(slugOf).join(", ")}`);
+    }
+    case "name": {
+      const [key, ...words] = rest;
+      if (
+        !key ||
+        !/^\d+(\/[\w./-]+)?$/.test(key) ||
+        (!words.length && !opts.hide && !opts.description)
+      )
+        return fail(
+          2,
+          'name needs a port or port/path and a name, such as: name 6006 "Design system"',
+        );
+      writeName(home(), key, {
+        ...(words.length ? { name: words.join(" ") } : {}),
+        ...(str(opts.description)
+          ? { description: str(opts.description) }
+          : {}),
+        ...(opts.hide ? { hide: true } : {}),
+      });
+      await refresh().catch(() => undefined);
+      return console.log(`Named ${key}. ${linkFor(`${HOME_PATH}/`)}`);
+    }
+    case "refresh": {
+      const found = await refresh();
+      return console.log(
+        `${found.filter((x) => x.up && !x.hidden).length} answering, ${found.filter((x) => !x.up && !x.hidden).length} not answering, ${found.filter((x) => x.hidden).length} hidden`,
+      );
+    }
+    case "home":
+      return console.log(linkFor(`${HOME_PATH}/`));
     case "unexpose": {
       const p = Number(rest[0]);
       if (!Number.isInteger(p) || p <= 0)
@@ -673,7 +871,7 @@ async function main(argv: string[]) {
     default:
       return fail(
         2,
-        "usage: share.ts add|remove|list|up|down|serve|expose|unexpose|exposed (see the header of this file)",
+        "usage: share.ts add|remove|list|up|down|serve|expose|unexpose|exposed|page|unpage|name|refresh|home (see the header of this file)",
       );
   }
 }

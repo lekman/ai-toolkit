@@ -8,6 +8,9 @@ there only. The `paths` front matter controls when each rule loads.
   checks for documentation prose, pointing to the `tone` plugin's skill for
   the full guidance. Plugins cannot ship rule files, so this copy step is the
   distribution mechanism.
+- **[Sharing work](sharing.md)** (always loaded): share documents, sites and files with the
+  `share` plugin and give the links it prints, never a local path alone. Copy it into
+  `~/.claude/rules/` and import it from the global CLAUDE.md.
 - **React layers** (`**/*.ts`, `**/*.tsx`): six rules for a React app split
   into a design system, an app layer, zod contracts and business logic.
   Start with [react-layers.md](react-layers.md), which links the others:

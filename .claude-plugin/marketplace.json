@@ -61,7 +61,7 @@
     {
       "name": "share",
       "source": "./plugins/share",
-      "description": "Share over Tailscale: put a local site such as Storybook on the tailnet (/share:site), and register or remove sets of temporary files on a tailnet-only files site that shows which session shared each set and when (/share:files)",
+      "description": "Share over Tailscale: a local site as a named card (/share:site), a Markdown document as a page (/share:page) and temporary files (/share:files), all on one tailnet-only home page that shows which services answer",
       "category": "productivity",
       "tags": ["tailscale", "share", "files", "storybook", "workflow"]
     },

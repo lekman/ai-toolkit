@@ -24,7 +24,8 @@ tune in isolation.
   request it opens, so CI failures and review comments come back to the session.
 
 [CLAUDE.md](CLAUDE.md) is the entry point: it does nothing but `@`-import the
-files above.
+files above, and the [sharing rule](../rules/sharing.md) (share documents, sites
+and files with the `share` plugin and give its links, never a local path alone).
 
 ## How to Reuse
 
@@ -36,6 +37,11 @@ files above.
 
 If you already have a `~/.claude/CLAUDE.md`, merge rather than overwrite: append
 the `@`-imports to your existing file instead of replacing it.
+
+The sharing rule is imported as `@../rules/sharing.md`, which resolves when
+`CLAUDE.md` is imported from a checkout of this repository. When you copy the
+files instead, copy `rules/sharing.md` to `~/.claude/rules/sharing.md` and import
+it as `@rules/sharing.md`.
 
 ## Output Style
 

@@ -71,13 +71,23 @@ I ask.
 reviewer that reviews each push comments on every fix, and Auto-fix pushes a
 fix for every comment, so each one wakes the other.
 
-A round is one review and the fixes for it. Round one is the review that runs
-when the pull request opens. Ask for round two once, after those fixes are
-pushed. After round two:
+A round is one pass in which a reviewer asks for changes, and the fixes for
+it. The pass can be a new review, or replies in threads that are already
+open. Both count.
 
-- Reply to each new review comment in its thread, and do not push a fix for
-  it.
-- List the comments that are still open for me, and stop.
+Round one is the review that runs when the pull request opens. Round two is
+either the reviewer's replies that ask for more or one review that you ask
+for, whichever comes first after round one. It counts whether or not you
+pushed a fix in between. Do not ask for a review when replies have already
+used round two.
+
+After round two:
+
+- Reply once in each thread that asks for a change, with your reason, and
+  do not push a fix for it. Do not reply again in a thread you have already
+  answered after round two.
+- Do not answer a reply that only confirms or withdraws.
+- List what is still open for me, and stop.
 - Keep fixing CI failures and merge conflicts. They do not count as rounds.
 
 If a reviewer reviews each push by itself, pause it on that pull request

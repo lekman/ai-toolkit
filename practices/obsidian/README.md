@@ -198,9 +198,14 @@ agents use, so it is checked and recorded the same way.
 
 **Hooks join the work to the notes.** The tasks plugin refuses `git commit`
 and `git push` until the session has claimed or added a task. It refuses
-`gh pr create`, and completing a task, until that task has a Details page.
-Every pull request can then be traced to a task, and every finished task to
-a page that explains it.
+`gh pr create`, and completing a task, until that task names a Details page
+in its `detailsId`. Every pull request can then be traced to a task, and a
+finished task names the page that explains it.
+
+The hooks have two limits. They check that the task names a page, and they
+do not check that the page exists in the vault. They also fail open. When
+the task database does not answer, `gh pr create` and the completion go
+through, so an outage never stops work and can leave a gap in the trace.
 
 **Pull requests move the task.** The agent links its pull request to the
 task and sets the state to `review`.
@@ -209,9 +214,11 @@ task and sets the state to `review`.
 released.
 
 **Reports come from the same records.** `tasks report` answers "what was done
-last week for this client" from the task logs, the state changes, the pull
-requests and the Details pages. Nothing is written a second time for the
-stand-up or the client call.
+last week for this client" from the task logs, the state changes and the
+linked pull requests. It covers the tasks that had a log note or a state
+change in the period. For each one it names the Details page and does not
+read it, so open the page for the evidence. Nothing is written a second time
+for the stand-up or the client call.
 
 ### Why the Work List Left the Vault
 
@@ -302,7 +309,10 @@ on every machine. Three matter for the vault:
   and the hooks described above.
 - [Planner](../../plugins/planner/README.md) writes a master plan for each
   repository, and a page for each goal, into the client's `Initiatives/`
-  folder. The goal page is the task's Details page.
+  folder. The goal page is meant to be the task's Details page. The goal
+  skill links the two only for a client marked as moved in `Dashboard.md`,
+  which is left over from the move. Without that marker, set the task's
+  `detailsId` to the page's file name yourself.
 - [Meeting](../../plugins/meeting/README.md) turns a meeting recorded and
   transcribed on your own machine into a meeting note in the client's folder.
   [Meetings](../meetings/README.md) describes the practice.
@@ -344,7 +354,7 @@ other.
 
 ## Setting It up Yourself
 
-Steps 1 to 5 give you the vault and the agent. Steps 6 to 10 add the task
+Steps 1 to 5 give you the vault and the agent. Steps 6 to 11 add the task
 database, Atlas and the index, and need a computer that stays on.
 
 1. Install Obsidian and open a folder as a vault.
@@ -365,7 +375,10 @@ database, Atlas and the index, and need a computer that stays on.
 9. In the dashboard server's `tasks.json`, map each client in the task
    database to its key in Atlas. A client you leave out is still read from a
    `Dashboard.md` in the vault.
-10. Index the vault once it holds enough notes to be worth searching.
+10. Set up [gh-events](../../packages/gh-events/README.md) on the same
+    computer. Without it, a task does not move when its pull request is
+    approved, merged or released.
+11. Index the vault once it holds enough notes to be worth searching.
     [RAG Toolkit Design (Draft)](../../packages/rag/DESIGN.md) covers the
     install and the checks that follow it.
 

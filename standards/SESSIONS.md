@@ -51,3 +51,18 @@ stop and tell me what it last did and what you think blocks it.
 Where there is no scheduling tool, list the sessions before you end each
 turn, act on the table, and say once that nothing watches them between
 turns.
+
+## Report Only What Changed
+
+**WHEN** a turn starts from an event and not from me, end it with a report
+only if it holds a result, a decision I must make or a blocker. An event is a
+command that finished, a note from another session, a pull request event or
+a check-in.
+
+"Still waiting", "no change" and a status I already have are not reports. End
+such a turn with one line of at most ten words.
+
+A turn I started always gets its full answer.
+
+I read these messages across many sessions. In a sample of 50 of them, 12
+gave me nothing to act on.

@@ -215,7 +215,8 @@ The scores need two cautions.
 2. **Smaller start.** Turn off the connectors and plugins that a coding
    session does not use, then measure the start again.
 3. **Start quiet.** A session that wakes on an event reports only a result,
-   a decision or a blocker. "Still waiting" is not a report.
+   a decision or a blocker. "Still waiting" is not a report. The
+   [Sessions](../../standards/SESSIONS.md) standard now says so.
 4. **One owner.** One session answers for a pull request. Other sessions send
    it a message.
 5. **Batch.** A session that receives several notes in one turn answers once.

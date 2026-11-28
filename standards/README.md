@@ -25,7 +25,8 @@ tune in isolation.
   and stop after two review rounds.
 - **[SESSIONS.md](SESSIONS.md)**: follow up every session or subagent it
   starts, with a scheduled check-in that nudges one that has gone idle with
-  its work unfinished.
+  its work unfinished. A turn that an event started reports only a result, a
+  decision or a blocker.
 
 [CLAUDE.md](CLAUDE.md) is the entry point: it does nothing but `@`-import the
 files above, and the [sharing rule](../rules/sharing.md) (share documents, sites

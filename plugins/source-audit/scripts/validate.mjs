@@ -13,7 +13,13 @@
  * are adapted from cloudflare/security-audit-skill (MIT). See the README.
  */
 
-import { lstatSync, readFileSync } from "node:fs";
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  openSync,
+  readFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -527,30 +533,33 @@ export function summarise(run, findings) {
  */
 function readJson(folder, name) {
   const path = join(folder, name);
+  const fail = (change) => ({ error: failure(name, change, "files") });
+  let fd;
   try {
-    const stat = lstatSync(path);
-    if (!stat.isFile())
-      return {
-        error: failure(
-          name,
-          "make it a regular file, not a link or a folder",
-          "files",
-        ),
-      };
-    if (stat.size > MAX_BYTES)
-      return {
-        error: failure(name, `keep it under ${MAX_BYTES} bytes`, "files"),
-      };
-    return { value: JSON.parse(readFileSync(path, "utf8")) };
+    // Open once and check the open file, so the file that is checked is the
+    // file that is read. A link is refused at open, and a pipe cannot block.
+    fd = openSync(
+      path,
+      constants.O_RDONLY |
+        (constants.O_NOFOLLOW ?? 0) |
+        (constants.O_NONBLOCK ?? 0),
+    );
   } catch (error) {
-    const missing = /** @type {{code?: string}} */ (error).code === "ENOENT";
-    return {
-      error: failure(
-        name,
-        missing ? "write this file into the run folder" : "make it valid JSON",
-        "files",
-      ),
-    };
+    const code = /** @type {{code?: string}} */ (error).code;
+    if (code === "ENOENT") return fail("write this file into the run folder");
+    return fail("make it a regular file, not a link or a folder");
+  }
+  try {
+    const stat = fstatSync(fd);
+    if (!stat.isFile()) {
+      return fail("make it a regular file, not a link or a folder");
+    }
+    if (stat.size > MAX_BYTES) return fail(`keep it under ${MAX_BYTES} bytes`);
+    return { value: JSON.parse(readFileSync(fd, "utf8")) };
+  } catch {
+    return fail("make it valid JSON");
+  } finally {
+    closeSync(fd);
   }
 }
 

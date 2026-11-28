@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -332,6 +338,16 @@ describe("the command line", () => {
     expect(failures.map((f) => f.change)).toEqual([
       "make it a regular file, not a link or a folder",
       "make it valid JSON",
+    ]);
+  });
+
+  test("a folder in place of a file fails, and so does a file that is too large", () => {
+    const dir = mkdtempSync(join(tmpdir(), "source-audit-"));
+    mkdirSync(join(dir, "run.json"));
+    writeFileSync(join(dir, "findings.json"), " ".repeat(5 * 1024 * 1024 + 1));
+    expect(validateFolder(dir).failures.map((f) => f.change)).toEqual([
+      "make it a regular file, not a link or a folder",
+      "keep it under 5242880 bytes",
     ]);
   });
 

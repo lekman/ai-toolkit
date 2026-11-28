@@ -20,6 +20,16 @@ export function findBypass(command: string): string | null {
   return null;
 }
 
+/** The text shown when a command is refused: what was wrong, what to do, and the rule. */
+export function blockMessage(reason: string): string {
+  return [
+    `${reason}. An agent must not circumvent commit hooks.`,
+    "Run the command without it and fix what the hook reports. If the hook is wrong, propose the change in a pull request for a person to approve.",
+    "Rule: no-hook-bypass",
+    "Docs: docs/checks.md#no-hook-bypass",
+  ].join("\n");
+}
+
 if (import.meta.main) {
   let payload: { tool_name?: string; tool_input?: { command?: string } };
   try {
@@ -30,7 +40,7 @@ if (import.meta.main) {
   if (payload.tool_name === "Bash") {
     const reason = findBypass(payload.tool_input?.command ?? "");
     if (reason) {
-      const message = `${reason}. An agent must not circumvent commit hooks — ask the repo owner to change or relax the hook; only a human may approve that.`;
+      const message = blockMessage(reason);
       // Belt and suspenders: the structured JSON deny and exit code 2 each block
       // a PreToolUse call on their own, so emit both.
       console.log(

@@ -125,9 +125,14 @@ case "$MODE" in
     for f in $FILES; do
       match=$(git show ":$f" 2>/dev/null | grep -IinE "$PATTERN" | head -3)
       if [ -n "$match" ]; then
-        HITS="${HITS}${f}:
+        if [ "$QUIET" -eq 1 ]; then
+          HITS="${HITS}${f}
+"
+        else
+          HITS="${HITS}${f}:
 $(echo "$match" | sed 's/^/    /')
 "
+        fi
       fi
     done
     ;;
@@ -135,8 +140,14 @@ $(echo "$match" | sed 's/^/    /')
   *)
     FILES=$(git ls-files --cached --others --exclude-standard | grep -vE "$EXCLUDE")
     [ -z "$FILES" ] && exit 0
-    HITS=$(printf '%s\n' "$FILES" | tr '\n' '\0' |
-      xargs -0 grep -IinE "$PATTERN" 2>/dev/null)
+    if [ "$QUIET" -eq 1 ]; then
+      # -l lists the files and leaves out the matching lines.
+      HITS=$(printf '%s\n' "$FILES" | tr '\n' '\0' |
+        xargs -0 grep -IilE "$PATTERN" 2>/dev/null)
+    else
+      HITS=$(printf '%s\n' "$FILES" | tr '\n' '\0' |
+        xargs -0 grep -HIinE "$PATTERN" 2>/dev/null)
+    fi
     ;;
 esac
 
@@ -158,6 +169,9 @@ if [ -n "$HITS" ]; then
     echo "Committed already: fixing the working tree is not enough. The blob" >&2
     echo "stays in history until it is rewritten." >&2
   fi
+  echo >&2
+  echo "Rule: no-client-content" >&2
+  echo "Docs: docs/checks.md#no-client-content" >&2
   exit 1
 fi
 

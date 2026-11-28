@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${CLIENT_TERMS:-}" ]; then
-            echo "::error::CLIENT_TERMS is not set. This check cannot run, and must not pass by default."
+            echo "::error::CLIENT_TERMS is not set, so this check cannot run and must not pass by default. Add a repository secret named CLIENT_TERMS that holds the contents of scripts/client-terms.txt. Rule: client-terms-secret. Docs: docs/checks.md#client-terms-secret"
             exit 1
           fi
           # No echo, no set -x: the value never reaches the log.
@@ -55,4 +55,4 @@ jobs:
       - name: Explain a failure without repeating it
         if: failure()
         run: |
-          echo "::notice::Client-identifying content found. Run 'scripts/check-no-client-content.sh --history' and '--messages' locally to see what and where."
+          echo "::notice::Client-identifying content found. Run 'scripts/check-no-client-content.sh --history' and '--messages' locally to list the files and commits that match, then replace each match with a placeholder. Rule: no-client-content. Docs: docs/checks.md#no-client-content"

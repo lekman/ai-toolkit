@@ -31,13 +31,19 @@ Run `git rev-parse HEAD` and `git status --porcelain` in the target. Keep the
 full commit. A review is of that commit and of nothing else.
 
 If the status prints anything, the working tree differs from the commit. Do
-not read it. Export the commit to a new folder beside the run folder.
+not read it. Clone the target into a new folder beside the run folder and
+check the commit out there.
 
 ```bash
-mkdir "<run folder>/../source-<short commit>" && git -C "<target>" archive HEAD | tar -x -C "<run folder>/../source-<short commit>"
+git clone --quiet --no-checkout "<target>" "<run folder>/../source-<short commit>" && git -C "<run folder>/../source-<short commit>" checkout --quiet --detach "<full commit>"
 ```
 
-The **source path** is the folder every agent reads from. It is the export
+The clone holds every file of the commit and leaves the target as it was. Do
+not use `git archive` for this. It leaves out any file the repository marks
+`export-ignore` and rewrites any file marked `export-subst`, so a repository
+could hide code from the review.
+
+The **source path** is the folder every agent reads from. It is the clone
 when one was made, and the target otherwise. Read from it yourself, and give
 it to every agent you start. Never give an agent the target's path when the
 working tree differs from the commit.

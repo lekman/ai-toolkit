@@ -24,7 +24,7 @@ refuses any field that is not listed here.
 | Field             | Rule                                                                                                         |
 | ----------------- | ------------------------------------------------------------------------------------------------------------ |
 | `commit`          | The full commit from `git rev-parse HEAD`, 40 characters                                                     |
-| `dirty`           | `true` when `git status --porcelain` printed anything. The review then read an export of the commit          |
+| `dirty`           | `true` when `git status --porcelain` printed anything. The review then read a clone at the commit            |
 | `scope`           | `{"kind": "repository"}`, `{"kind": "paths", "paths": [...]}` or `{"kind": "diff", "base": "<full commit>"}` |
 | `status`          | `complete`, or `incomplete` with an `incomplete_reason`                                                      |
 | `ran_target_code` | `true` if any agent ran the target's code. Then add `isolation`, as the request gave it                      |

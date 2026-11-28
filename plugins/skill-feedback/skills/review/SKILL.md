@@ -141,8 +141,9 @@ Report one line: `review: <n> runs, <m> modes ranked, top <skill>/<mode> RPN
 
 - The log is empty or holds only `ok` entries: report the run counts and
   stop. There is nothing to rank.
-- The script reports unreadable lines: tell the operator how many and which
-  file. Do not repair the file without asking.
+- The script reports lines or export documents that are not valid entries:
+  tell the operator how many and where. They are left out of every count. Do
+  not repair the file or the shared copy without asking.
 - The export fails with "no such artifact … (or no access)": this session's
   account cannot open the artifact. Review the local log and say that other
   machines' entries are missing.

@@ -252,7 +252,7 @@
   </section>
 
   <section aria-labelledby="h-runs">
-    <h2 id="h-runs">Recent runs</h2>
+    <h2 id="h-runs">Recent entries</h2>
     <div class="frame">
       <table>
         <thead>
@@ -344,10 +344,21 @@
       emptyRow(body, 6, "Counts appear here after the first logged run.");
       return;
     }
-    const bySkill = new Map();
-    for (const r of runs) {
+    // An entry that names an earlier entry in `run` belongs to that run, so
+    // a failure found later turns its run into one failed run.
+    const byRun = new Map();
+    for (const r of [...runs].reverse()) {
       const name = skillName(r.skill);
-      const s = bySkill.get(name) || {
+      const key = name + "\n" + String(r.run || r.id || "");
+      const run = byRun.get(key) || { skill: name, outcome: "ok", last: "" };
+      if (r.outcome === "corrected" || r.outcome === "failed")
+        run.outcome = r.outcome;
+      if (String(r.date || "") > run.last) run.last = String(r.date || "");
+      byRun.set(key, run);
+    }
+    const bySkill = new Map();
+    for (const run of byRun.values()) {
+      const s = bySkill.get(run.skill) || {
         runs: 0,
         ok: 0,
         corrected: 0,
@@ -355,14 +366,9 @@
         last: "",
       };
       s.runs += 1;
-      if (
-        r.outcome === "ok" ||
-        r.outcome === "corrected" ||
-        r.outcome === "failed"
-      )
-        s[r.outcome] += 1;
-      if (String(r.date || "") > s.last) s.last = String(r.date || "");
-      bySkill.set(name, s);
+      s[run.outcome] += 1;
+      if (run.last > s.last) s.last = run.last;
+      bySkill.set(run.skill, s);
     }
     const rows = [...bySkill.entries()]
       .sort((a, b) => b[1].runs - a[1].runs)
@@ -382,11 +388,13 @@
   function renderReview(review) {
     const body = document.getElementById("review-body");
     const note = document.getElementById("review-note");
-    const modes = review && Array.isArray(review.modes) ? review.modes : [];
-    if (!review || !modes.length) {
+    if (!review) {
       emptyRow(body, 8, "No review has been recorded yet.");
       return;
     }
+    const list = (value) => (Array.isArray(value) ? value : []);
+    const modes = list(review.modes);
+    const unscored = list(review.unscored);
     note.textContent =
       "Review of " +
       String(review.date || "") +
@@ -395,21 +403,33 @@
       " to " +
       String(review.to || "") +
       ". S is severity, O is occurrence, D is detection, and RPN is their product.";
-    const rows = modes.map((m) => {
+    if (!modes.length && !unscored.length) {
+      emptyRow(body, 8, "This review found no logged failures in its window.");
+      return;
+    }
+    const row = (m, scored) => {
       const tr = document.createElement("tr");
       tr.appendChild(cell(m.skill, "data"));
       tr.appendChild(cell(m.mode, "data"));
       tr.appendChild(cell(m.count, "num"));
       tr.appendChild(
-        cell(m.severity, "num" + (Number(m.severity) >= 9 ? " sev-high" : "")),
+        cell(
+          scored ? m.severity : "",
+          "num" + (Number(m.severity) >= 9 ? " sev-high" : ""),
+        ),
       );
       tr.appendChild(cell(m.occurrence, "num"));
       tr.appendChild(cell(m.detection, "num"));
-      tr.appendChild(cell(m.rpn, "num rpn"));
-      tr.appendChild(cell(m.decision, "text"));
+      tr.appendChild(cell(scored ? m.rpn : "not scored", "num rpn"));
+      tr.appendChild(
+        cell(scored ? m.decision : m.decision || "Needs a severity", "text"),
+      );
       return tr;
-    });
-    body.replaceChildren(...rows);
+    };
+    body.replaceChildren(
+      ...modes.map((m) => row(m, true)),
+      ...unscored.map((m) => row(m, false)),
+    );
   }
 
   async function start() {
@@ -430,14 +450,17 @@
       .limit(WINDOW)
       .onSnapshot(
         (snap) => {
-          const runs = snap.docs.map((d) => d.data() || {});
+          const runs = snap.docs.map((d) => ({
+            ...(d.data() || {}),
+            id: d.id,
+          }));
           renderSkills(runs);
           renderRuns(runs);
           if (!snap.metadata.fromCache) {
             clearTimeout(slow);
             statusEl.textContent =
               runs.length +
-              (runs.length === 1 ? " run" : " runs") +
+              (runs.length === 1 ? " entry" : " entries") +
               " loaded" +
               (runs.length === WINDOW ? " (the latest " + WINDOW + ")" : "") +
               ".";

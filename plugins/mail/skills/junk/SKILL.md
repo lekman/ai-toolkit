@@ -121,7 +121,9 @@ skip this step and report `log: skipped`.
   "Proposed deleting 2 of 14 messages that the operator moved to rescue".
 - `fix` is `config` when Step 6 added a rule for it, and `none` otherwise.
 - When the operator finds a wrongly deleted message days later, log it by
-  hand with `--detected later-use` and the date of that run.
+  hand with `--detected later-use`, the date of that run, and `--run` set to
+  the id of that run's entry. The log skill says how to find the id. The
+  review then counts the run once, as a failure.
 
 Report one line: `junk: <n> rescued, <m> deleted (read, recoverable),
 sweep: <a>+<d> marked read, rules: <k> added, log: <outcome>`.

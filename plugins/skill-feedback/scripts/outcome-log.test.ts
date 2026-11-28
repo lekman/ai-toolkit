@@ -23,6 +23,7 @@ import {
   pending,
   readExport,
   readLog,
+  recentEntries,
   renderReview,
   review,
   setSeverity,
@@ -75,6 +76,23 @@ function runs(
   }));
 }
 
+/** A complete document as the shared copy stores it: every field but the id. */
+function stored(fields: Partial<Entry> = {}): Omit<Entry, "id"> {
+  return {
+    cause: "",
+    cost: "",
+    date: "2026-11-28",
+    detected: "",
+    fix: "",
+    loggedAt: "2026-11-28T10:15:02.123Z",
+    mode: "",
+    outcome: "ok",
+    skill: "expenses@1.4.0",
+    what: "",
+    ...fields,
+  };
+}
+
 // -------------------------------------------------------------- validation
 
 test("an ok entry and a corrected entry are valid", () => {
@@ -91,7 +109,19 @@ test("a failed or corrected run needs a mode, what and detected", () => {
 
 test("an ok run carries no failure fields", () => {
   expect(validate({ ...ok, mode: "creates-duplicate" })).toEqual([
-    "an ok run has no mode, what or detected",
+    "an ok run has no mode, what, detected or run",
+  ]);
+});
+
+test("a later failure names the earlier entry of its run", () => {
+  const first = buildEntry(ok, NOW, "1a2b");
+  const later = { ...corrected, detected: "later-use", run: first.id };
+  expect(validate(later)).toEqual([]);
+  expect(buildEntry(later, NOW, "0002").run).toBe(first.id);
+  expect(buildEntry(corrected, NOW, "0003").run).toBeUndefined();
+  expect(validate({ ...corrected, run: "last tuesday" })).toHaveLength(1);
+  expect(validate({ ...ok, run: first.id })).toEqual([
+    "an ok run has no mode, what, detected or run",
   ]);
 });
 
@@ -169,6 +199,50 @@ test("unreadable lines are counted, not dropped silently", () => {
   expect(skipped).toBe(2);
 });
 
+test("a line that is JSON but not a complete entry is skipped", () => {
+  appendEntry(ok, root, NOW, "0001");
+  const lines = [
+    { id: "x", skill: "expenses" },
+    { ...stored(), id: "y", outcome: "maybe" },
+    { ...stored({ outcome: "failed" }), id: "z" },
+    { ...stored({ date: "28 November" }), id: "w" },
+  ];
+  writeFileSync(
+    join(root, "log.jsonl"),
+    lines.map((l) => JSON.stringify(l)).join("\n") + "\n",
+    { flag: "a" },
+  );
+  const { entries, skipped } = readLog(root);
+  expect(entries).toHaveLength(1);
+  expect(skipped).toBe(4);
+  expect(review(entries).skills[0].runs).toBe(1);
+});
+
+test("a failed outbox write leaves the log untouched, so a retry logs once", () => {
+  writeFileSync(
+    join(root, "config.json"),
+    JSON.stringify({ artifact: "https://example.test/a" }),
+  );
+  writeFileSync(join(root, "outbox"), "a file where the directory belongs");
+  expect(() => appendEntry(ok, root, NOW, "0001")).toThrow();
+  expect(readLog(root).entries).toEqual([]);
+
+  rmSync(join(root, "outbox"));
+  const { entry } = appendEntry(ok, root, NOW, "0001");
+  expect(readLog(root).entries.map((e) => e.id)).toEqual([entry.id]);
+  expect(pending(root).writes.map((w) => w.doc_id)).toEqual([entry.id]);
+});
+
+test("a failed log write removes the queued document again", () => {
+  writeFileSync(
+    join(root, "config.json"),
+    JSON.stringify({ artifact: "https://example.test/a" }),
+  );
+  mkdirSync(join(root, "log.jsonl"));
+  expect(() => appendEntry(ok, root, NOW, "0001")).toThrow();
+  expect(readdirSync(join(root, "outbox"))).toEqual([]);
+});
+
 test("with an artifact configured, each entry is queued as its document", () => {
   writeFileSync(
     join(root, "config.json"),
@@ -198,7 +272,10 @@ test("pending drops entries the export already holds, and sent clears the rest",
   const b = appendEntry(corrected, root, NOW, "0002").entry;
   const exported = join(root, "export");
   mkdirSync(join(exported, "runs"), { recursive: true });
-  writeFileSync(join(exported, "runs", `${a.id}.json`), JSON.stringify(ok));
+  writeFileSync(
+    join(exported, "runs", `${a.id}.json`),
+    JSON.stringify(stored()),
+  );
 
   const p = pending(root, exported);
   expect(p.alreadyThere).toEqual([a.id]);
@@ -212,16 +289,45 @@ test("an export is read with the file name as the id, and merged by id", () => {
   const local = appendEntry(ok, root, NOW, "0001").entry;
   const exported = join(root, "export");
   mkdirSync(join(exported, "runs"), { recursive: true });
-  writeFileSync(join(exported, "runs", `${local.id}.json`), JSON.stringify(ok));
+  writeFileSync(
+    join(exported, "runs", `${local.id}.json`),
+    JSON.stringify(stored()),
+  );
   writeFileSync(
     join(exported, "runs", "20261101T000000Z-expenses-ffff.json"),
-    JSON.stringify({ ...corrected, date: "2026-11-01" }),
+    JSON.stringify(stored({ ...corrected, date: "2026-11-01" })),
   );
-  const all = merge(readExport(exported), readLog(root).entries);
+  const { entries, invalid } = readExport(exported);
+  expect(invalid).toEqual([]);
+  const all = merge(entries, readLog(root).entries);
   expect(all.map((e) => e.id)).toEqual([
     "20261101T000000Z-expenses-ffff",
     local.id,
   ]);
+});
+
+test("an export document that is not a complete entry is reported, not counted", () => {
+  const exported = join(root, "export");
+  mkdirSync(join(exported, "runs"), { recursive: true });
+  const file = (id: string) => join(exported, "runs", `${id}.json`);
+  writeFileSync(file("good"), JSON.stringify(stored()));
+  writeFileSync(file("partial"), JSON.stringify(ok));
+  writeFileSync(file("broken"), "{ not json");
+  const { entries, invalid } = readExport(exported);
+  expect(entries.map((e) => e.id)).toEqual(["good"]);
+  expect(invalid).toEqual(["broken", "partial"]);
+});
+
+test("pending does not push again over an export document that is not valid", () => {
+  writeFileSync(
+    join(root, "config.json"),
+    JSON.stringify({ artifact: "https://example.test/a" }),
+  );
+  const a = appendEntry(ok, root, NOW, "0001").entry;
+  const exported = join(root, "export");
+  mkdirSync(join(exported, "runs"), { recursive: true });
+  writeFileSync(join(exported, "runs", `${a.id}.json`), JSON.stringify(ok));
+  expect(pending(root, exported)).toEqual({ alreadyThere: [a.id], writes: [] });
 });
 
 // ------------------------------------------------------------------ scoring
@@ -411,6 +517,89 @@ test("equal products fall back to severity, then count", () => {
   expect(r.modes[0].rpn).toBe(r.modes[1].rpn);
 });
 
+test("a failure found later counts its run once, not twice", () => {
+  const [first] = runs(1, {});
+  const later = runs(
+    1,
+    {
+      detected: "later-use",
+      mode: "creates-duplicate",
+      outcome: "corrected",
+      run: first.id,
+      what: "Found the duplicate a week later",
+    },
+    7,
+  )[0];
+  const one = review([first, later], {
+    expenses: { "creates-duplicate": { severity: 6 } },
+  });
+  expect(one.skills).toEqual([
+    { corrected: 1, failed: 0, ok: 0, runs: 1, skill: "expenses" },
+  ]);
+  expect(one.modes[0]).toMatchObject({ count: 1, rate: 1, runs: 1 });
+  // Rate 100% scores 10, later-use scores 8: 6 x 10 x 8.
+  expect(one.modes[0].rpn).toBe(480);
+  expect(one.from).toBe(first.date);
+
+  const withOthers = review([first, later, ...runs(3, {}, 10)]);
+  expect(withOthers.skills[0]).toMatchObject({ corrected: 1, ok: 3, runs: 4 });
+  expect(withOthers.unscored[0]).toMatchObject({ count: 1, rate: 0.25 });
+});
+
+test("a later failure with no earlier entry is still one run", () => {
+  const orphan = runs(1, {
+    detected: "later-use",
+    mode: "creates-duplicate",
+    outcome: "failed",
+    run: "20261101T000000Z-expenses-ffff",
+    what: "Found the duplicate a week later",
+  });
+  const r = review([...orphan, ...runs(1, {}, 5)]);
+  expect(r.skills[0]).toMatchObject({ failed: 1, ok: 1, runs: 2 });
+  expect(r.unscored[0]).toMatchObject({ count: 1, rate: 0.5 });
+});
+
+test("two later entries for one run and one mode count as one failure", () => {
+  const [first] = runs(1, {});
+  const again = (start: number) =>
+    runs(
+      1,
+      {
+        detected: "later-use",
+        mode: "creates-duplicate",
+        outcome: "corrected",
+        run: first.id,
+        what: "Found the duplicate",
+      },
+      start,
+    )[0];
+  const r = review([first, again(3), again(4), ...runs(1, {}, 9)]);
+  expect(r.skills[0]).toMatchObject({ corrected: 1, ok: 1, runs: 2 });
+  expect(r.unscored[0]).toMatchObject({ count: 1, rate: 0.5 });
+});
+
+test("recent entries are listed newest first, for one skill or day", () => {
+  const a = appendEntry(ok, root, new Date("2026-11-27T09:00:00Z"), "0001");
+  const b = appendEntry(ok, root, NOW, "0002");
+  appendEntry({ ...ok, skill: "mail:junk@0.3.0" }, root, NOW, "0003");
+  const { entries } = readLog(root);
+  expect(
+    recentEntries(entries, { skill: "expenses" }).map((e) => e.id),
+  ).toEqual([b.entry.id, a.entry.id]);
+  expect(
+    recentEntries(entries, { date: a.entry.date, skill: "expenses@9" }),
+  ).toEqual([
+    {
+      date: a.entry.date,
+      id: a.entry.id,
+      mode: "",
+      outcome: "ok",
+      skill: "expenses@1.4.0",
+    },
+  ]);
+  expect(recentEntries(entries, { limit: 1 })).toHaveLength(1);
+});
+
 test("known modes are listed per skill, most frequent first", () => {
   const entries = [
     ...runs(2, {
@@ -484,6 +673,36 @@ test("severities come from the latest stored review in an export", () => {
   expect(severitiesFromExport(join(root, "nothing-here"))).toEqual({});
 });
 
+test("a later review for one skill keeps the scores of the others", () => {
+  const reviews = join(root, "export", "reviews");
+  mkdirSync(reviews, { recursive: true });
+  writeFileSync(
+    join(reviews, "2026-10-01.json"),
+    JSON.stringify({
+      date: "2026-10-01",
+      modes: [
+        { mode: "creates-duplicate", severity: 3, skill: "expenses" },
+        { mode: "deletes-wanted-message", severity: 9, skill: "mail:junk" },
+      ],
+    }),
+  );
+  writeFileSync(
+    join(reviews, "2026-11-01.json"),
+    JSON.stringify({
+      date: "2026-11-01",
+      modes: [
+        { mode: "deletes-wanted-message", severity: 8, skill: "mail:junk" },
+      ],
+      unscored: [{ mode: "rescues-junk", severity: null, skill: "mail:junk" }],
+    }),
+  );
+  writeFileSync(join(reviews, "2026-11-02.json"), "{ not json");
+  expect(severitiesFromExport(join(root, "export"))).toEqual({
+    expenses: { "creates-duplicate": { severity: 3 } },
+    "mail:junk": { "deletes-wanted-message": { severity: 8 } },
+  });
+});
+
 // --------------------------------------------------------------------- cli
 
 function cli(...args: string[]) {
@@ -555,4 +774,43 @@ test("the command line appends, scores and reviews end to end", () => {
     { count: 1, mode: "wrong-verdict-delete", skill: "mail:junk" },
   ]);
   expect(JSON.parse(cli("config").out).entries).toBe(2);
+});
+
+test("the command line logs a later failure against the run it belongs to", () => {
+  expect(
+    cli("append", "--skill", "mail:junk@0.3.0", "--outcome", "ok").code,
+  ).toBe(0);
+  const [found] = JSON.parse(cli("recent", "--skill", "mail:junk").out);
+  expect(found.outcome).toBe("ok");
+
+  const later = cli(
+    "append",
+    "--skill",
+    "mail:junk@0.3.0",
+    "--outcome",
+    "corrected",
+    "--mode",
+    "deletes-wanted-message",
+    "--what",
+    "A deleted message turned out to be wanted",
+    "--detected",
+    "later-use",
+    "--run",
+    found.id,
+  );
+  expect(later.code).toBe(0);
+  expect(JSON.parse(later.out).entry.run).toBe(found.id);
+
+  const reviewed = cli("review");
+  expect(reviewed.out).toContain("| mail:junk | 1 | 0 | 1 | 0 |");
+  expect(reviewed.out).toContain(
+    "| mail:junk | deletes-wanted-message | 1/1 |",
+  );
+
+  const exported = join(root, "export");
+  mkdirSync(join(exported, "runs"), { recursive: true });
+  writeFileSync(join(exported, "runs", "partial.json"), JSON.stringify(ok));
+  expect(cli("review", "--export", exported).out).toContain(
+    "Left out of the export, because they are not valid entries: partial.",
+  );
 });

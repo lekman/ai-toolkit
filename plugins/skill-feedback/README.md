@@ -39,9 +39,14 @@ Needs [Bun](https://bun.sh).
 | `detected` | `check`, `review` or `later-use`                                                  |
 | `fix`      | `skill-instructions`, `skill-script`, `config`, `shared-store`, `check` or `none` |
 | `cost`     | Time or tokens, when you have the number                                          |
+| `run`      | On a failure found later, the id of the entry that run already has                |
 
 The script adds an `id`, a `loggedAt` timestamp and, when configured, an
 `origin` label for the machine.
+
+`run` keeps the counts right when a failure shows up after its run was
+logged as `ok`. The log is append-only, so the failure is a second entry. The
+review counts both entries as one run that failed.
 
 `mode` is what makes the review exact. Entries with the same slug are one
 failure mode, so the script can count them. The log skill lists the slugs a
@@ -80,6 +85,10 @@ These results come from real calls on 28 November 2026.
 
 A write to a document that already exists is refused unless it carries the
 document's version. Pushing an entry twice therefore cannot overwrite it.
+
+Stored data is checked when it is read. A log line or a shared document that
+is not a complete, valid entry is left out of every count, and the review
+says how many were left out.
 
 The database holds at most 25,000 documents per artifact. At ten runs a day
 that is over six years of entries.
@@ -141,8 +150,8 @@ working without this plugin. It skips the step and says so.
 ## The Script
 
 `scripts/outcome-log.ts` is one Bun script with no dependencies. It validates
-and appends entries, queues them for the shared copy, lists the known modes,
-stores severities and runs the review. It never talks to the artifact. The
+and appends entries, queues them for the shared copy, lists the known modes
+and the recent entries, stores severities and runs the review. It never talks to the artifact. The
 skills do that with the `ArtifactData` tool, using the files the script
 prepares.
 

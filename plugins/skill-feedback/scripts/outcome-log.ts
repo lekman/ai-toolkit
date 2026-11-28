@@ -18,7 +18,9 @@
  *            [--mode <slug>] [--what <text>] [--cause <text>]
  *            [--detected check|review|later-use]
  *            [--fix skill-instructions|skill-script|config|shared-store|check|none]
- *            [--cost <text>] [--date YYYY-MM-DD]
+ *            [--cost <text>] [--date YYYY-MM-DD] [--run <id>]
+ *   recent   [--skill <name>] [--date YYYY-MM-DD] [--export <dir>]
+ *                                 the latest entries with their ids
  *   pending  [--export <dir>]     entries still to push, as `ArtifactData` batch writes
  *   sent     <id>...              remove pushed entries from the outbox
  *   modes    [--skill <name>] [--export <dir>]
@@ -62,6 +64,8 @@ export interface Entry {
   mode: string;
   origin?: string;
   outcome: Outcome;
+  /** The id of the earlier entry for the same run, on a failure found later. */
+  run?: string;
   skill: string;
   what: string;
 }
@@ -153,6 +157,7 @@ export const MIN_SAMPLE = 20;
 const SKILL = /^[a-z0-9][a-z0-9_-]*(:[a-z0-9][a-z0-9_-]*)?(@[0-9A-Za-z.+-]+)?$/;
 const MODE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ENTRY_ID = /^\d{8}T\d{6}Z-[a-z0-9][a-z0-9._-]*-[0-9a-z]{4}$/;
 const TEXT_LIMIT = 300;
 
 // ------------------------------------------------------------------- paths
@@ -218,6 +223,7 @@ export function validate(input: EntryInput): string[] {
   const mode = text(input.mode);
   const detected = text(input.detected);
   const fix = text(input.fix);
+  const run = text(input.run);
 
   if (!SKILL.test(skill))
     problems.push(
@@ -243,10 +249,14 @@ export function validate(input: EntryInput): string[] {
     problems.push(`detected must be one of ${DETECTED.join(", ")}`);
   if (fix && !(FIXES as readonly string[]).includes(fix))
     problems.push(`fix must be one of ${FIXES.join(", ")}`);
+  if (run && !ENTRY_ID.test(run))
+    problems.push(
+      `run must be the id of an earlier entry, such as 20261128T101502Z-expenses-1a2b; got "${run}"`,
+    );
 
   if (outcome === "ok") {
-    if (mode || text(input.what) || detected)
-      problems.push("an ok run has no mode, what or detected");
+    if (mode || text(input.what) || detected || run)
+      problems.push("an ok run has no mode, what, detected or run");
   } else if (outcome === "corrected" || outcome === "failed") {
     if (!mode) problems.push(`a ${outcome} run needs a mode`);
     if (!text(input.what)) problems.push(`a ${outcome} run needs what`);
@@ -283,6 +293,7 @@ export function buildEntry(
     what: (input.what ?? "").trim(),
   };
   if (input.origin?.trim()) entry.origin = input.origin.trim();
+  if (input.run?.trim()) entry.run = input.run.trim();
   return entry;
 }
 
@@ -291,6 +302,10 @@ export function buildEntry(
 /**
  * Appends one entry to the local log. With an artifact configured, the entry
  * is also queued in the outbox as the document to push.
+ *
+ * The outbox document is written first. A failure there leaves the log
+ * untouched, and a failed log write removes the queued document again, so a
+ * retry after either failure records the run once.
  */
 export function appendEntry(
   input: EntryInput,
@@ -301,12 +316,17 @@ export function appendEntry(
   const config = readConfig(root);
   const entry = buildEntry({ origin: config.origin, ...input }, now, suffix);
   mkdirSync(root, { recursive: true });
-  appendFileSync(logFile(root), JSON.stringify(entry) + "\n");
   let outboxFile: null | string = null;
   if (config.artifact) {
     mkdirSync(outboxDir(root), { recursive: true });
     outboxFile = join(outboxDir(root), `${entry.id}.json`);
     writeFileSync(outboxFile, JSON.stringify(document(entry), null, 2) + "\n");
+  }
+  try {
+    appendFileSync(logFile(root), JSON.stringify(entry) + "\n");
+  } catch (e) {
+    if (outboxFile) rmSync(outboxFile, { force: true });
+    throw e;
   }
   return { entry, outboxFile };
 }
@@ -318,21 +338,51 @@ function document(entry: Entry): Omit<Entry, "id"> {
   return copy as Omit<Entry, "id">;
 }
 
-/** The local log. `skipped` counts lines that are not valid JSON entries. */
+const STORED_TEXT = [
+  "cause",
+  "cost",
+  "date",
+  "detected",
+  "fix",
+  "loggedAt",
+  "mode",
+  "outcome",
+  "skill",
+  "what",
+] as const;
+
+/**
+ * True when a stored record has every field of an entry and passes the same
+ * rules as new input. An export document has no `id` field, because its file
+ * name is the id.
+ */
+function isStored(record: unknown, needId: boolean): record is Entry {
+  if (!record || typeof record !== "object" || Array.isArray(record))
+    return false;
+  const r = record as Record<string, unknown>;
+  if (STORED_TEXT.some((field) => typeof r[field] !== "string")) return false;
+  if (needId && (typeof r.id !== "string" || !r.id)) return false;
+  for (const field of ["origin", "run"])
+    if (r[field] !== undefined && typeof r[field] !== "string") return false;
+  if (!DATE.test(r.date as string)) return false;
+  return validate(r as EntryInput).length === 0;
+}
+
+/** The local log. `skipped` counts lines that are not valid entries. */
 export function readLog(root = home()): { entries: Entry[]; skipped: number } {
   if (!existsSync(logFile(root))) return { entries: [], skipped: 0 };
   const entries: Entry[] = [];
   let skipped = 0;
   for (const line of readFileSync(logFile(root), "utf8").split("\n")) {
     if (!line.trim()) continue;
+    let record: unknown = null;
     try {
-      const e = JSON.parse(line) as Entry;
-      if (e && typeof e.id === "string" && typeof e.skill === "string")
-        entries.push(e);
-      else skipped++;
+      record = JSON.parse(line);
     } catch {
-      skipped++;
+      // Counted below with the other lines that are not entries.
     }
+    if (isStored(record, true)) entries.push(record);
+    else skipped++;
   }
   return { entries, skipped };
 }
@@ -344,13 +394,30 @@ function jsonFiles(dir: string): string[] {
     .sort();
 }
 
-/** The entries in an `ArtifactData` export directory. The file name is the id. */
-export function readExport(dir: string): Entry[] {
+const docId = (file: string) => file.slice(0, -".json".length);
+
+/**
+ * The entries in an `ArtifactData` export directory. The file name is the id.
+ * `invalid` lists the ids of documents that are not valid entries.
+ */
+export function readExport(dir: string): {
+  entries: Entry[];
+  invalid: string[];
+} {
   const runs = join(dir, "runs");
-  return jsonFiles(runs).map((f) => ({
-    ...(JSON.parse(readFileSync(join(runs, f), "utf8")) as Omit<Entry, "id">),
-    id: f.slice(0, -".json".length),
-  }));
+  const entries: Entry[] = [];
+  const invalid: string[] = [];
+  for (const f of jsonFiles(runs)) {
+    let record: unknown = null;
+    try {
+      record = JSON.parse(readFileSync(join(runs, f), "utf8"));
+    } catch {
+      // Listed below with the other documents that are not entries.
+    }
+    if (isStored(record, false)) entries.push({ ...record, id: docId(f) });
+    else invalid.push(docId(f));
+  }
+  return { entries, invalid };
 }
 
 /** Entries from several sources, one per id, oldest first. */
@@ -362,7 +429,9 @@ export function merge(...sources: Entry[][]): Entry[] {
 
 /**
  * The entries still to push, as `ArtifactData` batch writes. An entry whose
- * id is already in the export is dropped from the outbox instead.
+ * id is already in the export is dropped from the outbox instead. Every
+ * exported document counts here, valid or not, because a second write to its
+ * id would be refused.
  */
 export function pending(
   root = home(),
@@ -377,12 +446,12 @@ export function pending(
   }[];
 } {
   const there = new Set(
-    exportDir ? readExport(exportDir).map((e) => e.id) : [],
+    exportDir ? jsonFiles(join(exportDir, "runs")).map(docId) : [],
   );
   const alreadyThere: string[] = [];
   const writes = [];
   for (const f of jsonFiles(outboxDir(root))) {
-    const id = f.slice(0, -".json".length);
+    const id = docId(f);
     if (there.has(id)) {
       rmSync(join(outboxDir(root), f));
       alreadyThere.push(id);
@@ -453,21 +522,52 @@ export function setSeverity(
 }
 
 /**
- * Severities from the latest review stored in an export, for modes scored on
- * another machine. Local scores win where both exist.
+ * Severities from the reviews stored in an export, for modes scored on
+ * another machine. A later review replaces an earlier score for the same
+ * mode and keeps the scores of modes it does not cover. Local scores win
+ * where both exist.
  */
 export function severitiesFromExport(dir: string): Severities {
-  const reviews = join(dir, "reviews");
-  const latest = jsonFiles(reviews)
-    .map((f) => JSON.parse(readFileSync(join(reviews, f), "utf8")) as Review)
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
-    .pop();
-  const out: Severities = {};
-  for (const m of [...(latest?.modes ?? []), ...(latest?.unscored ?? [])]) {
-    if (typeof m.severity !== "number") continue;
-    out[m.skill] = { ...out[m.skill], [m.mode]: { severity: m.severity } };
+  const folder = join(dir, "reviews");
+  const reviews: Review[] = [];
+  for (const f of jsonFiles(folder)) {
+    try {
+      reviews.push(JSON.parse(readFileSync(join(folder, f), "utf8")) as Review);
+    } catch {
+      // A review document that is not JSON carries no scores.
+    }
   }
+  reviews.sort((a, b) => String(a?.date).localeCompare(String(b?.date)));
+  const out: Severities = {};
+  for (const r of reviews)
+    for (const m of [...(r?.modes ?? []), ...(r?.unscored ?? [])]) {
+      if (typeof m.severity !== "number") continue;
+      out[m.skill] = { ...out[m.skill], [m.mode]: { severity: m.severity } };
+    }
   return out;
+}
+
+/** The latest entries with their ids, newest first, to find a run to refer to. */
+export function recentEntries(
+  entries: Entry[],
+  options: { date?: string; limit?: number; skill?: string } = {},
+): Pick<Entry, "date" | "id" | "mode" | "outcome" | "skill">[] {
+  const wanted = options.skill ? skillName(options.skill) : undefined;
+  return entries
+    .filter(
+      (e) =>
+        (!wanted || skillName(e.skill) === wanted) &&
+        (!options.date || e.date === options.date),
+    )
+    .sort((a, b) => b.id.localeCompare(a.id))
+    .slice(0, options.limit ?? 20)
+    .map(({ date, id, mode, outcome, skill }) => ({
+      date,
+      id,
+      mode,
+      outcome,
+      skill,
+    }));
 }
 
 /** The known mode slugs per skill with their counts, most frequent first. */
@@ -499,6 +599,11 @@ export function knownModes(
 /**
  * Groups the failures by skill and mode, scores each group and ranks them.
  * Modes without a severity cannot be ranked and come back as `unscored`.
+ *
+ * A run is counted once. An entry that names an earlier entry in `run` is
+ * part of that entry's run, so a failure found days after an `ok` entry makes
+ * one failed run out of the two entries. The run's date is its earliest
+ * entry's date.
  */
 export function review(
   entries: Entry[],
@@ -506,30 +611,49 @@ export function review(
   options: { from?: string; now?: Date; skill?: string; to?: string } = {},
 ): Review {
   const wanted = options.skill ? skillName(options.skill) : undefined;
-  const inWindow = entries.filter(
-    (e) =>
-      (!wanted || skillName(e.skill) === wanted) &&
-      (!options.from || e.date >= options.from) &&
-      (!options.to || e.date <= options.to),
+  const byRun = new Map<
+    string,
+    { date: string; entries: Entry[]; skill: string }
+  >();
+  for (const e of [...entries].sort((a, b) => a.id.localeCompare(b.id))) {
+    const name = skillName(e.skill);
+    if (wanted && name !== wanted) continue;
+    const key = `${name}\n${e.run || e.id}`;
+    const run = byRun.get(key) ?? { date: e.date, entries: [], skill: name };
+    if (e.date < run.date) run.date = e.date;
+    run.entries.push(e);
+    byRun.set(key, run);
+  }
+  const inWindow = [...byRun.values()].filter(
+    (run) =>
+      (!options.from || run.date >= options.from) &&
+      (!options.to || run.date <= options.to),
   );
 
   const skills = new Map<string, Review["skills"][number]>();
   const groups = new Map<string, Entry[]>();
-  for (const e of inWindow) {
-    const name = skillName(e.skill);
-    const s = skills.get(name) ?? {
+  for (const run of inWindow) {
+    const s = skills.get(run.skill) ?? {
       corrected: 0,
       failed: 0,
       ok: 0,
       runs: 0,
-      skill: name,
+      skill: run.skill,
     };
+    const failures = run.entries.filter((e) => e.outcome !== "ok");
+    const outcome = failures.length
+      ? failures[failures.length - 1].outcome
+      : "ok";
     s.runs++;
-    if (e.outcome in s) s[e.outcome]++;
-    skills.set(name, s);
-    if (e.outcome === "ok" || !e.mode) continue;
-    const key = `${name}\n${e.mode}`;
-    groups.set(key, [...(groups.get(key) ?? []), e]);
+    if (outcome in s) s[outcome]++;
+    skills.set(run.skill, s);
+    // One run counts once per mode, by its latest entry for that mode.
+    const perMode = new Map<string, Entry>();
+    for (const e of failures) if (e.mode) perMode.set(e.mode, e);
+    for (const [mode, e] of perMode) {
+      const key = `${run.skill}\n${mode}`;
+      groups.set(key, [...(groups.get(key) ?? []), e]);
+    }
   }
 
   const scored: ModeScore[] = [];
@@ -563,7 +687,7 @@ export function review(
 
   const byName = (a: ModeScore, b: ModeScore) =>
     a.skill.localeCompare(b.skill) || a.mode.localeCompare(b.mode);
-  const dates = inWindow.map((e) => e.date).sort();
+  const dates = inWindow.map((run) => run.date).sort();
   return {
     date: localDate(options.now ?? new Date()),
     from: options.from ?? dates[0] ?? "",
@@ -667,7 +791,10 @@ function main(argv: string[]): void {
   const root = home();
   const print = (value: unknown) => console.log(JSON.stringify(value, null, 2));
   const all = () =>
-    merge(flags.export ? readExport(flags.export) : [], readLog(root).entries);
+    merge(
+      flags.export ? readExport(flags.export).entries : [],
+      readLog(root).entries,
+    );
 
   switch (command) {
     case "append": {
@@ -684,6 +811,7 @@ function main(argv: string[]): void {
             fix: flags.fix,
             mode: flags.mode,
             outcome: flags.outcome as Outcome,
+            run: flags.run,
             skill,
             what: flags.what,
           },
@@ -712,6 +840,9 @@ function main(argv: string[]): void {
     case "modes":
       print(knownModes(all(), flags.skill));
       break;
+    case "recent":
+      print(recentEntries(all(), { date: flags.date, skill: flags.skill }));
+      break;
     case "review": {
       const severities = {
         ...(flags.export ? severitiesFromExport(flags.export) : {}),
@@ -733,7 +864,12 @@ function main(argv: string[]): void {
         const { skipped } = readLog(root);
         if (skipped)
           console.log(
-            `${skipped} unreadable lines in ${logFile(root)} were left out.`,
+            `Left out of ${logFile(root)}, because they are not valid entries: ${skipped} ${skipped === 1 ? "line" : "lines"}.`,
+          );
+        const invalid = flags.export ? readExport(flags.export).invalid : [];
+        if (invalid.length)
+          console.log(
+            `Left out of the export, because they are not valid entries: ${invalid.join(", ")}.`,
           );
       }
       break;
@@ -761,7 +897,7 @@ function main(argv: string[]): void {
       break;
     default:
       fail(
-        "usage: outcome-log.ts append|pending|sent|modes|review|severity|config (see the file header)",
+        "usage: outcome-log.ts append|recent|pending|sent|modes|review|severity|config (see the file header)",
       );
   }
 }

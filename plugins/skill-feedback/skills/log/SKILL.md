@@ -27,6 +27,7 @@ is missing and cannot be read from the run.
 | `detected` | `check` (a script or hook caught it), `review` (the operator saw it) or `later-use`             |
 | `fix`      | `skill-instructions`, `skill-script`, `config`, `shared-store`, `check` or `none`               |
 | `cost`     | Time or tokens, when the number is known. Leave it out otherwise.                               |
+| `run`      | Only for a failure found after the run was logged: the id of that run's entry.                  |
 
 Log a run that went well too. Without the `ok` entries, the review cannot
 tell a skill that fails one run in fifty from one that fails every second
@@ -108,6 +109,15 @@ One line: `logged: <skill> <outcome>[ <mode>], shared copy: pushed <n>` or
   error. Do not fall back to writing the entry somewhere else.
 - The calling skill gave an outcome but no mode for a failure: ask the
   operator for one sentence on what went wrong and propose the slug.
-- The operator reports a failure days later: log a new entry with
-  `--detected later-use` and `--date` set to the day of the run. The earlier
-  `ok` entry stays, because the log is append-only.
+- The operator reports a failure days later: find the entry that run
+  already has, then log a new entry that names it.
+
+  ```bash
+  bun "${CLAUDE_PLUGIN_ROOT}/scripts/outcome-log.ts" recent --skill <name> --date <day of the run>
+  ```
+
+  Append with `--detected later-use`, `--date` set to the day of the run and
+  `--run <id>` set to the id from that list. The earlier `ok` entry stays,
+  because the log is append-only, and the review counts the two entries as
+  one failed run. When the list shows no entry for that run, leave `--run`
+  out. The new entry then counts as a run of its own.

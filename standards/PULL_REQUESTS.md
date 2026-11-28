@@ -77,13 +77,15 @@ open. Both count.
 
 Round one is the review that runs when the pull request opens. Round two is
 either the reviewer's replies that ask for more or one review that you ask
-for, whichever comes first after those fixes are pushed. Do not ask for a
-review when replies have already used round two.
+for, whichever comes first after round one. It counts whether or not you
+pushed a fix in between. Do not ask for a review when replies have already
+used round two.
 
 After round two:
 
-- Reply once to each new comment or thread reply that asks for a change,
-  with your reason, and do not push a fix for it.
+- Reply once in each thread that asks for a change, with your reason, and
+  do not push a fix for it. Do not reply again in a thread you have already
+  answered after round two.
 - Do not answer a reply that only confirms or withdraws.
 - List what is still open for me, and stop.
 - Keep fixing CI failures and merge conflicts. They do not count as rounds.

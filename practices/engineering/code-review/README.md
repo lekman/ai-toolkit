@@ -248,9 +248,10 @@ The first exchange found two real gaps. The second asked for something out
 of scope and was withdrawn in the third.
 
 Count the first set of replies that ask for more as round two, and do not
-also ask for a second review. After round two the coding agent replies once
-to anything that asks for a change, gives its reason, and pushes no fix. It
-does not answer a reply that only confirms or withdraws.
+also ask for a second review. That holds whether or not a fix was pushed in
+between. After round two the coding agent replies once in each thread that
+asks for a change, gives its reason, and pushes no fix. It does not answer a
+reply that only confirms or withdraws.
 
 These settings stop a reviewer from starting a round by itself. Nothing
 counts the rounds that someone asks for or the replies in a thread, so the

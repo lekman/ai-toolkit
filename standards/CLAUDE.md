@@ -14,4 +14,6 @@
 
 @PULL_REQUESTS.md
 
+@SESSIONS.md
+
 @../rules/sharing.md

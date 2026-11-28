@@ -16,7 +16,9 @@ while that session sits idle, so schedule the wake-up yourself.
    table below. In the desktop app the list is `list_sessions` with
    `linked: true`, and its `lastActivityAt` gives the idle time. Elsewhere it
    is `ListAgents`, which shows only whether a session is idle now. There,
-   treat a session as idle when two check-ins in a row find it idle.
+   treat a session as idle when two check-ins in a row find it idle. That
+   is an estimate. A session that worked between the two check-ins can get
+   a nudge early, and the cost is one message.
 3. Delete the check-in with `CronDelete` when every session is done, parked
    or waiting on me. Schedule it again when one of them starts work again.
    You learn that from me, or from the note the app sends when that session
@@ -34,7 +36,8 @@ Unfinished means work with no commit, a branch with no pull request, or a
 pull request that is open with nothing running on it.
 
 The check-in lives only in the running session, and a recurring one expires
-after 30 days. When you resume a session that started others, look for the
+after 30 days. Its last run says that it is the last. Schedule it again at
+that run if any session is still unfinished. When you resume a session that started others, look for the
 check-in with `CronList` and schedule it again if it is gone. If you end
 while a session you started is unfinished, tell me which ones are open,
 because nothing follows them up after that.

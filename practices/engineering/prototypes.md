@@ -75,5 +75,6 @@ Given a blank repository, it invents a structure per session.
 - The production repository has its structure checks in place before the
   first feature, so prototype code pasted in fails the build. See
   [Mechanical Checks](mechanical-checks.md).
-- The specification links the prototype as a reference and states that its
-  code was not reused.
+- The specification states that the prototype's code was not reused. It
+  links the prototype when the prototype was archived, and links the written
+  findings when it was deleted.

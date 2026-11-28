@@ -30,8 +30,9 @@ pages before you rely on one.
    its own instructions. See
    [Sessions and Subagents](../sessions-and-subagents.md) for stacks.
 4. **Answer comments.** Each comment gets one reply in its own thread, as
-   fixed, declined or deferred. When fixes are pushed, the reviewers read
-   the change again.
+   fixed, declined or deferred. A reviewer reads the pushed fixes again
+   only when it is set to. Copilot needs "Review new pushes" turned on in
+   the ruleset, and otherwise the author asks it for a new review.
 5. **Threads resolved.** A branch ruleset blocks the merge while any thread
    is open, so no comment can be passed over.
 6. **Approve and merge.** A written policy approves once the gates pass and
@@ -172,9 +173,11 @@ above applies to automation as much as to people.
 4. **The policy is code.** It names the authors, labels and paths it
    approves, a person owns it, and each approval leaves a record.
 
-Approving a merge is also not approving a shipment. A merge changes the
-main branch and puts nothing in front of a user, and the heavy tests run
-later against the deployed release. See
+Approving a merge is also not approving a shipment, provided the two are
+separate steps. Where a merge changes the main branch and nothing deploys
+from it, a merge puts nothing in front of a user, and the heavy tests run
+later against the deployed release. In a repository that deploys on merge,
+approving the merge is approving the shipment. See
 [Merge, Release and Ship](../merge-release-ship.md).
 
 The person does not leave. They stop approving each change and own the

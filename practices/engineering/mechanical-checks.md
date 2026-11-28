@@ -58,8 +58,10 @@ advice, so label it as advice until the check exists.
 
 A scaffolder is a small program that creates a new package, component or
 service with the right files in the right places. Prefer it to a check where
-you can. Work that a generator performs cannot be done wrong, so there is
-nothing to check afterwards and nothing for the agent to remember.
+you can. Work that a generator performs starts out right, and there is
+nothing for the agent to remember. Keep the check as well where the
+generated files can be edited later, because an edit can break the rule the
+generator followed.
 
 ### Run the Check at Every Stage
 

@@ -72,10 +72,17 @@ A release is a fixed thing that can be shipped at any time.
   change is a fix, a feature or a breaking change, and a tool turns that
   into the next version number.
 - **Each part is built once.** Packages and container images are published
-  with that version and never changed afterwards.
+  with that version and never changed afterwards. They go to a registry that
+  users cannot install from, or under a tag that marks them as not yet
+  released.
 - **A manifest lists every part.** It names each package, image and
   infrastructure component at its exact version. It is the bill of
   materials for the whole release, and the record of what ran where.
+
+Publishing where users can install is shipping. A package on a public
+registry reaches its users at once, before any test in staging has run. For
+a library that has no environment of its own, the publish is the shipment,
+so its qualification and security tests run before the publish.
 
 Nothing downstream builds anything. The parts tested in staging are, byte
 for byte, the parts that ship to production. Only the settings of each
@@ -102,9 +109,9 @@ the release manifest, so the evidence for a version sits beside the list of
 what the version holds.
 
 <details>
-<summary>What each kind of test proves</summary>
+<summary>What each kind of test shows</summary>
 
-| Test                       | Proves                                                 | Typical evidence                             |
+| Test                       | Shows                                                  | Typical evidence                             |
 | -------------------------- | ------------------------------------------------------ | -------------------------------------------- |
 | Installation qualification | The right versions are deployed and configured         | The manifest compared with what is running   |
 | Operational qualification  | Each function works as its specification says          | Scenario results against the deployed system |
@@ -126,8 +133,8 @@ is bought as rarely as a standard allows. Between two tests the system ships
 dozens of times, and each of those versions is untested.
 
 Automation and agents change the cost. A penetration test that an agent runs
-against staging can run on every release, or every night. A weakness is then
-found in the version that introduced it, while the change is small and its
+against staging can run on every release, or every night. A weakness can then
+be found in the version that introduced it, while the change is small and its
 author remembers it.
 
 Keep the independent specialist test where a standard or a customer asks for
@@ -180,9 +187,10 @@ request answers neither.
 - The tests run in an environment the author of the change cannot edit.
 
 This repository uses the first part of this. Changes merge through required
-checks, and a release tool assigns versions from the commit messages. It
-publishes packages and has no environment to ship to, so the staging steps
-do not apply here.
+checks, and a release tool assigns versions from the commit messages. It has
+no environment to ship to, so the staging steps do not apply here. It
+publishes packages to a public registry, and for those the publish is the
+shipment.
 
 [Software Delivery for a Changing System](https://www.lekman.com/blog/what-cicd-should-actually-do)
 sets out the three practices in more depth, with the release manifest and

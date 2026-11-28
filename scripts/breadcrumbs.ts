@@ -113,26 +113,28 @@ export function render(
 
 /**
  * Puts the breadcrumb under the page's title, replacing an earlier one.
+ *
+ * An earlier breadcrumb is known by its shape and not by its words, so it is
+ * still found after the front page is renamed.
  * @param text the page's markdown
  * @param crumb the breadcrumb line to place
- * @param rootTitle the front page's title, which starts every breadcrumb
  * @returns the page with exactly one breadcrumb, under its title
  */
-export function apply(text: string, crumb: string, rootTitle: string): string {
+export function apply(text: string, crumb: string): string {
   const lines = text.split("\n");
   const heading = lines.findIndex((line) => line.startsWith("# "));
   if (heading === -1) return text;
   // An earlier breadcrumb is the first line of text under the title, when it
-  // starts with a link to the front page and holds nothing but links.
+  // holds nothing but links and the first one points at the front page.
   let next = heading + 1;
   while (next < lines.length && lines[next]?.trim() === "") next += 1;
   const line = lines[next] ?? "";
   const onlyLinks = /^\[[^\]]+\]\([^)]+\)( \/ \[[^\]]+\]\([^)]+\))*$/.test(
     line,
   );
-  const old = onlyLinks && line.startsWith(`[${rootTitle}](`) ? next : -1;
-  if (old !== -1) {
-    lines[old] = crumb;
+  const startsAtFront = /^\[[^\]]+\]\((?:\.\.\/)*README\.md\)/.test(line);
+  if (onlyLinks && startsAtFront) {
+    lines[next] = crumb;
     return lines.join("\n");
   }
   lines.splice(heading + 1, 0, "", crumb);
@@ -146,23 +148,24 @@ if (import.meta.main) {
   const pages = new Set(
     execFileSync(
       "git",
-      ["ls-files", "--cached", "--others", "--exclude-standard", "*.md"],
+      // -z: one path per NUL, unquoted. Without it Git quotes and escapes a
+      // path with a character outside ASCII, and the page would be skipped.
+      ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "*.md"],
       { cwd: root, encoding: "utf8" },
     )
-      .split("\n")
+      .split("\0")
       .filter(Boolean),
   );
   const read = (path: string): string => readFileSync(join(root, path), "utf8");
   const exists = (path: string): boolean => pages.has(path);
   const title = (path: string): string => titleOf(read(path));
-  const rootTitle = title("README.md");
   const check = process.argv.includes("--check");
 
   const stale: string[] = [];
   for (const path of [...pages].filter(inScope).sort()) {
     const before = read(path);
     const crumb = render(path, ancestors(path, exists), title);
-    const after = apply(before, crumb, rootTitle);
+    const after = apply(before, crumb);
     if (after === before) continue;
     stale.push(path);
     if (!check) writeFileSync(join(root, path), after);

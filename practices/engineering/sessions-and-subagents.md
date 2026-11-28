@@ -36,7 +36,9 @@ the specification is incomplete.
 A Git worktree is a second working folder on its own branch, backed by the
 same repository. Give each subagent its own.
 
-- Two subagents cannot overwrite each other's files.
+- Two subagents that each work in their own folder do not overwrite each
+  other's files. A worktree does not stop one from writing outside its
+  folder, so the split of the work and the sandbox still matter.
 - Each piece of work is a branch that can be inspected, tested and discarded
   alone.
 - The main checkout stays clean while the work runs.
@@ -58,15 +60,20 @@ reviewer can read.
   merges in one operation.
 
 Always build a stack with GitHub's `gh stack` extension, and never by hand
-with chained branches. Four commands cover the work.
+with chained branches. Five commands cover the work.
 
 1. `gh stack init` starts a stack with its first branch, or turns existing
    branches into one.
 2. `gh stack add` puts a new branch on top of the stack. Run it once for
    each further piece, after committing the piece below.
-3. `gh stack submit` pushes every branch and creates the pull requests,
+3. `gh stack rebase` makes sure each branch holds the tip of the one below
+   it. Run it when the stack was made from existing branches, such as the
+   branches of subagents that all started from the main branch. Until then
+   an upper branch lacks the changes below it, and its checks run against
+   an incomplete change.
+4. `gh stack submit` pushes every branch and creates the pull requests,
    linked as a stack on GitHub.
-4. `gh stack merge` merges the stack as one operation. If any pull request
+5. `gh stack merge` merges the stack as one operation. If any pull request
    in it cannot be merged, none are. Where the base branch uses a merge
    queue, the stack is added to the queue and merges when the queue
    processes it, so do not count on all or nothing there. Merge requirements

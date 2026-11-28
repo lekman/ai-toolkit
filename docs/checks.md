@@ -22,7 +22,9 @@ PROJ-123 or acme-platform.
 - When the match is already in a commit, a fix on top is not enough. The
   history must be rewritten, so ask the repository owner.
 - When the match is a false one, narrow the pattern in
-  `scripts/client-terms.txt`. There is no other exemption.
+  `scripts/client-terms.txt`, and put the same list in the `CLIENT_TERMS`
+  repository secret. CI rebuilds the file from that secret on every run, so
+  a change to the file alone comes back. There is no other exemption.
 
 **Why.** This repository is public and is written during client work. A
 client name, a ticket key or a meeting title that reaches it is a

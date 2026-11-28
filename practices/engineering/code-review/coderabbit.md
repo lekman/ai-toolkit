@@ -32,8 +32,13 @@ reviews:
     enabled: true
     drafts: false
     ignore_title_keywords:
-      - "release"
+      - "chore: release"
 ```
+
+The last key skips pull requests by title. Use a phrase that only your
+release pull requests carry. A common word such as "release" would also skip
+a product change titled "Fix release authorisation", and it would do so
+without a message.
 
 `profile` sets how much it comments, from `quiet` through `chill` to
 `assertive`. `tone_instructions` is limited to 250 characters. See the

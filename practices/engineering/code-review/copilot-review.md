@@ -13,7 +13,9 @@ pages before you rely on one.
 ## Set Up
 
 1. Turn on automatic review in a repository or organisation ruleset, so that
-   every pull request is reviewed without anyone asking for it.
+   every pull request is reviewed without anyone asking for it. Turn on
+   "Review new pushes" in the same ruleset, or Copilot reads the first
+   version only and never sees the fixes.
 2. Add `.github/copilot-instructions.md` for rules that apply to the whole
    repository.
 3. Add files under `.github/instructions/` for rules that apply to some

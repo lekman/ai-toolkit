@@ -54,6 +54,8 @@ Flags and the full command reference are in
 Unified memory holds the model weights _and_ the context. macOS caps GPU-wired
 memory at roughly 75% of RAM by default, so on 48 GB the working budget is about
 36 GB. A 4-bit 30B model at 64k context lands near 24 GB, which is comfortable.
+That leaves about 12 GB free under the cap. The 12 GB above the cap stays with
+macOS.
 
 ![Memory budget](memory-budget.svg)
 

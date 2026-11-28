@@ -57,23 +57,38 @@ test("each link is relative to the page and named by its target's title", () => 
 });
 
 test("the breadcrumb goes under the title", () => {
-  expect(
-    apply("# Page\n\nText.\n", "[ai-toolkit](README.md)", "ai-toolkit"),
-  ).toBe("# Page\n\n[ai-toolkit](README.md)\n\nText.\n");
+  expect(apply("# Page\n\nText.\n", "[ai-toolkit](README.md)")).toBe(
+    "# Page\n\n[ai-toolkit](README.md)\n\nText.\n",
+  );
 });
 
 test("an earlier breadcrumb is replaced, so a second run changes nothing", () => {
-  const once = apply("# Page\n\nText.\n", "[ai-toolkit](a.md)", "ai-toolkit");
-  expect(apply(once, "[ai-toolkit](a.md)", "ai-toolkit")).toBe(once);
-  expect(apply(once, "[ai-toolkit](b.md) / [Up](c.md)", "ai-toolkit")).toBe(
-    "# Page\n\n[ai-toolkit](b.md) / [Up](c.md)\n\nText.\n",
+  const once = apply("# Page\n\nText.\n", "[ai-toolkit](../README.md)");
+  expect(apply(once, "[ai-toolkit](../README.md)")).toBe(once);
+  expect(apply(once, "[ai-toolkit](../../README.md) / [Up](README.md)")).toBe(
+    "# Page\n\n[ai-toolkit](../../README.md) / [Up](README.md)\n\nText.\n",
+  );
+});
+
+test("an earlier breadcrumb is found after the front page is renamed", () => {
+  const old =
+    "# Page\n\n[ai-toolkit](../README.md) / [Up](README.md)\n\nText.\n";
+  expect(apply(old, "[Toolkit](../README.md) / [Up](README.md)")).toBe(
+    "# Page\n\n[Toolkit](../README.md) / [Up](README.md)\n\nText.\n",
   );
 });
 
 test("a paragraph that only mentions the front page is left alone", () => {
   const text = "# Page\n\nSee [ai-toolkit](README.md) for more.\n";
-  expect(apply(text, "[ai-toolkit](README.md)", "ai-toolkit")).toContain(
+  expect(apply(text, "[ai-toolkit](README.md)")).toContain(
     "See [ai-toolkit](README.md) for more.",
+  );
+});
+
+test("a line of links that does not start at the front page is left alone", () => {
+  const text = "# Page\n\n[One](one.md) / [Two](two.md)\n";
+  expect(apply(text, "[ai-toolkit](README.md)")).toBe(
+    "# Page\n\n[ai-toolkit](README.md)\n\n[One](one.md) / [Two](two.md)\n",
   );
 });
 

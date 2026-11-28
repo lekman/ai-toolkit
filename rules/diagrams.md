@@ -112,6 +112,9 @@ uses the band fill with a border of `#8c959f`, or `#656d76` on dark.
 - Do not put an explanatory paragraph under the diagram. For a workflow, put
   the step by step text in a collapsed `<details>` block with a `<summary>`,
   as a numbered list that matches the numbers in the diagram.
+- For any other type, every amount and name in the diagram must also be in
+  the page's text, in the section around it, in a table or in a collapsed
+  `<details>` block. A reader who cannot see the image must lose nothing.
 
 ## Check It
 

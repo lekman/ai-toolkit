@@ -31,12 +31,16 @@ Run `git rev-parse HEAD` and `git status --porcelain` in the target. Keep the
 full commit. A review is of that commit and of nothing else.
 
 If the status prints anything, the working tree differs from the commit. Do
-not read it. Export the commit to a new folder beside the run folder and read
-that copy in every later step.
+not read it. Export the commit to a new folder beside the run folder.
 
 ```bash
 mkdir "<run folder>/../source-<short commit>" && git -C "<target>" archive HEAD | tar -x -C "<run folder>/../source-<short commit>"
 ```
+
+The **source path** is the folder every agent reads from. It is the export
+when one was made, and the target otherwise. Read from it yourself, and give
+it to every agent you start. Never give an agent the target's path when the
+working tree differs from the commit.
 
 File paths in the records stay relative to the repository. For a diff scope,
 take the changed files from `git diff --name-only <base> HEAD`, which compares
@@ -87,16 +91,17 @@ system is deployed, and harm a user can only do to themselves are not
 candidates.
 
 When the scope is too large to read in one pass, split it by part of the
-system and give each part to one hunter agent with this pass's text. Use at
+system and give each part to one hunter agent with this pass's text and the
+source path. Use at
 most four.
 
 ### The Second Pass, with Fresh Eyes
 
-Start one agent that gets the target's path and the scope, and nothing else.
+Start one agent that gets the source path and the scope, and nothing else.
 It gets no list of classes and none of your candidates.
 
 ```text
-Find the security weaknesses in <scope> of the repository at <path>. Read the
+Find the security weaknesses in <scope> of the repository at <source path>. Read the
 source, including build and workflow files. Do not run the code and do not
 contact any service. Return a JSON list and no other text. Each entry has
 title, attacker (who, and with what access), control (what should stop them),
@@ -124,7 +129,7 @@ candidate that later vanishes with no record fails validation.
 Give every candidate to a fresh agent that did not hunt. One verifier takes up
 to five candidates from the same part of the code. Start them together.
 
-Send each verifier the candidates, the target's path, the record formats, and
+Send each verifier the candidates, the source path, the record formats, and
 this instruction.
 
 ```text

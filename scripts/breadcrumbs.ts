@@ -109,10 +109,11 @@ export function render(
   return (
     chain
       // A square bracket in a title would end the link text early, so it is
-      // written with a backslash in front.
+      // written with a backslash in front. A backslash is escaped too, or one
+      // that stood before a bracket would cancel that bracket's escape.
       .map(
         (up) =>
-          `[${title(up).replace(/[[\]]/g, "\\$&")}](${posix.relative(from, up)})`,
+          `[${title(up).replace(/[\\[\]]/g, "\\$&")}](${posix.relative(from, up)})`,
       )
       .join(" / ")
   );

@@ -14,7 +14,9 @@ pages before you rely on one.
 
 1. Turn on automatic review in a repository or organisation ruleset. A pull
    request is then reviewed without anyone asking, when its author has
-   access to Copilot. A pull request from any other author is not. Turn on
+   access to Copilot code review and the budget that pays for it is not
+   used up. A pull request from any other author is not reviewed, and
+   reviews stop when the budget runs out. Turn on
    "Review new pushes" in the same ruleset. Without it Copilot does not
    review a new push by itself, and someone has to ask it for a new review.
 2. Add `.github/copilot-instructions.md` for rules that apply to the whole

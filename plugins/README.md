@@ -26,7 +26,7 @@ path, or a spec.
 
 Then invoke a skill, for example `/git:commit`.
 
-## Plugins
+## What Each Plugin Does
 
 - **git**, [commit](git/skills/commit/SKILL.md) / [pr](git/skills/pr/SKILL.md)
   / [purge](git/skills/purge/SKILL.md):

@@ -29,6 +29,11 @@ to pass and every review thread to be resolved, and GitHub merges the pull
 request when both are true. Where a review bot reports a check, that check is
 required too, so the merge waits until the review finishes or is skipped.
 
+If a review bot reviews the repository and its check is not a required check,
+wait for its first review before you turn on auto-merge. Without that wait the
+checks can pass before the review arrives, and the pull request merges with no
+review. Tell me that the check is not required.
+
 Use the pull request's URL in every command. Given only a number, `gh` reads
 the repository from the current folder, and the session may sit in another
 repository.

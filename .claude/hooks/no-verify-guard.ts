@@ -10,14 +10,30 @@ export function findBypass(command: string): string | null {
   // `-n` or `--no-verify` inside a commit message is ignored.
   for (const raw of command.split(/&&|\|\||[;|\n]/)) {
     const seg = raw.replace(/'[^']*'/g, " ").replace(/"[^"]*"/g, " ");
-    if (/(^|\s)--no-verify(\s|=|$)/.test(seg)) return "`--no-verify` skips git hooks";
+    if (/(^|\s)--no-verify(\s|=|$)/.test(seg))
+      return "`--no-verify` skips git hooks";
     if (/\bcommit\b/.test(seg) && /(^|\s)-n(\s|$)/.test(seg))
       return "`git commit -n` skips git hooks";
-    if (/core\.hooksPath/.test(seg)) return "overriding `core.hooksPath` bypasses git hooks";
-    if (/(^|\s)(HUSKY|HUSKY_SKIP_HOOKS|PRE_COMMIT_ALLOW_NO_CONFIG|LEFTHOOK)=/.test(seg))
+    if (/core\.hooksPath/.test(seg))
+      return "overriding `core.hooksPath` bypasses git hooks";
+    if (
+      /(^|\s)(HUSKY|HUSKY_SKIP_HOOKS|PRE_COMMIT_ALLOW_NO_CONFIG|LEFTHOOK)=/.test(
+        seg,
+      )
+    )
       return "a hook-skip env var disables git hooks";
   }
   return null;
+}
+
+/** The text shown when a command is refused: what was wrong, what to do, and the rule. */
+export function blockMessage(reason: string): string {
+  return [
+    `${reason}. An agent must not circumvent commit hooks.`,
+    "Run the command without it and fix what the hook reports. If the hook is wrong, propose the change in a pull request for a person to approve.",
+    "Rule: no-hook-bypass",
+    "Docs: docs/checks.md#no-hook-bypass",
+  ].join("\n");
 }
 
 if (import.meta.main) {
@@ -30,7 +46,7 @@ if (import.meta.main) {
   if (payload.tool_name === "Bash") {
     const reason = findBypass(payload.tool_input?.command ?? "");
     if (reason) {
-      const message = `${reason}. An agent must not circumvent commit hooks — ask the repo owner to change or relax the hook; only a human may approve that.`;
+      const message = blockMessage(reason);
       // Belt and suspenders: the structured JSON deny and exit code 2 each block
       // a PreToolUse call on their own, so emit both.
       console.log(

@@ -1,5 +1,7 @@
 # Share
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Share work from this machine with your own devices over Tailscale: a local site such as
 Storybook, a document such as a plan, or a set of temporary files such as screenshots and
 reports. One home page lists everything shared as cards. Nothing goes on the

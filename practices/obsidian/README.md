@@ -1,5 +1,7 @@
 # Obsidian as an Agent-Operated Workspace
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 How to run an Obsidian vault where an AI agent (Claude Code) does most of the
 writing, filing and tidying. Written so a colleague can copy the practice
 rather than guess at it. The reader is a consultant or engineer who keeps

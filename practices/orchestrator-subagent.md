@@ -1,19 +1,45 @@
 # Orchestrator and Subagents
 
-**Practice:** run coding agents continuously without your daily machine by
-splitting the work across two planes. An orchestrator plans and maintains the
-backlog and never touches code. Disposable subagents do the code, on separate,
-scoped, expiring credentials.
+[ai-toolkit](../README.md) / [Practices](README.md)
+
+**Practice:** run coding agents away from your daily machine by splitting the
+work across two planes. An orchestrator plans and maintains the backlog and
+never touches code. Disposable subagents do the code, each on one specified
+unit of work, on separate, scoped, expiring credentials.
 
 This is the operating model behind
 [isolated-agent security](../security/isolated/README.md): that page protects one
 checkout, this one describes how the whole thing runs.
 
+## What Bounds a Run
+
+The orchestrator stays available. The subagents do not run without limit.
+Leaving many agents to work overnight and hand work to each other in prose
+is a different pattern, and
+[Engineering with Agents](engineering/README.md) sets out what it costs. Four
+limits keep this model apart from it.
+
+- **A subagent starts from a specification.** It receives the scenarios to
+  satisfy, the files it may touch and what done looks like. It does not
+  receive another agent's notes. See
+  [Goals and Specifications](engineering/goals-and-specs.md).
+- **A subagent's session is short.** One unit of work, then it ends. Work too
+  large for one short session is split in the plan first.
+- **A machine proves the result.** Lint, tests and gates decide whether the
+  work is accepted. The subagent's own report is a claim. See
+  [Mechanical Checks](engineering/mechanical-checks.md).
+- **The result is one reviewable change.** The orchestrator collects the
+  subagents' branches into one pull request or a short stack. Who approves
+  it follows the risk, as
+  [Agent Code Review](engineering/code-review/README.md) sets out. Agent-to-agent text is
+  never committed. See
+  [Sessions and Subagents](engineering/sessions-and-subagents.md).
+
 ## The Two Planes
 
 |                      | Orchestrator                                                               | Subagent                                                           |
 | -------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Runs                 | continuously, on a dedicated machine and OS account                        | on demand, one per unit of work                                    |
+| Runs                 | stays available, on a dedicated machine and OS account                     | on demand, one short session per unit of work                      |
 | Auth                 | your interactive subscription (Claude.ai / Max)                            | the cloud model provider over SSO (for example AWS Bedrock)        |
 | Job                  | maintain the backlog, clone repos, launch and watch subagents, refresh SSO | write the code in an isolated checkout                             |
 | Touches code?        | no                                                                         | yes                                                                |
@@ -98,8 +124,9 @@ so it belongs on the orchestrator, not on a headless subagent. See
 
 The orchestrator watches subagent state (running, blocked, waiting on input,
 failed) and intervenes. When a subagent stalls, drifts from the plan, or a check
-fails, the orchestrator steers it back rather than letting it run open loop. Two
-practices pair with this:
+fails, the orchestrator steers it back rather than letting it run open loop. A
+subagent that cannot meet its specification stops and reports the blocker. It
+does not keep trying through the night. Two practices pair with this:
 
 - **Goal plan and execute** ([goal](../plugins/planner/skills/goal/SKILL.md) /
   [execute](../plugins/planner/skills/execute/SKILL.md)): the plan is the contract.
@@ -121,6 +148,11 @@ is [defence in depth](../security/README.md) applied to autonomous work.
 
 This is deliberate overhead. For a single interactive session on your own
 machine it is too much: you do not need an orchestrator, a second machine,
-per-client accounts, or cloud SSO. Reach for it when you run agents continuously
-and unattended, across more than one client, and the cost of a mistake reaching
+per-client accounts, or cloud SSO. Reach for it when agents work away from your
+own machine, across more than one client, and the cost of a mistake reaching
 the wrong context is real.
+
+It is also the wrong tool for work that has no specification yet. Explore
+that first, as [Prototypes](engineering/prototypes.md) describes, because a
+subagent given a vague task spends tokens producing something nobody asked
+for.

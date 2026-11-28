@@ -1,5 +1,7 @@
 # Wrap
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Three closing rituals, at three scopes: the day, the session, and the work
 itself when it moves to someone else.
 

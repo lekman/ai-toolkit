@@ -1,12 +1,43 @@
 # Planning-to-Implementation Handoff
 
+[ai-toolkit](../README.md) / [Practices](README.md)
+
 Plan in Claude Desktop, implement in Claude Code, and connect the two with a
 committed dispatch document, because the two sessions share no context and
 because they should not share a machine.
 
 > Retired 2026-08-10: the handoff plugin is removed; day plans live in the
 > Obsidian dashboard and plan notes now (see the planner plugin). This
-> practice stays as the record of the operating model.
+> practice stays as the record of the operating model. Do not start new work
+> this way. Read [What Changed and Why](#what-changed-and-why) first.
+
+## What Changed and Why
+
+This page describes briefs and day plans committed to the repository under
+`docs/handoff/`. That part is withdrawn. The plan now lives in the notes
+vault and the tracker, and nothing an agent writes for another agent is
+committed.
+
+Committed briefs have three costs.
+
+- **They fill the history with generated prose.** Pull requests carry plans
+  and outcome notes beside the code, which makes the code change harder to
+  find and to review.
+- **They are read as fact.** A later session can treat an old brief as a
+  description of the present, including any mistake in it.
+- **They duplicate the tracker.** Status exists in two places, and the two
+  can drift.
+
+Four parts of the model still hold, and
+[Sessions and Subagents](engineering/sessions-and-subagents.md) carries them
+forward.
+
+- Planning and implementation run as separate sessions with different access.
+- A handoff must be complete enough for a session with no other context.
+- Everything a handoff says about the world is re-verified before acting.
+- The tracker and the pull request are the audit record.
+
+The sections below are kept unchanged as the record of the earlier model.
 
 This was the operating model behind the retired handoff plugin, the way
 [orchestrator-subagent](orchestrator-subagent.md) is the operating model behind
@@ -15,17 +46,7 @@ version of the same split.
 
 ## The Shape
 
-```mermaid
-flowchart LR
-    subgraph plan["Claude Desktop / Cowork — planning"]
-        P["broad read context:<br/>tracker, wiki, mail, calendar,<br/>mounted repos, the operator"]
-    end
-    subgraph impl["Claude Code — implementation"]
-        I["narrow write context:<br/>one repo, one branch,<br/>scoped credentials"]
-    end
-    P -->|"writes docs/handoff/YYYY-MM-DD/<br/>(day plan + per-ticket briefs,<br/>committed to the repo)"| G[(git)]
-    G -->|"reads brief, verifies claims,<br/>executes, fills Outcome"| I
-```
+![Handoff shape](handoff-shape.svg)
 
 The planning session reads widely: the issue tracker, wiki pages, the repo's
 `CLAUDE.md` and rules, the master plan, and the operator's head. It produces a

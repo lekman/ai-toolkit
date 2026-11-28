@@ -1,5 +1,7 @@
 # Security
 
+[ai-toolkit](../README.md)
+
 Security settings for working with Claude, organised by **level**. Each level
 protects a different blast radius and applies in different contexts: pick the
 isolation levels that match what you can afford to lose, not all of them by

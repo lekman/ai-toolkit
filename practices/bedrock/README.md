@@ -1,5 +1,7 @@
 # Bedrock
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Running Claude Code against the model over AWS Bedrock, and keeping the session
 authenticated. Bedrock gives you IAM-scoped access and per-team cost allocation;
 AWS SSO gives credentials that refresh instead of being pasted.

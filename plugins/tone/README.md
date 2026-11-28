@@ -1,5 +1,7 @@
 # Tone
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Documentation tone as a plugin: one skill that carries the house writing
 rules for markdown, Word, PDF, and HTML deliverables, so every session and
 machine writes documentation the same way.

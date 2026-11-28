@@ -58,6 +58,16 @@ jobs:
             (cd "$dir" && bun test)
           done
 
+      # The checks this repository runs on itself: each failure must name its
+      # rule and link to docs/checks.md, and these tests hold them to it.
+      - name: Test repository guards
+        run: bun test ./scripts ./.claude/hooks
+
+      # Each documentation page carries a generated line of links back up to
+      # the front page. This fails when one is missing or out of date.
+      - name: Check breadcrumbs
+        run: bun run breadcrumbs --check
+
       # The video plugin's end-to-end tests record real pages, so they need
       # Playwright's Chromium. Without it they skip instead of failing.
       - name: Install Chromium for the video plugin

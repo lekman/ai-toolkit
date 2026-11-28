@@ -1,5 +1,7 @@
 # Context
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Keep each session's context window small. Everything in the window is sent again
 on every turn, so a large window costs more per turn, answers more slowly, and
 pushes out detail the session still needs. The cheapest token is the one that

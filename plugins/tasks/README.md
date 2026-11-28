@@ -1,5 +1,7 @@
 # tasks
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Gives every Claude Code session the task MCP server, and a
 [work](skills/work/SKILL.md) skill on how to use it. The server is
 [packages/tasks-mcp](../../packages/tasks-mcp): it runs once, on the machine

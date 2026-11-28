@@ -1,5 +1,7 @@
 # Privacy
 
+[ai-toolkit](../README.md)
+
 **Practice:** keep sensitive data (PII, PHI, financial) from reaching the AI
 agent or being transmitted to the model or any third party.
 

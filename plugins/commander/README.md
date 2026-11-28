@@ -1,5 +1,7 @@
 # Commander
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Run one long-lived Claude Code session as a commander. It plans the day with
 `/planner:today`, hands work to other named sessions, and tracks what they
 are doing. The commander does not do the work itself, so its context stays

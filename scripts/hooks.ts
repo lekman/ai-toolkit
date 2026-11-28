@@ -109,7 +109,7 @@ console.log(lines.join("\n"));
 
 if (broken > 0) {
   console.error(
-    `\n${broken} guard(s) inert. Register the check as a trunk action with a git_hooks trigger, or hand the hooks path back to .githooks. CI runs the same checks either way, so this is defence in depth, not the only line.`,
+    `\n${broken} guard(s) inert. Register the check as a trunk action with a git_hooks trigger, or hand the hooks path back to .githooks. CI runs the same checks either way, so this is defence in depth, not the only line.\n\nRule: guards-live\nDocs: docs/checks.md#guards-live`,
   );
   process.exit(1);
 }

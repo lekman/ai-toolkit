@@ -1,6 +1,14 @@
 import { expect, test } from "bun:test";
 
-import { findBypass } from "./no-verify-guard";
+import { blockMessage, findBypass } from "./no-verify-guard";
+
+test("the refusal says what to do, the rule and its docs", () => {
+  const message = blockMessage("`--no-verify` skips git hooks");
+  expect(message).toContain("`--no-verify` skips git hooks");
+  expect(message).toContain("Run the command without it");
+  expect(message).toContain("Rule: no-hook-bypass");
+  expect(message).toContain("Docs: docs/checks.md#no-hook-bypass");
+});
 
 test("blocks --no-verify on commit", () => {
   expect(findBypass("git commit --no-verify -m x")).toBeTruthy();
@@ -12,7 +20,9 @@ test("blocks git commit -n", () => {
   expect(findBypass("git commit -n -m x")).toBeTruthy();
 });
 test("blocks core.hooksPath override", () => {
-  expect(findBypass("git -c core.hooksPath=/dev/null commit -m x")).toBeTruthy();
+  expect(
+    findBypass("git -c core.hooksPath=/dev/null commit -m x"),
+  ).toBeTruthy();
 });
 test("blocks a hook-skip env var", () => {
   expect(findBypass("HUSKY=0 git commit -m x")).toBeTruthy();

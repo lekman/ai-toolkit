@@ -1,5 +1,7 @@
 # Practices
 
+[ai-toolkit](../README.md)
+
 Patterns and operating models for working with Claude, across projects. Prose,
 not config: the _how_ and _why_ of a way of working. Enforcement lives in the
 other areas (security, privacy, plugins); this folder explains the shape they
@@ -22,22 +24,7 @@ Running Claude in your own AWS account answers the first and nothing about the
 second: the agent still has your laptop. Putting it in a container answers the
 second and nothing about the first. Most setups need both.
 
-```mermaid
-flowchart TB
-    subgraph inference["Where inference runs — what data leaves"]
-        local["claude-local<br/>your own machine"]
-        bedrock["claude-bedrock<br/>your AWS account"]
-        foundry["claude-foundry<br/>your Azure tenant"]
-    end
-
-    subgraph reach["What the agent can reach — what a mistake costs"]
-        container["claude-docker<br/>one repo, one branch,<br/>one dedicated key"]
-        guards["isolated-agent security<br/>guard rails it cannot relax"]
-    end
-
-    inference --> reach
-    container --> guards
-```
+![Isolation questions](isolation-questions.svg)
 
 - [local-models/](local-models/README.md): run Claude Code against a model on
   your own machine via LM Studio's Anthropic-compatible endpoint, for work that
@@ -69,21 +56,7 @@ behind APIs and connectors.
 The split is the useful part. Knowledge that changes slowly is worth indexing.
 State that changes constantly is not, and belongs behind a live query.
 
-```mermaid
-flowchart LR
-    subgraph fits["Indexable — knowledge, changes slowly"]
-        N["notes, docs, wikis<br/>exported files, shares"]
-    end
-
-    subgraph live["Not indexable — state, changes constantly"]
-        T["tickets, orders,<br/>calendars, inboxes"]
-    end
-
-    N --> IDX[("RAG index<br/>derived, rebuildable")]
-    T --> CONN["connector<br/>queried live"]
-    IDX --> A["grounded answer"]
-    CONN --> A
-```
+![Retrieval routes](retrieval-routes.svg)
 
 - [rag/README.md](rag/README.md): the mental model (fed like a warehouse,
   queried like a search index); why transactional data does not fit; when a
@@ -111,19 +84,7 @@ map before it edits rather than grepping its way to one.
 
 The two layers answer different questions, and neither replaces the other.
 
-```mermaid
-flowchart TB
-    subgraph prose["Prose — what was said"]
-        D["notes, docs, decisions"] --> R[("RAG index<br/>semantic, many sources")]
-    end
-
-    subgraph code["Code — what connects to what"]
-        S["one repository"] --> G[("codebase graph<br/>structural, one repo")]
-    end
-
-    R --> Q["where was this discussed,<br/>and what did we decide?"]
-    G --> P["what calls this,<br/>and what breaks if I change it?"]
-```
+![Prose and code](prose-and-code.svg)
 
 Building a graph reaches further than most tasks, so it lands on both axes
 above. It summarises every file in scope, which decides where inference must
@@ -148,14 +109,48 @@ are and who holds the plan. Both docs below split the same way: something that
 holds context and never touches code, and something disposable and narrowly
 scoped that does.
 
-- [planning-handoff.md](planning-handoff.md): plan in Claude Desktop, implement
-  in Claude Code on dedicated instances, and connect the two with committed
-  day plans and briefs under `docs/handoff/`. The operating model behind the
-  retired handoff plugin (day plans live in Obsidian now).
-- [orchestrator-subagent.md](orchestrator-subagent.md): run agents continuously
-  by splitting work between a planning orchestrator that never touches code and
-  disposable, scoped subagents that do. The operating model behind
-  [isolated-agent security](../security/isolated/README.md).
+- [orchestrator-subagent.md](orchestrator-subagent.md): split work between a
+  planning orchestrator that never touches code and disposable, scoped
+  subagents that each take one specified unit of work. The operating model
+  behind [isolated-agent security](../security/isolated/README.md).
+- [planning-handoff.md](planning-handoff.md): the retired model of planning in
+  Claude Desktop and implementing in Claude Code through briefs committed to
+  the repository. Kept as a record, with a note on why committed briefs were
+  withdrawn.
+
+## Engineering with Agents
+
+Orchestration decides who holds the plan. It does not decide whether the
+result is any good. An agent reports success with the same confidence either
+way, so the work needs a written specification, evidence, and checks a
+machine runs.
+
+![Workflow](engineering/workflow.svg)
+
+- [Engineering with Agents](engineering/README.md): the argument and the
+  four rules behind the pages below.
+- [Goals and Specifications](engineering/goals-and-specs.md): a business goal,
+  behaviour written as scenarios, and a plan from a first working version to
+  measured adoption.
+- [Mechanical Checks](engineering/mechanical-checks.md): enforce the
+  organisation's rules with gates nobody can skip, where every failure says
+  what to change and links to its rule.
+- [Prototypes](engineering/prototypes.md): explore cheaply with whiteboards
+  and artifacts, then build production code from the specification.
+- [Sessions and Subagents](engineering/sessions-and-subagents.md): short
+  sessions, the specification as the handoff, one worktree per subagent, and
+  one pull request or a stack made with `gh stack`.
+- [Agent Code Review](engineering/code-review/README.md): set up Claude Code Review,
+  GitHub Copilot and CodeRabbit with their own instructions, answer every
+  comment, and resolve the threads.
+- [Merge, Release and Ship](engineering/merge-release-ship.md): continuous
+  integration, delivery and deployment as three separate events, with
+  qualification and security tests on every release.
+- [Skill Feedback](engineering/skill-feedback.md): correct a skill when it
+  fails, log every outcome, and rank the failures before deciding what to
+  change.
+- [Third-Party Skills](engineering/third-party-skills.md): queue, read,
+  isolate and evaluate a skill someone else wrote before installing it.
 
 ## An Agent-Operated Notes Vault
 

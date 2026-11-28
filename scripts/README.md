@@ -1,5 +1,7 @@
 # scripts
 
+[ai-toolkit](../README.md)
+
 Repository-level checks. Not published, not part of any plugin: these guard
 this repo itself.
 

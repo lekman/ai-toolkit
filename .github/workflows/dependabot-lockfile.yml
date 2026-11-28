@@ -91,7 +91,7 @@ jobs:
           # Only the lockfile. A dependency bump that somehow dirtied anything
           # else is not something to commit unread.
           if ! git diff --quiet -- . ':(exclude)bun.lock'; then
-            echo "::error::bun install changed files other than bun.lock; refusing to commit"
+            echo "::error::bun install changed files other than bun.lock, so nothing was committed. Check out this branch, run 'bun install --ignore-scripts', read the files listed below and commit them by hand if they are intended. Rule: lockfile-only. Docs: docs/checks.md#lockfile-only"
             git diff --stat -- . ':(exclude)bun.lock'
             exit 1
           fi

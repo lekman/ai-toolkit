@@ -1,5 +1,7 @@
 # Video
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Record a tutorial video of a real interface from a short YAML script. The
 [storybook skill](skills/storybook/SKILL.md) (`/video:storybook`) opens
 Storybook stories, or any page, in Chromium, and walks through the steps the

@@ -1,5 +1,7 @@
 # Isolated Container
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Run the agent somewhere it can only reach the task. Then stop asking it for
 permission.
 

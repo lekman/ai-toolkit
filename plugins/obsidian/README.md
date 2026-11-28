@@ -1,5 +1,7 @@
 # Obsidian
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 The dashboard holds three bands under `## Focus`: today unprefixed, exactly one
 day inside a collapsed `> [!note]- Tomorrow` callout, and every later day inside
 `> [!note]- Future` (every line `"> "`-prefixed), with the Initiatives body

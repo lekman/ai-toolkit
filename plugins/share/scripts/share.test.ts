@@ -3,12 +3,14 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { addPage, discover } from "./home";
 import {
   addShare,
   handle,
@@ -121,13 +123,13 @@ test("the index groups shares under the session that shared them, with the time"
     },
     root,
   );
-  const page = await get("/", new Date("2026-10-07T10:00:00Z")).text();
+  const page = await get("/files", new Date("2026-10-07T10:00:00Z")).text();
   expect(page).toContain(
     "Session <strong>Emulator</strong> <code>sess-111</code>",
   );
   expect(page).toContain("Emulator screens");
   expect(page).toMatch(/Shared \w{3} 7 Oct/);
-  expect(page).toContain('<img src="/s/');
+  expect(page).toContain('<img src="/home/s/');
 });
 
 test("files are served, a folder serves its index.html, and nothing outside the share is", async () => {
@@ -194,4 +196,166 @@ test("a dev server's host refusal is told apart from other answers", () => {
   expect(hostRefused({ status: 403, text: "Forbidden" })).toBe(false);
   expect(hostRefused({ status: 200, text: "<html>" })).toBe(false);
   expect(hostRefused(null)).toBe(false);
+});
+
+test("the home page lists services, pages and file shares as cards, under / and /home/", async () => {
+  mkdirSync(root, { recursive: true });
+  writeFileSync(
+    join(root, "services-status.json"),
+    JSON.stringify([
+      {
+        backend: 6013,
+        checkedAt: "2026-10-07T09:58:00Z",
+        code: 200,
+        description: "Components",
+        folder: "atlas",
+        hidden: false,
+        key: "6443",
+        kind: "Storybook",
+        name: "Atlas Storybook",
+        up: true,
+        url: "https://host.ts.net:6443/",
+      },
+      {
+        backend: 6006,
+        checkedAt: "2026-10-07T09:58:00Z",
+        code: null,
+        description: null,
+        folder: null,
+        hidden: false,
+        key: "6006",
+        kind: "Web",
+        name: "Port 6006",
+        up: false,
+        url: "http://host.ts.net:6006/",
+      },
+      {
+        backend: 7400,
+        checkedAt: "2026-10-07T09:58:00Z",
+        code: 200,
+        description: null,
+        folder: null,
+        hidden: true,
+        key: "443",
+        kind: "Web",
+        name: "Old app",
+        up: true,
+        url: "https://host.ts.net/",
+      },
+    ]),
+  );
+  const s = addShare(
+    [join(src, "notes.txt")],
+    { session: "x", title: "Notes", ttl: "7d" },
+    root,
+  );
+  const md = join(src, "plan.md");
+  writeFileSync(md, "---\nstatus: draft\n---\n# The plan\n\nSome **text**.\n");
+  const pg = addPage(md, root, { cwd: "/x", id: null, name: "Atlas" });
+  for (const path of ["/", "/home/"]) {
+    const home = await get(path).text();
+    expect(home).toContain('href="https://host.ts.net:6443/"');
+    expect(home).toContain("Atlas Storybook");
+    expect(home).toContain(`href="/plans/${pg.slug}.html"`);
+    expect(home).toContain(`href="/home/s/${s.id}/"`);
+    expect(home).toContain("1 route not answering");
+    expect(home).toContain("1 hidden");
+    expect(home).not.toContain('href="https://host.ts.net/"');
+  }
+  expect(get("/home").status).toBe(301);
+});
+
+test("a shared page is served under /plans/ and, with the mount stripped, at the root", async () => {
+  const md = join(src, "plan.md");
+  writeFileSync(md, "# Title\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n");
+  const pg = addPage(md, root, { cwd: "/x", id: null, name: null });
+  expect(pg.slug).toBe("plan");
+  for (const path of ["/plans/plan.html", "/plan.html"]) {
+    const html = await get(path).text();
+    expect(html).toContain("<title>Title</title>");
+    expect(html).toContain("<td>1</td>");
+  }
+  expect(get("/plans/missing.html").status).toBe(404);
+});
+
+test("routes come from tailscale serve status, named from services.json or what answers", async () => {
+  mkdirSync(root, { recursive: true });
+  writeFileSync(
+    join(root, "services.json"),
+    JSON.stringify({
+      "6443": { name: "Atlas Storybook" },
+      "443": { hide: true },
+    }),
+  );
+  const status = {
+    TCP: {
+      "443": { HTTPS: true },
+      "6443": { HTTPS: true },
+      "6006": { HTTP: true },
+    },
+    Web: {
+      "host.ts.net:443": {
+        Handlers: {
+          "/": { Proxy: "http://127.0.0.1:7400" },
+          "/home": { Proxy: "http://127.0.0.1:8765" },
+        },
+      },
+      "host.ts.net:6443": {
+        Handlers: { "/": { Proxy: "http://127.0.0.1:6013" } },
+      },
+      "host.ts.net:6006": {
+        Handlers: { "/": { Proxy: "http://127.0.0.1:6006" } },
+      },
+    },
+  };
+  const found = await discover(
+    root,
+    status,
+    async (p) =>
+      p === 6006
+        ? { code: 200, title: "storybook - Storybook" }
+        : p === 6013
+          ? { code: 200, title: "x" }
+          : { code: 200, title: "Atlas" },
+    (p) => (p === 6006 ? "~/Repo/app/.worktrees/feature/packages/ui" : null),
+    8765,
+  );
+  expect(found.map((f) => f.key)).toEqual(["443", "6006", "6443"]);
+  expect(found.find((f) => f.key === "443")?.hidden).toBe(true);
+  expect(found.find((f) => f.key === "6443")?.name).toBe("Atlas Storybook");
+  expect(found.find((f) => f.key === "6006")).toMatchObject({
+    kind: "Storybook",
+    name: "app · feature/packages/ui",
+    url: "http://host.ts.net:6006/",
+  });
+  expect(found.some((f) => f.backend === 8765)).toBe(false);
+});
+
+test("the CLI shares and removes a page, and names a service, without touching the tailnet", () => {
+  const env = { ...process.env, SHARE_HOME: root, SHARE_NO_TAILNET: "1" };
+  const run = (...args: string[]) =>
+    Bun.spawnSync(["bun", SCRIPT, ...args], { env });
+  const md = join(src, "plan.md");
+  writeFileSync(md, "# The plan\n");
+  mkdirSync(root, { recursive: true });
+  writeFileSync(
+    join(root, "config.json"),
+    JSON.stringify({ publicBase: "https://server.example.com/" }),
+  );
+  const shared = run("page", md, "--slug", "Questions plan");
+  expect(shared.exitCode).toBe(0);
+  expect(shared.stdout.toString()).toContain(
+    "The plan: https://server.example.com/plans/questions-plan.html",
+  );
+  expect(existsSync(join(root, "pages", "questions-plan.html"))).toBe(true);
+  expect(run("unpage", "questions-plan").exitCode).toBe(0);
+  expect(existsSync(join(root, "pages", "questions-plan.html"))).toBe(false);
+  expect(
+    run("name", "6006", "Design", "system", "--description", "Components")
+      .exitCode,
+  ).toBe(0);
+  expect(
+    JSON.parse(readFileSync(join(root, "services.json"), "utf8"))["6006"],
+  ).toEqual({ name: "Design system", description: "Components" });
+  expect(run("name", "abc", "x").exitCode).toBe(2);
 });

@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  auto_review:
+    # CodeRabbit reviews a pull request once, when it opens. Review of each
+    # push is off, because a session with Auto-fix pushes a fix for every
+    # comment and each push would start another review. Comment
+    # `@coderabbitai review` to ask for a second round.
+    auto_incremental_review: false

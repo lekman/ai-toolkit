@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 426" role="img" aria-labelledby="rv-title rv-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
   <title id="rv-title">The workflow for agent code review</title>
-  <desc id="rv-desc">Six steps. 1, a person writes one instruction file for each reviewer and changes it like code. 2, the coding agent runs a local review before the pull request, for two rounds at most. 3, reviewer agents comment on one pull request, or on each piece of a stack. 4, the coding agent answers each comment in its own thread as fixed, declined or deferred. When fixes are pushed, the reviewers review again. 5, a machine blocks the merge while any thread is open. 6, a written policy approves and merges, and a person approves only where the risk calls for one.</desc>
+  <desc id="rv-desc">Six steps. 1, a person writes one instruction file for each reviewer and changes it like code. 2, the coding agent runs a local review before the pull request, for two rounds at most. 3, reviewer agents comment on one pull request, or on each piece of a stack. 4, the coding agent answers each comment in its own thread as fixed, declined or deferred. After the fixes the author asks the reviewers for one more round, and the pull request stops at two. 5, a machine blocks the merge while any thread is open. 6, a written policy approves and merges, and a person approves only where the risk calls for one.</desc>
   <style>
     .box { stroke-width: 2; }
     .ttl { font-size: 20px; font-weight: 700; fill: #1f2328; }
@@ -81,7 +81,7 @@
   </g>
   <path class="arw" d="M665 152V230" marker-end="url(#rv-head)"/>
   <path class="arw opt" d="M825 232V154" marker-end="url(#rv-head)"/>
-  <text class="lbl mid" x="745" y="197">fixes pushed</text>
+  <text class="lbl mid" x="745" y="197">one more round</text>
 
   <!-- Row two, right to left -->
   <g class="agent" transform="translate(620 236)">

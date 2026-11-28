@@ -191,10 +191,14 @@ available inside it.
 The practice asks for a container with no real credentials. This run had
 one, because an agent cannot run without a way to reach a model. The
 sign-in was made for the container and is kept apart from the one on the
-host, so it was the only thing a misled agent could have taken. Two ways
-remove even that. One is a model on the same machine, as in
-[Local Models](../local-models/README.md). The other is a key made for one
-run and revoked when the run ends.
+host, so it was the only thing a misled agent could have taken.
+
+Only a model on the same machine meets the rule in full, as in
+[Local Models](../local-models/README.md), because the container then holds
+no credential at all. A key made for one run and revoked when the run ends
+is still a real credential while the audit runs. It is a smaller exception
+to the rule and not a way to meet it, because what a misled agent could take
+is then worth nothing after the run.
 
 <details>
 <summary>The planted weaknesses and decoys</summary>

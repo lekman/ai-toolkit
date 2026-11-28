@@ -24,6 +24,15 @@ Top level is flat and grouped by how each thing is consumed:
 - `packages/`: runnable TypeScript: CLIs, MCP servers, and the Agent SDK on
   AWS Bedrock base project.
 
+## Work in Worktrees, Never in the Main Checkout
+
+Machines load this repository's `standards/` and `rules/` straight from their
+main checkout (for example `~/Repo/ai-toolkit`), so that checkout always stays on
+`main`. Do every change in a worktree on its own branch, for example
+`git worktree add ../.wt-ai-toolkit-<topic> -b <branch>`, and remove it once the
+pull request merges. Never check out another branch in the main checkout; a session
+that does changes the instructions every other session on that machine reads.
+
 The repo also has its own `.claude/` with repo-level hooks, rules, and a
 `settings.json` that protect this repo. Each folder carries its own README.
 `standards/`, `security/`, `privacy/`, `docs/`, `practices/`,

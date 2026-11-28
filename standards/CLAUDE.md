@@ -13,3 +13,5 @@
 @PROPORTION.md
 
 @PULL_REQUESTS.md
+
+@../rules/sharing.md

@@ -156,16 +156,17 @@ machine runs.
 
 Where the working notes live and how an agent maintains them. Obsidian holds
 the markdown, and Claude Code does the filing and the recurring documents.
-The work items live in a task database, and
+The vault is the detail source for the planning documents and for the
+retrieval index. The work items live in a task database, and
 [lekman/atlas](https://github.com/lekman/atlas) shows them beside the notes
 they link to. The vault's value comes from written conventions, which are a
 frontmatter schema, one folder per client, a Details page for each piece of
 work, and skills for anything written the same way three times.
 
 - [Obsidian as an Agent-Operated Workspace](obsidian/README.md): the full
-  practice, from vault settings and conventions to tasks and Atlas, the agent
-  layer underneath, and the cautions (shared state in files, secrets, client
-  separation as a contractual matter).
+  practice, from vault settings and conventions to retrieval, tasks and
+  Atlas, the agent layer underneath, and the cautions (shared state in files,
+  secrets, client separation as a contractual matter).
 
 ## A Live Work Dashboard
 

@@ -7,11 +7,16 @@ writing, filing and tidying. Written so a colleague can copy the practice
 rather than guess at it. The reader is a consultant or engineer who keeps
 notes for more than one client and wants an agent to maintain them.
 
-Obsidian holds the notes, and the agent works inside them. The work items do
-not live in the vault. They live in a task database, and
-[lekman/atlas](https://github.com/lekman/atlas) shows them beside the notes
-they link to. The vault's value comes from written conventions, so the agent
-produces the same shape of note every time.
+The vault is the detail source. It holds the planning documents, which are
+a master plan for each repository and a Details page for each piece of work,
+and it holds the meeting notes. Two things read it. A retrieval index, known
+as RAG (retrieval-augmented generation), lets any agent session search the
+notes by meaning. [lekman/atlas](https://github.com/lekman/atlas) shows each
+task beside its Details page.
+
+The work items themselves do not live in the vault. They live in a task
+database. The vault's value comes from written conventions, so the agent
+produces the same shape of note every time, and both readers can rely on it.
 
 Until late October 2026 the vault also held the day's work list, in a
 Markdown file named `Dashboard.md`. That file is retired.
@@ -20,26 +25,28 @@ the reason.
 
 ## The Stack at a Glance
 
-| Layer               | What it is                                     | What it does                                                             |
-| ------------------- | ---------------------------------------------- | ------------------------------------------------------------------------ |
-| Obsidian            | Local markdown editor over a folder of `.md`   | The notes themselves; nothing is locked in a proprietary format          |
-| Community plugins   | A small, earned set                            | Dataview queries, image conversion, deep links, a terminal               |
-| Task database       | Postgres behind a tasks server, from this repo | Every client's work items, with claims, a log and a history              |
-| Atlas               | A web page served from a computer you own      | Your day, your agents and what waits for you, with each task's notes     |
-| Claude Code         | Anthropic's agent CLI                          | The actual agent; reads `CLAUDE.md`, rules and skills                    |
-| Rules and skills    | Markdown files in `.claude/`                   | The house style and the repeatable jobs                                  |
-| Plugin marketplaces | GitHub repositories                            | Shared skills across machines and clients (this repo is one)             |
-| ObsidiBot           | Obsidian plugin by Scott Kirvan, optional      | Chat panel that runs Claude Code as a subprocess with the vault as `cwd` |
+| Layer               | What it is                                          | What it does                                                             |
+| ------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
+| Obsidian            | Local markdown editor over a folder of `.md`        | The notes themselves; nothing is locked in a proprietary format          |
+| Community plugins   | A small, earned set                                 | Dataview queries, image conversion, deep links, a terminal               |
+| Task database       | Postgres behind a tasks server, from this repo      | Every client's work items, with claims, a log and a history              |
+| Atlas               | A web page served from a computer you own           | Your day, your agents and what waits for you, with each task's notes     |
+| RAG index           | An index of the vault's notes, built on one machine | Lets any agent session search the notes by meaning                       |
+| Claude Code         | Anthropic's agent CLI                               | The actual agent; reads `CLAUDE.md`, rules and skills                    |
+| Rules and skills    | Markdown files in `.claude/`                        | The house style and the repeatable jobs                                  |
+| Plugin marketplaces | GitHub repositories                                 | Shared skills across machines and clients (this repo is one)             |
+| ObsidiBot           | Obsidian plugin by Scott Kirvan, optional           | Chat panel that runs Claude Code as a subprocess with the vault as `cwd` |
 
 ## Where Each Thing Lives
 
 ![Notes and tasks](notes-and-tasks.svg)
 
-| Thing      | Kept in        | What it holds                                | How it reaches Atlas                                                       |
-| ---------- | -------------- | -------------------------------------------- | -------------------------------------------------------------------------- |
-| Notes      | Obsidian vault | Meeting notes, plans and Details pages       | A Details page is found by the `detailsId` of its task                     |
-| Work items | Task database  | Tasks, claims, logs and history              | Through the tasks server, which checks every write and records who made it |
-| The view   | Atlas          | Your day, your agents and what waits for you | It reads both and is the master copy of neither                            |
+| Thing      | Kept in        | What it holds                                | Who reads it, and how                                                                                  |
+| ---------- | -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Notes      | Obsidian vault | Plans, Details pages and meeting notes       | The RAG index takes in notes as they change. Atlas reads a Details page by the `detailsId` of its task |
+| Work items | Task database  | Tasks, claims, logs and history              | Atlas and the agents, through the tasks server                                                         |
+| The index  | RAG index      | A searchable copy of the notes               | Any agent session, searching by meaning                                                                |
+| The view   | Atlas          | Your day, your agents and what waits for you | You. It is the master copy of nothing                                                                  |
 
 Shared tickets stay in the client's own tracker (Jira, GitHub or Monday). A
 task keeps a link to its ticket and does not copy it.
@@ -100,18 +107,53 @@ moves to `active` when the note is in real use.
 
 **Links.** `[[wikilinks]]` internally, standard markdown for external links.
 
-**Details pages.** Each piece of work has one Markdown page under the
-client's `Initiatives/` folder. It says what was done, why, and the evidence,
-such as pull requests, commits, files and results. One sentence is enough
-when there is little to say. The file name in lower case with hyphens is the
-task's `detailsId`, and that is the only link between the task and the page.
-Atlas finds the page by file name alone, so give every Details page a name
-that is unique in the vault. It does not look in folders whose names start
-with `_` or `.`, so a page left in `_Drafts/` is not found.
+**Planning documents.** They live under the client's `Initiatives/` folder
+and come in two kinds. A master plan, named `<repo> — Master Plan.md`, says
+where the work in one repository stands. A Details page covers one piece of
+work. It says what was done, why, and the evidence, such as pull requests,
+commits, files and results. One sentence is enough when there is little to
+say.
+
+**A Details page is tied to its task by name.** The file name in lower case
+with hyphens is the task's `detailsId`, and that is the only link between the
+task and the page. Atlas finds the page by file name alone, so give every
+Details page a name that is unique in the vault. It does not look in folders
+whose names start with `_` or `.`, so a page left in `_Drafts/` is not found.
 
 **Writing style.** One rule file holds the house style (plain language, banned
 filler words). The agent applies it to everything it generates, including
 commit messages.
+
+## The Vault as the Source for Retrieval
+
+The RAG index is a searchable copy of the vault's notes. It answers "what do
+I know about this" and "what did we decide", from a session in any
+repository. [Retrieval (RAG)](../rag/README.md) explains the idea and where
+it stops fitting. The code is in `packages/rag` in this repository.
+
+The index reads the vault in a fixed way, and the conventions above are what
+make its answers useful:
+
+- **Only Markdown files are indexed.** Each note is split at its headings,
+  and a result names the note and the heading it came from.
+- **Frontmatter becomes the filters.** A search can be narrowed by `client`
+  and `type`. A note with `status: archived` is left out unless the search
+  asks for it.
+- **The top folder sets the privacy tier.** Notes under `Personal/` are
+  private. Everything else is private to the business.
+- **Scratch and system files are left out.** That covers `_Drafts/`,
+  `_Attachments/`, `Templates/`, `CLAUDE.md`, the context file, backup files
+  and sync conflict copies.
+- **Master plans are left out too**, because they change too often for an
+  index to keep up. An agent reads a master plan by its path. Details pages
+  and meeting notes are indexed.
+
+One machine that stays on does the indexing. It watches the vault, runs a
+full scan once a day, and serves the index read only over Tailscale. Every
+other machine registers that address and keeps no index of its own.
+
+The index holds knowledge and never state. "Is this task open" is a question
+for the task database, because an index is always a little behind its source.
 
 ## Tasks and Atlas
 
@@ -289,7 +331,8 @@ other.
    Triage to have an agent suggest them. Move a task to today, tomorrow or
    the backlog.
 3. **Work.** An agent claims a task before it starts and logs progress on it
-   as it goes. Your own rough notes go into `_Drafts/`. Meeting notes are
+   as it goes. When it needs background, it searches the notes through the
+   RAG index. Your own rough notes go into `_Drafts/`. Meeting notes are
    dictated or typed roughly and processed afterwards.
 4. **Let the record build itself.** The agent writes the Details page before
    it opens a pull request, and the task moves as the pull request does.
@@ -301,8 +344,8 @@ other.
 
 ## Setting It up Yourself
 
-Steps 1 to 5 give you the vault and the agent. Steps 6 to 9 add the task
-database and Atlas, and need a computer that stays on.
+Steps 1 to 5 give you the vault and the agent. Steps 6 to 10 add the task
+database, Atlas and the index, and need a computer that stays on.
 
 1. Install Obsidian and open a folder as a vault.
 2. Set new notes to a `_Drafts` folder, attachments to `_Attachments`, and
@@ -322,6 +365,9 @@ database and Atlas, and need a computer that stays on.
 9. In the dashboard server's `tasks.json`, map each client in the task
    database to its key in Atlas. A client you leave out is still read from a
    `Dashboard.md` in the vault.
+10. Index the vault once it holds enough notes to be worth searching.
+    [RAG Toolkit Design (Draft)](../../packages/rag/DESIGN.md) covers the
+    install and the checks that follow it.
 
 ObsidiBot is a separate choice. Install BRAT from the community plugin
 browser, add `ScottKirvan/ObsidiBot` through it, and start in a permission
@@ -348,6 +394,10 @@ and correct it.
   folder that can sit inside the vault, and that folder can hold calendar
   feed links and an endpoint token. Treat it as a secret and keep it out of
   anything you commit or share.
+- **Indexing sends note text to an embedding service.** The index here uses
+  the Voyage AI API to turn each piece of a note into a vector, so that text
+  leaves your machine. Check each client's terms before you index its
+  folder.
 - **Client separation is a contractual matter.** Never write a combined note
   across two clients. Keep one folder per client and one client per task, and
   instruct the agent to keep them apart. A task takes its client's

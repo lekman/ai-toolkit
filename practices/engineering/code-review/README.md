@@ -210,9 +210,9 @@ count rises.
 
 ### Limit the Rounds
 
-A round is one review and the fixes for it. Stop after two rounds. The
-limit applies to a local review before the pull request opens, and again to
-the reviewers on the pull request.
+A round is one pass in which a reviewer asks for changes, and the fixes for
+it. Stop after two rounds. The limit applies to a local review before the
+pull request opens, and again to the reviewers on the pull request.
 
 1. **Round one** reviews the work. The agent checks each finding against the
    code and fixes the real ones.
@@ -239,13 +239,22 @@ fixes.
 | GitHub Copilot     | Leave "Review new pushes" off in the ruleset  | Request Copilot as a reviewer  |
 | CodeRabbit         | Set `auto_incremental_review: false`          | Comment `@coderabbitai review` |
 
-Give the coding agent the same limit. After round two it replies to a new
-comment and does not push a fix for it. A reviewer's reply that only
-confirms a fix needs no answer.
+A reviewer's replies in a thread count as a pass. Some reviewers answer
+each reply, check the fix and ask for more. Turning off review of each push
+does not stop that, because the reviewer is answering a reply and no push
+is involved. On this repository one pull request had its review, then
+three more exchanges in its threads, with review of each push turned off.
+The first exchange found two real gaps. The second asked for something out
+of scope and was withdrawn in the third.
+
+Count the first set of replies that ask for more as round two, and do not
+also ask for a second review. After round two the coding agent replies once
+to anything that asks for a change, gives its reason, and pushes no fix. It
+does not answer a reply that only confirms or withdraws.
 
 These settings stop a reviewer from starting a round by itself. Nothing
-counts the rounds that someone asks for, so the limit of two is a rule the
-author and the coding agent keep.
+counts the rounds that someone asks for or the replies in a thread, so the
+limit of two is a rule the author and the coding agent keep.
 
 Check every finding before acting on it. A reviewer's finding is a claim,
 the same as an agent's report of success.

@@ -47,6 +47,13 @@ request that is already open, the comment `@coderabbitai pause` stops its
 automatic reviews until someone comments `@coderabbitai resume`. See
 [Control when reviews run](https://docs.coderabbit.ai/pr-reviews/when-reviews-run).
 
+CodeRabbit also answers a reply in one of its threads without being
+mentioned, and it can ask for more there. Those replies count towards the
+two rounds in [Agent Code Review](README.md). `chat.auto_reply` is on by
+default, and setting it to `false` makes CodeRabbit answer only when it is
+mentioned. This repository leaves it on, because the replies confirm fixes
+and save what they learn from a declined finding.
+
 Where review of each push stays on, `auto_pause_after_reviewed_commits` is
 the limit. CodeRabbit pauses after that many reviewed commits, and the
 default is 5.

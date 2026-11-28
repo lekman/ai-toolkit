@@ -191,7 +191,9 @@ count rises.
 <summary>Approving without a person on GitHub</summary>
 
 - **A ruleset** requires passing checks, resolved threads, one approving
-  review, and review from code owners.
+  review, and review from code owners. It also dismisses an approval when
+  new commits are pushed. Without that, an approval given before a later
+  push still counts for the commits that came after it.
 - **A second GitHub App** gives that review when the policy's conditions
   hold. GitHub refuses a review from a pull request's own author, so the
   approver must be a different identity from the one that opened it.
@@ -264,6 +266,8 @@ thread is resolved.
   has posted.
 - Instruction files are covered by code owners, and the ruleset requires
   review from code owners, so a change to them needs approval from a person.
+  That holds for a change pushed after the approval only where the ruleset
+  dismisses stale approvals.
 - A second app approves the kinds of change the policy names, and the
   approving job fails when the approver and the author are the same.
 
@@ -272,6 +276,7 @@ This repository uses all four. Its ruleset sets
 and its `.github/copilot-instructions.md` tells Copilot to skip release and
 dependency pull requests. Its release pull requests are approved by a
 second app when the author, the label and every changed path match, and no
-person reads them. It has no `REVIEW.md` or `.coderabbit.yaml`. Claude
-Code Review is not installed here, and CodeRabbit has so far been run on it
-from the command line only.
+person reads them. Its ruleset does not dismiss stale approvals, so here an
+approval given before a later push still counts. It has no `REVIEW.md` or
+`.coderabbit.yaml`. Claude Code Review is not installed here, and CodeRabbit
+reviews its pull requests with its default settings.

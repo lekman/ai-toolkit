@@ -1,5 +1,7 @@
 # Codebase Graphs
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Turning a repository into a graph of files, symbols, layers and relationships,
 so structure can be queried instead of grepped. This page covers when the
 technique pays for itself, how to run it without overspending, and which parts
@@ -16,22 +18,7 @@ contains, exports, tested_by, documents, configures). A second pass groups the
 nodes into **layers**, and a third writes a **tour**: an ordered reading path
 through the codebase for someone seeing it the first time.
 
-```mermaid
-flowchart LR
-    subgraph deterministic["Scripts — cheap, exact"]
-        SCAN[scan files] --> BATCH[group into batches]
-        BATCH --> TS[tree-sitter<br/>structural extraction]
-    end
-
-    subgraph llm["Agents — expensive, interpretive"]
-        SEM[semantic analysis<br/>summaries, tags, edges]
-        REV[assembly review]
-        ARCH[layer assignment]
-        TOUR[tour design]
-    end
-
-    TS --> SEM --> REV --> ARCH --> TOUR --> G[(knowledge graph)]
-```
+![Graph build](graph-build.svg)
 
 The split matters more than it looks. File enumeration, import resolution and
 syntax parsing are exact and cheap. Summaries, layer boundaries and teaching

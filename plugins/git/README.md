@@ -1,5 +1,7 @@
 # Git
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Git workflow: four skills you invoke, and a hook that runs whether you
 remember it or not.
 

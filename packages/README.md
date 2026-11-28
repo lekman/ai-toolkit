@@ -1,5 +1,7 @@
 # Packages
 
+[ai-toolkit](../README.md)
+
 Runnable code: CLIs, MCP servers, editor extensions, and base projects.
 Everything else in this repo is instructions and config for Claude; this folder
 is software you install and run.

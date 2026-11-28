@@ -1,5 +1,7 @@
 # Meetings
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Notes from a meeting the meeting tool cannot or should not record. This
 practice covers two common cases:
 
@@ -25,20 +27,7 @@ That puts the record in the open, where a recording bot would have been.
 
 ## How It Works
 
-```mermaid
-flowchart LR
-    subgraph mac["Your Mac"]
-        A["meeting audio<br/>mic + speakers"] --> M["Samurai Scribe or Meetily<br/>transcribes locally"]
-        M --> DB[("recorder's own store")]
-        DB --> X["metadata only:<br/>export script or list_meetings"]
-        X --> T["transcript stays with the<br/>recorder until a permitted<br/>model reads it"]
-    end
-    T --> S{"client listed<br/>local only?"}
-    S -- no --> H["hosted Claude<br/>writes the note"]
-    S -- yes --> L["claude-local<br/>writes the note"]
-    H --> N["meeting note:<br/>summary, decisions,<br/>actions, open questions"]
-    L --> N
-```
+![Note workflow](note-workflow.svg)
 
 1. **Capture.** Samurai Scribe or
    [Meetily](https://github.com/Zackriya-Solutions/meetily) (MIT licence)

@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 426" role="img" aria-labelledby="sv-title sv-desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="sv-title">How to vet a skill someone else wrote</title>
+  <desc id="sv-desc">Five steps. 1, queue it: star the repository and add it to a review list. 2, read it: the instructions, scripts, tools and hooks. 3, run it in isolation, in a container with test data and no real credentials. 4, evaluate it against a known answer, and against doing the task without the skill. 5, decide whether to adopt it, fork it, take the idea, or reject it. Read it again on every update.</desc>
+  <style>
+    .box { stroke-width: 2; }
+    .band { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; }
+    .hd { font-size: 18px; font-weight: 700; fill: #1f2328; }
+    .sub { font-size: 14px; fill: #59636e; }
+    .ttl { font-size: 20px; font-weight: 700; fill: #1f2328; }
+    .dsc { font-size: 15px; fill: #32383f; }
+    .tag { font-size: 12.5px; font-weight: 700; letter-spacing: 1.2px; }
+    .num { font-size: 14px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+    .lbl { font-size: 14px; font-weight: 600; fill: #6f7780; }
+    .mid { text-anchor: middle; }
+    .arw { stroke: #6f7780; stroke-width: 2.5; fill: none; }
+    .opt { stroke-dasharray: 7 5; }
+    .head { fill: #6f7780; }
+
+    .g0 .box { fill: #f6f8fa; stroke: #8c959f; }
+    .g0 .tag { fill: #59636e; }
+    .g1 .box { fill: #ddf4ff; stroke: #0969da; }
+    .g1 .tag { fill: #0550ae; }
+    .g1 .dot { fill: #0969da; }
+    .g2 .box { fill: #fff8c5; stroke: #9a6700; }
+    .g2 .tag { fill: #7d4e00; }
+    .g2 .dot { fill: #9a6700; }
+    .g3 .box { fill: #dafbe1; stroke: #1a7f37; }
+    .g3 .tag { fill: #116329; }
+    .g3 .dot { fill: #1a7f37; }
+
+    @media (prefers-color-scheme: dark) {
+      .band { fill: #151b23; stroke: #3d444d; }
+      .hd { fill: #f0f6fc; }
+      .sub { fill: #9198a1; }
+      .ttl { fill: #f0f6fc; }
+      .dsc { fill: #d1d9e0; }
+      .num { fill: #0d1117; }
+      .lbl { fill: #9198a1; }
+      .arw { stroke: #9198a1; }
+      .head { fill: #9198a1; }
+      .g0 .box { fill: #151b23; stroke: #656d76; }
+      .g0 .tag { fill: #9198a1; }
+      .g1 .box { fill: #121d2f; stroke: #4493f8; }
+      .g1 .tag { fill: #79c0ff; }
+      .g1 .dot { fill: #4493f8; }
+      .g2 .box { fill: #2a2111; stroke: #d29922; }
+      .g2 .tag { fill: #e3b341; }
+      .g2 .dot { fill: #d29922; }
+      .g3 .box { fill: #12261e; stroke: #3fb950; }
+      .g3 .tag { fill: #56d364; }
+      .g3 .dot { fill: #3fb950; }
+    }
+  </style>
+  <defs>
+    <marker id="sv-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="head" d="M0 0 10 5 0 10z"/>
+    </marker>
+  </defs>
+  <g class="g1" transform="translate(30 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">1</text>
+    <text class="tag" x="54" y="32">PERSON</text>
+    <text class="ttl" x="18" y="68">Queue it</text>
+    <text class="dsc" x="18" y="91">Star it and add it to</text>
+    <text class="dsc" x="18" y="110">a review list</text>
+  </g>
+  <path class="arw" d="M284 86H319" marker-end="url(#sv-head)"/>
+  <g class="g1" transform="translate(325 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">2</text>
+    <text class="tag" x="54" y="32">PERSON</text>
+    <text class="ttl" x="18" y="68">Read it</text>
+    <text class="dsc" x="18" y="91">Instructions, scripts,</text>
+    <text class="dsc" x="18" y="110">tools and hooks</text>
+  </g>
+  <path class="arw" d="M579 86H614" marker-end="url(#sv-head)"/>
+  <g class="g2" transform="translate(620 24)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">3</text>
+    <text class="tag" x="54" y="32">AGENT</text>
+    <text class="ttl" x="18" y="68">Run in isolation</text>
+    <text class="dsc" x="18" y="91">A container, test data</text>
+    <text class="dsc" x="18" y="110">and no real credentials</text>
+  </g>
+  <path class="arw" d="M745 152V230" marker-end="url(#sv-head)"/>
+  <g class="g1" transform="translate(620 236)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">4</text>
+    <text class="tag" x="54" y="32">PERSON</text>
+    <text class="ttl" x="18" y="68">Evaluate</text>
+    <text class="dsc" x="18" y="91">Against a known answer,</text>
+    <text class="dsc" x="18" y="110">and against doing without</text>
+  </g>
+  <path class="arw" d="M616 298H581" marker-end="url(#sv-head)"/>
+  <g class="g1" transform="translate(325 236)">
+    <rect class="box" width="250" height="124" rx="10"/>
+    <circle class="dot" cx="31" cy="27" r="13"/>
+    <text class="num" x="31" y="32">5</text>
+    <text class="tag" x="54" y="32">PERSON</text>
+    <text class="ttl" x="18" y="68">Decide</text>
+    <text class="dsc" x="18" y="91">Adopt, fork, take the</text>
+    <text class="dsc" x="18" y="110">idea, or reject</text>
+  </g>
+  <path class="arw opt" d="M450 232V154" marker-end="url(#sv-head)"/>
+  <text class="lbl" x="464" y="198">on every update</text>
+  <g class="g1" transform="translate(30 392)">
+    <rect class="box" width="18" height="18" rx="4"/>
+    <text class="lbl" x="28" y="14">Person sets goals and rules</text>
+  </g>
+  <g class="g2" transform="translate(325 392)">
+    <rect class="box" width="18" height="18" rx="4"/>
+    <text class="lbl" x="28" y="14">Agent builds and reviews</text>
+  </g>
+  <g class="g3" transform="translate(620 392)">
+    <rect class="box" width="18" height="18" rx="4"/>
+    <text class="lbl" x="28" y="14">Machine proves the result</text>
+  </g>
+</svg>

@@ -1,5 +1,7 @@
 # Planner
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Planning over an Obsidian vault, at four time scales: the next task
 (`/planner:next`), the day (`/today`), the repo (`/planner:plan`,
 `/planner:sync`), and one goal (`/planner:goal`, `/planner:execute`). Where the [obsidian plugin](../obsidian/README.md) owns

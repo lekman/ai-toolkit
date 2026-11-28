@@ -1,5 +1,7 @@
 # Machine Security
 
+[ai-toolkit](../../README.md) / [Security](../README.md)
+
 **Practice:** machine-level security for an interactive or autonomous Claude
 session: deny rules that stop the agent reading or clobbering secrets on the
 workstation it runs on.

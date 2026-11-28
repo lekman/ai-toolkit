@@ -1,5 +1,7 @@
 # Plugins
 
+[ai-toolkit](../README.md)
+
 Claude Code plugins distributed from this repo as a marketplace. A skill is a
 reusable workflow: the procedure and reference knowledge are packaged once, and
 you point it at a target that varies per run: a pull request, a logfile, a

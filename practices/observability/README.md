@@ -1,5 +1,7 @@
 # Observability
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 See what the agent is doing: when it needs you, what it is working on, and what
 it touches. Notifications come first, because knowing when to look is what makes
 the rest optional. Progress and access visibility follow as content lands.

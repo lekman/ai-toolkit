@@ -1,5 +1,7 @@
 # Share
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Share work from this machine with your own devices over Tailscale: a local site such as
 Storybook, or a set of temporary files such as screenshots and reports. Nothing goes on the
 local network or the internet. Every device on your tailnet can open it, and nobody else.

@@ -1,5 +1,7 @@
 # Contributing
 
+[ai-toolkit](../README.md) / [Docs](README.md)
+
 How to work in this repo. Consumer documentation lives in each folder's
 `README.md`; anything that assumes you have the repo checked out belongs here or
 in a package's own `CONTRIBUTING.md`.

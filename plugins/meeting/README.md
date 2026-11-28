@@ -1,5 +1,7 @@
 # Meeting
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Notes from meetings you cannot or will not record in the meeting tool. Two
 cases come up often. You join another organisation's Teams or Google Meet and
 recording is turned off for guests. Or the meeting tool could record, but its

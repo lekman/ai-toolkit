@@ -1,8 +1,12 @@
 # Controls: Soft, Hard, Boundary
 
+[ai-toolkit](../README.md) / [Docs](README.md)
+
 Three kinds of control shape how an agent behaves here. They differ by _who_
 enforces them and _what has to fail_ for the control to fail. Knowing which is
 which, and matching the strength to the stakes, is the point.
+
+![Control layers](control-layers.svg)
 
 ## Soft Controls: Advisory (the Model Enforces)
 

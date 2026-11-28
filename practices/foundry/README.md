@@ -1,5 +1,7 @@
 # Microsoft Foundry
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Running Claude Code against the model on Azure, and keeping the session
 authenticated. Foundry gives you Entra ID identity, RBAC, Azure networking, and
 one bill; it is the natural choice when the rest of your estate is already

@@ -1,5 +1,7 @@
 # Principles
 
+[ai-toolkit](../README.md) / [Docs](README.md)
+
 The _why_ behind the practices. The [README](../README.md) tells you what to do
 and in what order; this page is the reasoning you can read when you want it.
 

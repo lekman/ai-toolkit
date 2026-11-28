@@ -53,6 +53,9 @@ any of the above further than it goes.
   doing and get notified when it needs you.
 - **[Isolated-agent security](security/isolated/README.md)**: guard rails for a remote or Docker-based agent.
 - **[Practices](practices/README.md)**: operating models and patterns.
+- **[Engineering with agents](practices/engineering/README.md)**: get
+  dependable software from an agent through specifications, mechanical checks
+  and short sessions, with no reliance on the agent's own word.
 - **[Skills](plugins/README.md)**: reusable workflows for common tasks.
 - **[Repo guards](scripts/README.md)**: a pre-commit hook that keeps client
   names, ticket keys and internal system names out of a public repo written

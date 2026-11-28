@@ -1,5 +1,7 @@
 # Dependabot
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Dependabot lifecycle skills for a whole GitHub account: find the repos that are
 not covered, then bring them under one consistent flow.
 

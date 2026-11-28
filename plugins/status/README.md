@@ -1,5 +1,7 @@
 # Status
 
+[ai-toolkit](../../README.md) / [Plugins](../README.md)
+
 Check whether the services you depend on are in an outage, from each
 provider's official status feed and from HTTP probes of your own endpoints.
 One Bun script with no dependencies does the work, and the

@@ -1,5 +1,7 @@
 # Isolated Agent
 
+[ai-toolkit](../../README.md) / [Security](../README.md)
+
 **Practice:** protect the **repo**, not the machine, from an agent that quietly
 weakens its own guard rails.
 

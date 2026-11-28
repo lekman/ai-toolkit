@@ -1,5 +1,7 @@
 # A Live Work Dashboard
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 One private page that answers "what needs me today, per client" and keeps
 itself current. It shows the day's meetings, the worklist from your notes, and
 each client's own tracker, with a filter that narrows everything to one client.
@@ -37,25 +39,7 @@ its own data store, and MCP servers running on your computer. Everything else
 comes through one of three routes, chosen by where the data and its secret
 live.
 
-```mermaid
-flowchart LR
-    subgraph live["Live connectors: page code, every few minutes"]
-        CAL["Calendars"]
-        MON["monday.com"]
-        GH["GitHub issues"]
-    end
-    subgraph mac["Your computer"]
-        SYNC["Scheduled sync<br/>notes, calendar feeds, Jira"]
-        MCP["Local MCP server<br/>release check, sync now"]
-    end
-    DB[("Artifact data store")]
-    PAGE["Dashboard page"]
-
-    live --> PAGE
-    SYNC --> DB --> PAGE
-    MCP --> PAGE
-    PAGE -- "saves last result" --> DB
-```
+![Data routes](data-routes.svg)
 
 | Route            | Used for                                    | Refresh                                        | Why this route                                            |
 | ---------------- | ------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |

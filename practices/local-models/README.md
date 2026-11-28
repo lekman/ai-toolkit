@@ -1,5 +1,7 @@
 # Local Models
 
+[ai-toolkit](../../README.md) / [Practices](../README.md)
+
 Running Claude Code against a model on your own machine instead of the hosted
 one. Nothing leaves the laptop, nothing is metered, and it works on a plane.
 The trade is capability: the best model that fits in 48 GB is not close to the
@@ -12,6 +14,8 @@ Use it for the cases where that trade is worth it, not as a replacement.
 Claude Code talks to whatever `ANTHROPIC_BASE_URL` points at, as long as that
 endpoint speaks Anthropic's Messages API. [LM Studio](https://lmstudio.ai) added
 a native `/v1/messages` endpoint, so tool calls round-trip unchanged.
+
+![Hosted and local](hosted-and-local.svg)
 
 That last part is the whole reason to pick LM Studio over Ollama. Ollama serves
 an OpenAI-shaped API, so a proxy has to translate tool-call blocks in both
@@ -51,6 +55,8 @@ Unified memory holds the model weights _and_ the context. macOS caps GPU-wired
 memory at roughly 75% of RAM by default, so on 48 GB the working budget is about
 36 GB. A 4-bit 30B model at 64k context lands near 24 GB, which is comfortable.
 
+![Memory budget](memory-budget.svg)
+
 | Model           | Key                      | Size   | Notes                                                                                         |
 | --------------- | ------------------------ | ------ | --------------------------------------------------------------------------------------------- |
 | Qwen3.8 27B     | `qwen/qwen3.8-27b`       | ~16 GB | The default. Dense 27B, so slower per token than the MoE models.                              |
@@ -89,6 +95,8 @@ Worth trying at 96 GB and up, not here.
 ## What to Expect
 
 Be clear-eyed about this before you rewire your workflow.
+
+![When to use](when-to-use.svg)
 
 - **Quality.** A local 30B handles single-file edits, tests, refactors, and
   explanations. It degrades on long multi-step tasks: the kind where Claude

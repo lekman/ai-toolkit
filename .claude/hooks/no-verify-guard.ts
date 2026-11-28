@@ -10,11 +10,17 @@ export function findBypass(command: string): string | null {
   // `-n` or `--no-verify` inside a commit message is ignored.
   for (const raw of command.split(/&&|\|\||[;|\n]/)) {
     const seg = raw.replace(/'[^']*'/g, " ").replace(/"[^"]*"/g, " ");
-    if (/(^|\s)--no-verify(\s|=|$)/.test(seg)) return "`--no-verify` skips git hooks";
+    if (/(^|\s)--no-verify(\s|=|$)/.test(seg))
+      return "`--no-verify` skips git hooks";
     if (/\bcommit\b/.test(seg) && /(^|\s)-n(\s|$)/.test(seg))
       return "`git commit -n` skips git hooks";
-    if (/core\.hooksPath/.test(seg)) return "overriding `core.hooksPath` bypasses git hooks";
-    if (/(^|\s)(HUSKY|HUSKY_SKIP_HOOKS|PRE_COMMIT_ALLOW_NO_CONFIG|LEFTHOOK)=/.test(seg))
+    if (/core\.hooksPath/.test(seg))
+      return "overriding `core.hooksPath` bypasses git hooks";
+    if (
+      /(^|\s)(HUSKY|HUSKY_SKIP_HOOKS|PRE_COMMIT_ALLOW_NO_CONFIG|LEFTHOOK)=/.test(
+        seg,
+      )
+    )
       return "a hook-skip env var disables git hooks";
   }
   return null;

@@ -20,7 +20,9 @@ test("blocks git commit -n", () => {
   expect(findBypass("git commit -n -m x")).toBeTruthy();
 });
 test("blocks core.hooksPath override", () => {
-  expect(findBypass("git -c core.hooksPath=/dev/null commit -m x")).toBeTruthy();
+  expect(
+    findBypass("git -c core.hooksPath=/dev/null commit -m x"),
+  ).toBeTruthy();
 });
 test("blocks a hook-skip env var", () => {
   expect(findBypass("HUSKY=0 git commit -m x")).toBeTruthy();

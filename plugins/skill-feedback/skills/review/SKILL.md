@@ -88,8 +88,12 @@ operator changes it. Occurrence and detection come from the log:
 
 ```bash
 bun "${CLAUDE_PLUGIN_ROOT}/scripts/outcome-log.ts" review --export <dir> \
-  --out ~/.config/skill-feedback/reviews/<today>.json
+  --out-dir ~/.config/skill-feedback/reviews
 ```
+
+The last line of the output names the saved file. Its name is the review's
+`id`, a time stamp such as `20261128T101502Z`, so two reviews on one day are
+two files.
 
 Show the tables as printed. The risk priority number is severity times
 occurrence times detection. Read the flags before drawing conclusions:
@@ -127,12 +131,12 @@ configuration that owns the skill.
 
 ## Step 6: Record
 
-Add a `decision` field to each mode in the `--out` file: the operator's
+Add a `decision` field to each mode in the saved file: the operator's
 choice in one sentence, or `no action` with the reason. With a shared copy in
 reach, store the file with `ArtifactData`: `action: "set"`,
-`collection: "reviews"`, `doc_id` set to the review date and `file_path` set
-to the file. A second review on the same date needs the stored document's
-`version` as `if_version`.
+`collection: "reviews"`, `doc_id` set to the review's `id` and `file_path`
+set to the file. Every review is its own document, so a second review on the
+same day replaces nothing.
 
 Report one line: `review: <n> runs, <m> modes ranked, top <skill>/<mode> RPN
 <n>, <k> changes proposed, <j> accepted`.

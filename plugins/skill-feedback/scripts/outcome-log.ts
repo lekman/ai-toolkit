@@ -25,7 +25,8 @@
  *   sent     <id>...              remove pushed entries from the outbox
  *   modes    [--skill <name>] [--export <dir>]
  *   review   [--skill <name>] [--from YYYY-MM-DD] [--to YYYY-MM-DD]
- *            [--export <dir>] [--out <file>] [--json]
+ *            [--export <dir>] [--out <file> | --out-dir <dir>] [--json]
+ *            `--out-dir` saves the review as `<dir>/<review id>.json`
  *   severity <skill> <mode> <1-10> [--note <text>]
  *   config                         print the resolved paths and settings
  *
@@ -103,6 +104,8 @@ export interface ModeScore {
 export interface Review {
   date: string;
   from: string;
+  /** The time of the review as a sortable stamp, and its document name. */
+  id: string;
   modes: ModeScore[];
   skills: {
     corrected: number;
@@ -214,6 +217,13 @@ export function skillFromDir(dir: string): string {
   return skill;
 }
 
+/** A time as a sortable stamp, such as 20261128T101502Z. */
+const timeStamp = (now: Date) =>
+  now
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z");
+
 /** Every problem with the input, one sentence each. Empty means valid. */
 export function validate(input: EntryInput): string[] {
   const problems: string[] = [];
@@ -274,10 +284,7 @@ export function buildEntry(
   const problems = validate(input);
   if (problems.length) throw new Error(problems.join("\n"));
   const skill = input.skill!.trim();
-  const stamp = now
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\.\d+Z$/, "Z");
+  const stamp = timeStamp(now);
   const slug = skillName(skill).replace(":", ".");
   const entry: Entry = {
     cause: (input.cause ?? "").trim(),
@@ -523,9 +530,10 @@ export function setSeverity(
 
 /**
  * Severities from the reviews stored in an export, for modes scored on
- * another machine. A later review replaces an earlier score for the same
- * mode and keeps the scores of modes it does not cover. Local scores win
- * where both exist.
+ * another machine. Reviews are read in file-name order, which is time order
+ * because a review's document name is its time stamp. A later review replaces
+ * an earlier score for the same mode and keeps the scores of modes it does
+ * not cover. Local scores win where both exist.
  */
 export function severitiesFromExport(dir: string): Severities {
   const folder = join(dir, "reviews");
@@ -537,7 +545,6 @@ export function severitiesFromExport(dir: string): Severities {
       // A review document that is not JSON carries no scores.
     }
   }
-  reviews.sort((a, b) => String(a?.date).localeCompare(String(b?.date)));
   const out: Severities = {};
   for (const r of reviews)
     for (const m of [...(r?.modes ?? []), ...(r?.unscored ?? [])]) {
@@ -551,7 +558,7 @@ export function severitiesFromExport(dir: string): Severities {
 export function recentEntries(
   entries: Entry[],
   options: { date?: string; limit?: number; skill?: string } = {},
-): Pick<Entry, "date" | "id" | "mode" | "outcome" | "skill">[] {
+): Pick<Entry, "date" | "id" | "mode" | "outcome" | "run" | "skill">[] {
   const wanted = options.skill ? skillName(options.skill) : undefined;
   return entries
     .filter(
@@ -561,11 +568,12 @@ export function recentEntries(
     )
     .sort((a, b) => b.id.localeCompare(a.id))
     .slice(0, options.limit ?? 20)
-    .map(({ date, id, mode, outcome, skill }) => ({
+    .map(({ date, id, mode, outcome, run, skill }) => ({
       date,
       id,
       mode,
       outcome,
+      ...(run ? { run } : {}),
       skill,
     }));
 }
@@ -597,13 +605,35 @@ export function knownModes(
 }
 
 /**
+ * For each entry, the id of the first entry of its run. A `run` reference is
+ * followed until it reaches an entry with none, or an id that is not in the
+ * log. References that form a loop resolve to the smallest id in the loop.
+ */
+export function firstEntryIds(entries: Entry[]): Map<string, string> {
+  const refers = new Map<string, string>();
+  for (const e of entries) if (e.run) refers.set(e.id, e.run);
+  const first = new Map<string, string>();
+  for (const e of entries) {
+    const seen = [e.id];
+    let at = e.run || e.id;
+    while (refers.has(at) && !seen.includes(at)) {
+      seen.push(at);
+      at = refers.get(at)!;
+    }
+    first.set(e.id, seen.includes(at) ? [...seen].sort()[0] : at);
+  }
+  return first;
+}
+
+/**
  * Groups the failures by skill and mode, scores each group and ranks them.
  * Modes without a severity cannot be ranked and come back as `unscored`.
  *
  * A run is counted once. An entry that names an earlier entry in `run` is
  * part of that entry's run, so a failure found days after an `ok` entry makes
- * one failed run out of the two entries. The run's date is its earliest
- * entry's date.
+ * one failed run out of the two entries. A reference to an entry that itself
+ * names an earlier one is followed back to the first entry. The run's date is
+ * its earliest entry's date.
  */
 export function review(
   entries: Entry[],
@@ -615,10 +645,11 @@ export function review(
     string,
     { date: string; entries: Entry[]; skill: string }
   >();
+  const first = firstEntryIds(entries);
   for (const e of [...entries].sort((a, b) => a.id.localeCompare(b.id))) {
     const name = skillName(e.skill);
     if (wanted && name !== wanted) continue;
-    const key = `${name}\n${e.run || e.id}`;
+    const key = `${name}\n${first.get(e.id) ?? e.id}`;
     const run = byRun.get(key) ?? { date: e.date, entries: [], skill: name };
     if (e.date < run.date) run.date = e.date;
     run.entries.push(e);
@@ -688,9 +719,11 @@ export function review(
   const byName = (a: ModeScore, b: ModeScore) =>
     a.skill.localeCompare(b.skill) || a.mode.localeCompare(b.mode);
   const dates = inWindow.map((run) => run.date).sort();
+  const now = options.now ?? new Date();
   return {
-    date: localDate(options.now ?? new Date()),
+    date: localDate(now),
     from: options.from ?? dates[0] ?? "",
+    id: timeStamp(now),
     modes: scored
       .filter((m) => m.rpn !== null)
       .sort(
@@ -854,13 +887,17 @@ function main(argv: string[]): void {
         skill: flags.skill,
         to: flags.to,
       });
-      if (flags.out) {
-        mkdirSync(dirname(resolve(flags.out)), { recursive: true });
-        writeFileSync(flags.out, JSON.stringify(result, null, 2) + "\n");
+      const out = flags["out-dir"]
+        ? join(flags["out-dir"], `${result.id}.json`)
+        : flags.out;
+      if (out) {
+        mkdirSync(dirname(resolve(out)), { recursive: true });
+        writeFileSync(out, JSON.stringify(result, null, 2) + "\n");
       }
       if (flags.json) print(result);
       else {
         console.log(renderReview(result));
+        if (flags["out-dir"]) console.log(`Saved as ${out}`);
         const { skipped } = readLog(root);
         if (skipped)
           console.log(

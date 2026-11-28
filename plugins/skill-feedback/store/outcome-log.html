@@ -346,10 +346,23 @@
     }
     // An entry that names an earlier entry in `run` belongs to that run, so
     // a failure found later turns its run into one failed run.
+    // A reference to an entry that itself names an earlier one is followed
+    // back to the first entry, stopping if the references form a loop.
+    const refers = new Map();
+    for (const r of runs) if (r.run) refers.set(r.id, r.run);
+    const firstId = (r) => {
+      const seen = [r.id];
+      let at = r.run || r.id;
+      while (refers.has(at) && !seen.includes(at)) {
+        seen.push(at);
+        at = refers.get(at);
+      }
+      return seen.includes(at) ? [...seen].sort()[0] : at;
+    };
     const byRun = new Map();
     for (const r of [...runs].reverse()) {
       const name = skillName(r.skill);
-      const key = name + "\n" + String(r.run || r.id || "");
+      const key = name + "\n" + String(firstId(r) || "");
       const run = byRun.get(key) || { skill: name, outcome: "ok", last: "" };
       if (r.outcome === "corrected" || r.outcome === "failed")
         run.outcome = r.outcome;
@@ -472,11 +485,18 @@
         },
       );
 
+    // A review's document name is its time stamp, so the largest name among
+    // the most recent dates is the latest review.
     db.collection("reviews")
       .orderBy("date", "desc")
-      .limit(1)
+      .limit(20)
       .onSnapshot(
-        (snap) => renderReview(snap.docs.length ? snap.docs[0].data() : null),
+        (snap) => {
+          const latest = [...snap.docs].sort((a, b) =>
+            String(b.id).localeCompare(String(a.id)),
+          )[0];
+          renderReview(latest ? latest.data() : null);
+        },
         () => {},
       );
   }

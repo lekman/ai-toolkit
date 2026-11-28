@@ -16,6 +16,7 @@ import {
   buildEntry,
   detectionScore,
   type Entry,
+  firstEntryIds,
   knownModes,
   markSent,
   merge,
@@ -578,6 +579,67 @@ test("two later entries for one run and one mode count as one failure", () => {
   expect(r.unscored[0]).toMatchObject({ count: 1, rate: 0.5 });
 });
 
+test("a chain of later entries resolves to the first entry of the run", () => {
+  const [a] = runs(1, {});
+  const failure = (start: number, run: string) =>
+    runs(
+      1,
+      {
+        detected: "later-use",
+        mode: "creates-duplicate",
+        outcome: "corrected",
+        run,
+        what: "Found the duplicate",
+      },
+      start,
+    )[0];
+  const b = failure(3, a.id);
+  const c = failure(4, b.id);
+  expect([...firstEntryIds([a, b, c]).values()]).toEqual([a.id, a.id, a.id]);
+
+  const r = review([a, b, c, ...runs(1, {}, 9)]);
+  expect(r.skills[0]).toMatchObject({ corrected: 1, ok: 1, runs: 2 });
+  expect(r.unscored[0]).toMatchObject({ count: 1, rate: 0.5 });
+
+  // Two entries that name each other are one run, whichever is read first.
+  const x = { ...failure(5, "loop-y"), id: "loop-x" };
+  const y = { ...failure(6, "loop-x"), id: "loop-y" };
+  expect(review([y, x]).skills[0].runs).toBe(1);
+});
+
+test("a review carries a time-ordered id, so two on one day are two documents", () => {
+  const morning = review([], {}, { now: new Date("2026-11-28T08:00:00Z") });
+  const evening = review([], {}, { now: new Date("2026-11-28T17:30:05Z") });
+  expect(morning.id).toBe("20261128T080000Z");
+  expect(evening.id).toBe("20261128T173005Z");
+  expect(morning.date).toBe(evening.date);
+
+  const reviews = join(root, "export", "reviews");
+  mkdirSync(reviews, { recursive: true });
+  const mode = (name: string, severity: number) => ({
+    mode: name,
+    severity,
+    skill: "expenses",
+  });
+  writeFileSync(
+    join(reviews, `${evening.id}.json`),
+    JSON.stringify({ ...evening, modes: [mode("creates-duplicate", 7)] }),
+  );
+  writeFileSync(
+    join(reviews, `${morning.id}.json`),
+    JSON.stringify({
+      ...morning,
+      modes: [mode("creates-duplicate", 3), mode("wrong-total", 5)],
+    }),
+  );
+  expect(severitiesFromExport(join(root, "export"))).toEqual({
+    expenses: {
+      "creates-duplicate": { severity: 7 },
+      "wrong-total": { severity: 5 },
+    },
+  });
+});
+
 test("recent entries are listed newest first, for one skill or day", () => {
   const a = appendEntry(ok, root, new Date("2026-11-27T09:00:00Z"), "0001");
   const b = appendEntry(ok, root, NOW, "0002");
@@ -801,7 +863,12 @@ test("the command line logs a later failure against the run it belongs to", () =
   expect(later.code).toBe(0);
   expect(JSON.parse(later.out).entry.run).toBe(found.id);
 
-  const reviewed = cli("review");
+  expect(JSON.parse(cli("recent").out)[0].run).toBe(found.id);
+  const saved = join(root, "reviews");
+  const reviewed = cli("review", "--out-dir", saved);
+  const [file] = readdirSync(saved);
+  expect(file).toMatch(/^\d{8}T\d{6}Z\.json$/);
+  expect(reviewed.out).toContain(`Saved as ${join(saved, file)}`);
   expect(reviewed.out).toContain("| mail:junk | 1 | 0 | 1 | 0 |");
   expect(reviewed.out).toContain(
     "| mail:junk | deletes-wanted-message | 1/1 |",
